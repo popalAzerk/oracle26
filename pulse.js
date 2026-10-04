@@ -1,6 +1,8 @@
 /* Pulse — hypermotion + graphiques + 3D (three.js pur, aucun asset externe) */
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'https://unpkg.com/three@0.160.0/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
+import { RGBELoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
 
 /* ---------- données ---------- */
 const DATA = window.PULSE_DATA;
@@ -124,13 +126,13 @@ function fillTicker(items){
 
 /* ---------- 3D viewer ---------- */
 const PART_ANCHORS = {
-  screen:  [0, .5, .17],
-  battery: [0, -1.5, -.2],
-  sensory: [0, 1.05, -.2],
-  mid:     [.12, .15, -.2],
-  back:    [.7, .8, -.19],
-  camera:  [-.5, 1.62, -.3],
-};
+  screen:  [0, .042, .0052],
+  battery: [0, -.042, -.0052],
+  sensory: [-.02, .056, -.0052],
+  mid:     [.011, .002, -.0052],
+  back:    [.019, .006, -.0052],
+  camera:  [-.021, .056, .002],
+};;;
 const PART_LABELS = {
   screen:'Écran (face avant)', battery:'Batterie (arrière, bas)',
   sensory:'Haut-parleurs / vis / micro (arrière, haut)', mid:'Carte logique (arrière, centre)',
@@ -140,97 +142,87 @@ function initViewer(){
   const cv = document.getElementById('viewer');
   const renderer = new THREE.WebGLRenderer({canvas:cv, antialias:true, alpha:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
   const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(38, 1, .1, 50);
-  scene.add(new THREE.AmbientLight(0xffffff, .78));
-  const key = new THREE.DirectionalLight(0xffffff, 2.1); key.position.set(3,5,4); scene.add(key);
-  const rim = new THREE.PointLight(0x2997ff, 16, 22); rim.position.set(-4,2,-3); scene.add(rim);
-  const rim2 = new THREE.PointLight(0x2997ff, 12, 20); rim2.position.set(4.5,-1,3.5); scene.add(rim2);
-    const shadowDisc = new THREE.Mesh(new THREE.CircleGeometry(2.2, 32),
-      new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.5}));
-    shadowDisc.rotation.x = -Math.PI/2; shadowDisc.position.y = -2.9;
-    scene.add(shadowDisc);
+  scene.background = new THREE.Color(0x05070d);
+  const cam = new THREE.PerspectiveCamera(38, 1, .01, 20);
+  const rimL = new THREE.DirectionalLight(0x88bbff, 2.4); rimL.position.set(-.8,.55,-.6); scene.add(rimL);
+  const rimR = new THREE.DirectionalLight(0xffffff, 1.6); rimR.position.set(.8,.4,.55); scene.add(rimR);
+  new RGBELoader().load('studio_small_03_1k.hdr', tex=>{
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(tex).texture;
+  });
   const root = new THREE.Group(); scene.add(root);
 
-  function buildPhone(model){
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(
-      new RoundedBoxGeometry(2.15, 4.4, .32, 6, .34),
-      new THREE.MeshPhysicalMaterial({
-        color:new THREE.Color(model.bodyColor), metalness:.62, roughness:.32,
-        clearcoat:.9, clearcoatRoughness:.18}));
-    g.add(body);
-    const scr = new THREE.Mesh(
-      new RoundedBoxGeometry(2.0, 4.26, .05, 4, .26),
-      new THREE.MeshPhysicalMaterial({color:0x05070d, metalness:.1, roughness:.16,
-        clearcoat:1, clearcoatRoughness:.06, emissive:0x0e2444, emissiveIntensity:.85}));
-    scr.position.z = .155; g.add(scr);
-    const isl = new THREE.Mesh(new RoundedBoxGeometry(.56,.17,.03,3,.08),
-      new THREE.MeshPhysicalMaterial({color:0x000, roughness:.28}));
-    isl.position.set(0,1.86,.185); g.add(isl);
-    const back = new THREE.Mesh(new RoundedBoxGeometry(2.02,4.24,.04,4,.26),
-      new THREE.MeshPhysicalMaterial({color:new THREE.Color(model.backColor),
-        metalness:.35, roughness:.42, clearcoat:.7}));
-    back.position.z = -.16; g.add(back);
-    const camB = new THREE.Mesh(new RoundedBoxGeometry(.86,.86,.12,4,.2),
-      new THREE.MeshPhysicalMaterial({color:new THREE.Color(model.backColor),
-        metalness:.7, roughness:.3}));
-    camB.position.set(-.5,1.62,-.22); g.add(camB);
-    for (const [dx,dy] of [[-.19,.18],[.19,.18],[-.19,-.18],[.19,-.18]]){
-      const lens = new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.09,24),
-        new THREE.MeshPhysicalMaterial({color:0x0a0d14, metalness:.9, roughness:.12}));
-      lens.rotation.x = Math.PI/2;
-      lens.position.set(-.5+dx, 1.62+dy, -.285); g.add(lens);
+    const LOADER = new GLTFLoader();
+  const draco = new DRACOLoader();
+  draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+  LOADER.setDRACOLoader(draco);
+
+  function colorize(g, model){
+    // teinte du châssis/dos selon le modèle (le GLB = titane noir)
+    const c = new THREE.Color(model.bodyColor);
+    g.traverse(o=>{
+      if (o.isMesh && o.material && o.material.color &&
+          o.material.color.getHex() > 0x0a0a0a) {
+        // teinter les surfaces non-noires (châssis titane + dos):
+        o.material = o.material.clone();
+        o.material.color.lerp(c, .55);
+        o.material.envMapIntensity = 1.35;
+        if (!o.material.map) { o.material.clearcoat = .8; o.material.clearcoatRoughness = .14; }
+      }
+    });
+  }
+
+  let iphoneGLTF = null;
+  let loading = true;
+  let phone = null;
+  const phonedots = {};
+  const pending = [];
+
+  function attachDots(ph){
+    for (const [k,p] of Object.entries(PART_ANCHORS)){
+      const m = new THREE.Mesh(new THREE.SphereGeometry(.0055, 18, 18),
+        new THREE.MeshBasicMaterial({color:0x2997ff, transparent:true, opacity:.95}));
+      m.position.set(...p); m.visible=false; ph.add(m);
+      phonedots[k]=m;
     }
-    const bat = new THREE.Mesh(new RoundedBoxGeometry(1.7,1.5,.06,3,.1),
-      new THREE.MeshPhysicalMaterial({color:0x0d3320, metalness:.2, roughness:.5,
-        emissive:0x118f48, emissiveIntensity:.42}));
-    bat.position.set(0,-1.5,-.175); bat.visible=false; g.add(bat);
-    const board = new THREE.Mesh(new RoundedBoxGeometry(1.15,1.35,.05,3,.06),
-      new THREE.MeshPhysicalMaterial({color:0x08130a, metalness:.3, roughness:.4,
-        emissive:0x1e7f3c, emissiveIntensity:.42}));
-    board.position.set(.12,.15,-.175); board.visible=false; g.add(board);
-    const spk = new THREE.Mesh(new RoundedBoxGeometry(.9,.24,.05,2,.05),
-      new THREE.MeshPhysicalMaterial({color:0x140022, emissive:0x7a3cff, emissiveIntensity:.5,
-        metalness:.3, roughness:.4}));
-    spk.position.set(0,1.05,-.175); spk.visible=false; g.add(spk);
-    g.userData = {bat, board, spk, scr};
-    return g;
   }
 
-  let phone = buildPhone(window.PULSE_MODELS[0]);
-  root.add(phone);
-
-  const dots = {};
-  for (const [k,p] of Object.entries(PART_ANCHORS)){
-    const m = new THREE.Mesh(new THREE.SphereGeometry(.09,18,18),
-      new THREE.MeshBasicMaterial({color:0x2997ff, transparent:true, opacity:.94}));
-    m.position.set(...p); m.visible=false; phone.add(m); dots[k]=m;
-  }
+  LOADER.load('iphone15pro.glb', gltf=>{
+    iphoneGLTF = gltf.scene;
+    loading = false;
+    // premier modèle:
+    phone = iphoneGLTF.clone();
+    colorize(phone, window.PULSE_MODELS[0]);
+    attachDots(phone);
+    // ombre de contact au sol:
+    phone.traverse(o=>{ if (o.isMesh) o.castShadow = true; });
+    const shadowC = new THREE.Mesh(new THREE.CircleGeometry(.22, 40),
+      new THREE.ShadowMaterial({opacity:.36}));
+    shadowC.rotation.x = -Math.PI/2; shadowC.position.y = -.115;
+    shadowC.receiveShadow = true; scene.add(shadowC);
+    const dsc = new THREE.DirectionalLight(0xffffff, 1.5);
+    dsc.position.set(.4,.9,.35); dsc.castShadow = true;
+    dsc.shadow.mapSize.set(1024,1024); scene.add(dsc);
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    root.add(phone);
+    pending.forEach(fn=>fn());
+    pending.length = 0;
+  }, undefined, ()=>{ loading = false; });
 
   function showDot(key){
-    for (const [k,d] of Object.entries(dots)) d.visible = (k===key);
-    const u = phone.userData;
-    u.bat.visible    = (key==='battery');
-    u.board.visible  = (key==='mid');
-    u.spk.visible    = (key==='sensory');
-    u.scr.material.emissiveIntensity = (key==='screen') ? 1.3 : .62;
+    if (loading || !phone) { pending.push(()=>showDot(key)); return; }
+    for (const [k,d] of Object.entries(phonedots)) d.visible = (k===key);
+    // les composants physiques = vue arrière; l'écran = vue avant
     const backish = ['battery','mid','sensory','camera','back'].includes(key);
-    const from = root.rotation.y;
-    const to = backish ? Math.PI : 0;
-    const t0 = performance.now();
-    (function st(t){
-      const k2 = Math.min(1,(t-t0)/650), e = 1-Math.pow(1-k2,3);
-      // rotation la plus courte
-      let delta = to - (from % (Math.PI*2));
-      if (delta > Math.PI) delta -= Math.PI*2;
-      if (delta < -Math.PI) delta += Math.PI*2;
-      root.rotation.y = from + delta*e;
-      if (k2<1) requestAnimationFrame(st);
-    })(t0);
+    // cible = l'état d'orientation lu par la boucle idle (lisse et sans conflit)
+    ry = backish ? .38 : Math.PI - .45;
+    drag = false;
   }
-
-  let drag=false, px=0, py=0, ry=.62, rx=-.34, dist=6.4;
+let drag=false, px=0, py=0, ry=.62, rx=-.28, dist=.52;
   cv.addEventListener('pointerdown', e=>{drag=true; px=e.clientX; py=e.clientY;});
   addEventListener('pointerup', ()=>drag=false);
   addEventListener('pointermove', e=>{
@@ -240,7 +232,7 @@ function initViewer(){
   });
   cv.addEventListener('wheel', e=>{
     e.preventDefault();
-    dist = Math.max(3.8, Math.min(9, dist + e.deltaY*.004));
+    dist = Math.max(.25, Math.min(1.3, dist + e.deltaY*.00035));
   }, {passive:false});
   let pinch0=null;
   cv.addEventListener('touchstart', e=>{
@@ -251,7 +243,7 @@ function initViewer(){
     if (e.touches.length===2 && pinch0){
       const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
                            e.touches[0].clientY-e.touches[1].clientY);
-      dist = Math.max(3.8, Math.min(9, dist*(pinch0/d))); pinch0 = d; e.preventDefault();
+      dist = Math.max(.25, Math.min(1.3, dist*(pinch0/d))); pinch0 = d; e.preventDefault();
     }
   }, {passive:false});
 
@@ -268,17 +260,17 @@ function initViewer(){
   let tLast = 0;
   (function loop(t){
     const dt = Math.min(50, t-(tLast||t)); tLast = t;
-    if (!drag) ry += .00014*dt;
-    root.rotation.y += (((ry*.55) - root.rotation.y) * .1);
-    root.rotation.x += (((rx*.4) - root.rotation.x) * .1);
+    if (!drag && ![...Object.values(phonedots)].some(d=>d.visible)) ry += .00014*dt;
+    root.rotation.y += ((ry - root.rotation.y) * .1);
+    root.rotation.x += ((rx - root.rotation.x) * .1);
     cam.position.z += ((dist - cam.position.z) * .12);
     const s = 1 + Math.sin(t*.004)*.25;
-    for (const d of Object.values(dots)) if (d.visible) d.scale.setScalar(s);
+    for (const d of Object.values(phonedots)) if (d.visible) d.scale.setScalar(s);
     renderer.render(scene, cam);
     requestAnimationFrame(loop);
   })(0);
 
-  return { buildPhone, showDot, phone, root };
+  return { showDot, phone, root, iphoneGLTF:()=>iphoneGLTF, colorize, attachDots };
 }
 
 /* ---------- orchestration ---------- */
@@ -316,16 +308,13 @@ window.PULSE_MODELS.forEach((m, i)=>{
   b.onclick = ()=>{
     tabsEl.querySelectorAll('.mtab').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    const np = vw.buildPhone(m);
+    if (!vw.iphoneGLTF) { pendingTabSwitch = m.name; return; }
+    const np = vw.iphoneGLTF.clone();
+    vw.colorize(np, m);
     vw.root.add(np); vw.root.remove(vw.phone);
     vw.phone = np;
-    // remettre les dots sur le nouveau téléphone
-    for (const [k,p] of Object.entries(PART_ANCHORS)){
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(.09,18,18),
-        new THREE.MeshBasicMaterial({color:0x2997ff, transparent:true, opacity:.94}));
-      dot.position.set(...p); dot.visible=false; np.add(dot);
-      vw.dots[k] = dot;
-    }
+    vw.phonedotsClear && vw.phonedotsClear();
+    vw.attachDots(vw.phone);
     const cur = document.querySelector('.issu.on');
     if (cur) vw.showDot(cur.dataset.k);
   };
