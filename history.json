@@ -1,0 +1,16 @@
+[
+ {
+  "date": "2026-10-05",
+  "total": 50,
+  "counts": {
+   "process": 24,
+   "warranty": 2,
+   "system_bug": 3,
+   "pricing": 3,
+   "screen": 6,
+   "service": 4,
+   "sensory": 1,
+   "battery": 7
+  }
+ }
+]
