@@ -1,109 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
-<title>Pulse — Signal client Apple en continu</title>
-<meta name="description" content="Tableau de bord du signal client : problèmes recensés sur les réseaux sociaux autour des produits Apple — problème émergent, sensoriel, bugs système, garantie et prix.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%232997ff'/></svg>">
-<link rel="stylesheet" href="pulse.css?v=2026100401">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse — Tendances de pannes Apple</title>
+<meta name="description" content="Dashboard temps réel des problèmes client Apple : tendances, historique, exemples concrets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-in">
-    <div class="brand"><span class="dot"></span> Pulse</div>
-    <nav>
-      <a href="#tableau">Tableau de bord</a>
-      <a href="#emergents">Émergents</a>
-      <a href="#anatomie">Anatomie 3D</a>
-      <a href="#methode">Méthode</a>
-    </nav>
-    <div class="live"><span class="led"></span> Analyse en continu</div>
-  </div>
+<canvas id="grain"></canvas>
+
+<header id="hud">
+  <div><span class="dot"></span>PULSE · <span class="brand">APPLE OPS</span></div>
+  <div>Veille signal client · Genius Bar</div>
+  <div><span class="dot"></span>LIVE</div>
 </header>
-<main>
-  <section class="hero">
-    <canvas id="heroCanvas"></canvas>
-    <div class="kicker rv">Intelligence client · réseaux sociaux · produits Apple</div>
-    <h1 class="rv d1">Le signal client,<br><span class="grad">mesuré en continu.</span></h1>
-    <p class="lede rv d2">Les problèmes déclarés par les clients — écran, batterie, garantie, capteurs, bugs système — sont collectés sur les réseaux publics, classifiés par un moteur de décision IA, et résumés ici en pourcentages et en tendances.</p>
-  </section>
 
-  <section class="sect" id="tableau">
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div>
+    <div class="sur">SIGNAL CLIENT APPLE</div>
+    <h1>Ce qui se casse en ce moment<br>— détecté en continu.</h1>
+    <p class="sub">Chaque nuit, les conversations clients (réseaux, forums) sont collectées puis classées par composant. Le résultat alimente l'anticipation Genius&nbsp;Bar&nbsp;: que va-t-on nous apporter demain&nbsp;?</p>
     <div class="kpis">
-      <div class="kpi rv"><div class="v" id="kpi-mentions">0</div><div class="l">Mentions analysées</div><div class="sub" id="kpi-period">—</div></div>
-      <div class="kpi rv d1"><div class="v" id="kpi-problems">0</div><div class="l">Catégories suivies</div><div class="sub">dont sensoriel &amp; bugs système</div></div>
-      <div class="kpi rv d2"><div class="v" id="kpi-neg">0</div><div class="l">Signal négatif</div><div class="sub">part des clients mécontents</div></div>
-      <div class="kpi rv d3"><div class="v" id="kpi-conf">0</div><div class="l">Confiance moyenne</div><div class="sub">calibration du moteur</div></div>
+      <div class="kpi"><div class="v" id="kpi-total">0</div><div class="l">Mentions actives</div></div>
+      <div class="kpi"><div class="v" id="kpi-cats">0</div><div class="l">Composants suivis</div></div>
+      <div class="kpi"><div class="v conf" id="conf-val">–%</div><div class="l">Confiance IA</div></div>
+      <div class="kpi"><div class="v" style="color:var(--neg)" id="kpi-neg">0</div><div class="l">Signal négatif</div></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="sect">
-    <div class="sect-head rv">
-      <div class="kicker">Répartition</div>
-      <h2>Quels problèmes recense-t-on ?</h2>
-      <p>Répartition des mentions par nature du problème, sur l'échantillon analysé. Le nuage de citations défile sous les graphiques.</p>
-    </div>
-    <div class="charts">
-      <div class="card rv">
-        <h3>Parts par type de problème</h3>
-        <canvas id="donut"></canvas>
-        <div class="legend" id="legend"></div>
-      </div>
-      <div class="card rv d1">
-        <h3>Problèmes émergents <span style="font-size:11px;color:var(--warn);letter-spacing:.1em;font-weight:600">▲ HAUSSE</span></h3>
-        <div class="bars" id="barsEmergent"></div>
-        <h3 style="margin-top:24px">Sentiment global</h3>
-        <div class="sent3">
-          <div class="cell pos"><div class="n" id="s-pos">—</div><div class="t">Positif</div></div>
-          <div class="cell"><div class="n" id="s-neu">—</div><div class="t">Neutre</div></div>
-          <div class="cell neg"><div class="n" id="s-neg">—</div><div class="t">Négatif</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="ticker rv"><div class="ticker-in" id="ticker"></div></div>
-  </section>
+<!-- ============ TOP PANNES ============ -->
+<section id="top" class="rx">
+  <div class="stitle">Tendances · dernières 24 h</div>
+  <h2>Par composant, du plus au moins signalé</h2>
+  <div id="bars"></div>
+</section>
 
-  <section class="sect" id="anatomie">
-    <div class="sect-head rv">
-      <div class="kicker">Anatomie du problème</div>
-      <h2>Où se situe-t-il sur l'appareil ?</h2>
-      <p>Choisis un modèle, puis un problème : le point bleu s'anime à l'endroit exact du composant concerné. Fais pivoter le modèle.</p>
-    </div>
-    <div class="viewer-wrap">
-      <div class="rv">
-        <canvas id="viewer"></canvas>
-        <div class="viewer-hint">Glisser = rotation · molette/pincement = zoom</div>
-        <div class="model-tabs" id="modelTabs"></div>
-      </div>
-      <div class="issues rv d1" id="issueList"></div>
-    </div>
-  </section>
+<!-- ============ HISTORIQUE ============ -->
+<section id="hist" class="rx">
+  <div class="stitle">Historique</div>
+  <h2>Volume total — semaines écoulées</h2>
+  <canvas id="spark-total" style="width:100%;height:110px"></canvas>
+  <div class="stitle" style="margin-top:44px">Carte thermique — collectes récentes</div>
+  <h2>Composant × date</h2>
+  <div id="heat"></div>
+</section>
 
-  <section class="sect" id="methode">
-    <div class="sect-head rv">
-      <div class="kicker">Méthode</div>
-      <h2>Comment ce tableau se construit</h2>
-    </div>
-    <div class="steps">
-      <div class="step rv"><div class="n">01 · Collecte</div><h4>Écoute des réseaux publics</h4><p>Harken (open source, auto-hébergé) agrège Hacker News, Bluesky, Reddit et flux RSS/Google Alerts. Aucune donnée personnelle ne quitte le serveur.</p></div>
-      <div class="step rv d1"><div class="n">02 · Classification</div><h4>Moteur de décision Laya</h4><p>Chaque mention est classifiée en 11 catégories (écran, batterie, garantie, prix, sensoriel, bug système…) avec une probabilité calibrée en une seule passe réseau (33 ms sur GPU).</p></div>
-      <div class="step rv d2"><div class="n">03 · Publication</div><h4>Nightly + pourcentages</h4><p>Un cron nocturne re-classe les nouvelles mentions et met à jour ce tableau. Les émergents comparent chaque jour à la moyenne des jours précédents.</p></div>
-    </div>
-  </section>
-</main>
+<!-- ============ SENTIMENT ============ -->
+<section id="sent" class="rx">
+  <div class="stitle">Ton général</div>
+  <h2>Comment les clients le vivent</h2>
+  <div id="sent-wrap">
+    <canvas id="gauge"></canvas>
+    <div id="gauge-labels"></div>
+  </div>
+</section>
+
+<!-- ============ EXEMPLES ============ -->
+<section id="exemples" class="rx">
+  <div class="stitle">Preuves</div>
+  <h2>Ce que les clients disent — mot pour mot</h2>
+  <p style="color:var(--mut);font-size:12px;margin-bottom:20px">Clique sur un composant pour lire les phrases réelles qui l'ont déclenché.</p>
+  <div id="examples"></div>
+</section>
+
 <footer>
-  <b>Pulse</b> — prototype de veille client. Outils : Harken (MIT) + Laya (Apache 2.0). Données publiques agrégées, classification IA calibrée — outil interne, non affilié à Apple Inc.
+  <div id="updated"></div>
+  <div>Collecte nocturne Harken (HN + Bluesky) · classification Laya · <a href="https://github.com/popalAzerk/oracle26">repo oracle26</a></div>
+  <div>popalazerk.com — à l'aide des sites loi-réparation et Genius Bar</div>
 </footer>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-  }
-}
-</script>
-<script src="data.js?v=202610050900"></script>
-<script type="module" src="pulse.js?v=202610041230"></script>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
