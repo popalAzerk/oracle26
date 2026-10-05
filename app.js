@@ -184,6 +184,14 @@ const io = new IntersectionObserver(es=>es.forEach(e=>{
 document.querySelectorAll('.rx').forEach(el=>io.observe(el));
 
 /* ---------- France / ARA (PULSE_FR) ---------- */
+const MOIS = {jan:'janv',feb:'févr',mar:'mars',apr:'avr',may:'mai',jun:'juin',jul:'juil',aug:'août',sep:'sept',oct:'oct',nov:'nov',dec:'déc'};
+function frdate(d){
+  if (!d) return '';
+  const m = d.match(/(\w{3}),(\s*)(\d{1,2})\s+(\w{3})/);
+  if (m) return `${m[3]} ${MOIS[m[4].toLowerCase().slice(0,3)]||m[4]}`;
+  return d.slice(5,10);
+}
+function cleanTitle(t){ return (t||'').replace(/\s[-–]\s[^-––]{2,40}$/,'').trim(); }
 (function(){
   const FR = window.PULSE_FR;
   if (!FR || !window.PULSE_DATA) return;
@@ -206,8 +214,8 @@ document.querySelectorAll('.rx').forEach(el=>io.observe(el));
       <details class="frdetails"><summary>Voir les signalements (${d.items.length})</summary>
         <ul class="frlist">${d.items.slice(0,20).map(i => {
           const m = CAT_META[i.cat]||{label:i.cat,color:'#888'};
-          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${(i.text||'').replace(/</g,'&lt;')}</a>
-            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${(i.date||'').slice(5,10)}</span></li>`;
+          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${cleanTitle(i.text).replace(/</g,'&lt;')}</a>
+            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${frdate(i.date)}</span></li>`;
         }).join('')}</ul>
       </details>`;
     return card;
