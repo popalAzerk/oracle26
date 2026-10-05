@@ -122,7 +122,7 @@ exCats.forEach(([k,v], i)=>{
     <summary>
       <span class="eicon" style="color:var(--c)">${ICONS[k]||''}</span>
       <span class="elabel">${m.label}</span>
-      <span class="eval">${fmt(v)} mentions</span>
+      <span class="eval">${fmt(v)} ${v>1?'mentions':'mention'}</span>
       <span class="earrow">▾</span>
     </summary>
     <div class="ebody">
