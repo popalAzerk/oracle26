@@ -111,3 +111,5 @@ window.PULSE_DATA = {
   }
  ]
 };
+
+window.PULSE_MODELS = [{"name": "iPhone 18 Pro", "bodyColor": "#3a3d44", "backColor": "#1c1e24"}, {"name": "iPhone 18", "bodyColor": "#2b4a6f", "backColor": "#16324e"}, {"name": "iPhone 16e", "bodyColor": "#e8e8ed", "backColor": "#d5d5dc"}];
