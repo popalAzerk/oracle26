@@ -12,11 +12,11 @@ window.PULSE_FR = {
    "service": 1
   },
   "sentiment": {
-   "neutral": 11,
-   "negative": 8,
+   "neutral": 9,
+   "negative": 10,
    "positive": 3
   },
-  "avgConf": 0.866,
+  "avgConf": 0.857,
   "examples": {
    "screen": [
     {
@@ -46,8 +46,8 @@ window.PULSE_FR = {
      "src": "WebFR"
     },
     {
-     "text": "Problèmes réseau majeurs depuis iOS 26 /… - Communauté Apple",
-     "url": "https://communities.apple.com/fr/thread/256195339",
+     "text": "Problèmes et bugs de l'iPhone 18 Pro/17 : guide complet en 2026",
+     "url": "https://www.tenorshare.fr/iphone-17/bugs-et-problemes-de-iphone-17.html",
      "date": "",
      "src": "WebFR"
     }
@@ -203,7 +203,7 @@ window.PULSE_FR = {
     "region": "FR"
    },
    {
-    "text": "Problèmes réseau majeurs depuis iOS 26 /… - Communauté Apple",
+    "text": "Problèmes et bugs de l'iPhone 18 Pro/17 : guide complet en 2026",
     "cat": "system_bug",
     "sent": "negative",
     "date": "",
@@ -219,9 +219,25 @@ window.PULSE_FR = {
     "region": "FR"
    },
    {
+    "text": "Problème écran tactile iPhone - Communauté Apple",
+    "cat": "system_bug",
+    "sent": "negative",
+    "date": "",
+    "src": "WebFR",
+    "region": "FR"
+   },
+   {
     "text": "Problème depuis mise à jour iOS 26.1 - Communauté Apple",
     "cat": "system_bug",
     "sent": "negative",
+    "date": "",
+    "src": "WebFR",
+    "region": "FR"
+   },
+   {
+    "text": "Votre iPhone Redémarre Tout Seul sans cesse ? 8 Solutions - iMyFone",
+    "cat": "system_bug",
+    "sent": "neutral",
     "date": "",
     "src": "WebFR",
     "region": "FR"
@@ -235,25 +251,9 @@ window.PULSE_FR = {
     "region": "FR"
    },
    {
-    "text": "Bug iPhone : les solutions aux problèmes les plus fréquents - BDM",
+    "text": "Problème microphone iPhone : causes, diagnostics et solutions",
     "cat": "system_bug",
-    "sent": "neutral",
-    "date": "",
-    "src": "WebFR",
-    "region": "FR"
-   },
-   {
-    "text": "8 problèmes avec l'iPhone 14 : voici comment les résoudre",
-    "cat": "system_bug",
-    "sent": "neutral",
-    "date": "",
-    "src": "WebFR",
-    "region": "FR"
-   },
-   {
-    "text": "Votre iPhone Redémarre Tout Seul sans cesse ? 8 Solutions - iMyFone",
-    "cat": "system_bug",
-    "sent": "neutral",
+    "sent": "negative",
     "date": "",
     "src": "WebFR",
     "region": "FR"
