@@ -224,5 +224,12 @@ function cleanTitle(t){ return (t||'').replace(/\s[-–]\s[^-––]{2,40}$/,'')
   const c2 = mk(FR.fr, 'France entière');
   if (c1) wrap.appendChild(c1);
   if (c2) wrap.appendChild(c2);
-  if (c1||c2) { document.getElementById('fr').classList.add('in'); }
+  if (!(c1||c2)) {
+    const wait = document.createElement('div');
+    wait.className = 'frcard frwait';
+    wait.innerHTML = `<div class="frhead"><span class="frname">veille en cours</span></div>
+      <p style="color:var(--mut);font-size:12px;line-height:1.6">Collecte du signal utilisateurs lancée (Mastodon FR, puis Reddit dès que le flux sera autorisé). Premier signalement attendu à la collecte de 2 h du matin.</p>`;
+    wrap.appendChild(wait);
+  }
+  if (c1||c2||true) { document.getElementById('fr').classList.add('in'); }
 })();
