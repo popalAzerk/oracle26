@@ -7,7 +7,7 @@
 <meta name="description" content="Dashboard temps réel des problèmes client Apple : tendances, historique, exemples concrets.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=2">
+<link rel="stylesheet" href="app.css?v=3">
 </head>
 <body>
 <canvas id="grain"></canvas>
@@ -68,13 +68,22 @@
   <div id="examples"></div>
 </section>
 
+<!-- ============ FRANCE / AURA ============ -->
+<section id="fr" class="rx">
+  <div class="stitle">France</div>
+  <h2>La France — et l'Auvergne-Rhône-Alpes</h2>
+  <p style="color:var(--mut);font-size:12px;margin-bottom:20px">Presse française (réparation, garanties, pannes) + signal Mastodon francophone. Les verbatims sont déjà en français — la région ARA est isolée quand elle est identifiable.</p>
+  <div id="fr-cards"></div>
+</section>
+
 <footer>
   <div id="updated"></div>
   <div>Collecte nocturne Harken (HN + Bluesky) · classification Laya · <a href="https://github.com/popalAzerk/oracle26">repo oracle26</a></div>
   <div>popalazerk.com — à l'aide des sites loi-réparation et Genius Bar</div>
 </footer>
 
-<script src="data.js?v=202610051000"></script>
-<script src="app.js?v=2"></script>
+<script src="data.js?v=00000000"></script>
+<script src="data.fr.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

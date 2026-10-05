@@ -182,3 +182,39 @@ const io = new IntersectionObserver(es=>es.forEach(e=>{
   if (e.isIntersecting) e.target.classList.add('in');
 }), {threshold:.12});
 document.querySelectorAll('.rx').forEach(el=>io.observe(el));
+
+/* ---------- France / ARA (PULSE_FR) ---------- */
+(function(){
+  const FR = window.PULSE_FR;
+  if (!FR || !window.PULSE_DATA) return;
+  const wrap = $('fr-cards');
+  if (!wrap) return;
+  const mk = (d, label) => {
+    if (!d || !d.total) return null;
+    const card = document.createElement('div');
+    card.className = 'frcard';
+    const bars = Object.entries(d.counts).slice(0,6).sort((a,b)=>b[1]-a[1]);
+    const mx = bars[0]?.[1] || 1;
+    card.innerHTML = `
+      <div class="frhead"><span class="frname">${label}</span>
+        <span class="frn">${d.total} signalements</span></div>
+      <div class="frbars">${bars.map(([k,v]) => {
+        const m = CAT_META[k]||{label:k,color:'#888',icon:'❓'};
+        return `<div class="frbar"><span class="frlab">${ICONS[k]||''}${m.label}</span>
+          <span class="frtrack"><span class="frfill" style="--c:${m.color};--w:${Math.round(v/mx*100)}%"></span></span>
+          <span class="frv">${v}</span></div>`;}).join('')}</div>
+      <details class="frdetails"><summary>Voir les signalements (${d.items.length})</summary>
+        <ul class="frlist">${d.items.slice(0,20).map(i => {
+          const m = CAT_META[i.cat]||{label:i.cat,color:'#888'};
+          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${(i.text||'').replace(/</g,'&lt;')}</a>
+            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${(i.date||'').slice(5,10)}</span></li>`;
+        }).join('')}</ul>
+      </details>`;
+    return card;
+  };
+  const c1 = mk(FR.aura, 'Auvergne-Rhône-Alpes');
+  const c2 = mk(FR.fr, 'France entière');
+  if (c1) wrap.appendChild(c1);
+  if (c2) wrap.appendChild(c2);
+  if (c1||c2) { document.getElementById('fr').classList.add('in'); }
+})();
