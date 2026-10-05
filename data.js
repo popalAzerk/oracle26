@@ -71,6 +71,34 @@ window.PULSE_DATA = {
 
 window.PULSE_HISTORY = [
  {
+  "date": "2026-09-21",
+  "total": 64,
+  "counts": {
+   "screen": 3,
+   "battery": 6,
+   "pricing": 5,
+   "process": 35,
+   "service": 3,
+   "system_bug": 6,
+   "emerging": 4,
+   "warranty": 2
+  }
+ },
+ {
+  "date": "2026-09-28",
+  "total": 26,
+  "counts": {
+   "battery": 5,
+   "process": 11,
+   "warranty": 2,
+   "system_bug": 2,
+   "pricing": 1,
+   "service": 2,
+   "screen": 2,
+   "sensory": 1
+  }
+ },
+ {
   "date": "2026-10-05",
   "total": 50,
   "counts": {
