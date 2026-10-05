@@ -77,7 +77,8 @@ function spark(canvas, points, color, opts={}){
   if (opts.dots!==false) pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],5,0,7); ctx.fillStyle=color; ctx.fill(); });
 }
 const histTotal = HIST.map(h=>h.total);
-setTimeout(()=>{ spark($('spark-total'), histTotal, '#4ae3ff'); }, 500);
+if (histTotal.length > 1) { setTimeout(()=>{ spark($('spark-total'), histTotal, '#4ae3ff'); }, 500); }
+else { $('spark-total').closest('.rx').style.display='none'; }
 
 /* ---------- heatmap 7 jours x 8 composants (animée en cascade) ---------- */
 const heatEl = $('heat');
