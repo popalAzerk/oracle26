@@ -1,5 +1,5 @@
 window.PULSE_FR = {
- "updated": "2026-10-05",
+ "updated": "2026-10-06",
  "period": "collecte Google News FR + Mastodon, mise à jour nocturne",
  "fr": {
   "label": "France",
@@ -211,17 +211,17 @@ window.PULSE_FR = {
     "region": "FR"
    },
    {
-    "text": "Assistance Apple en panne? Présentation en temps réel de l'assistance ...",
-    "cat": "service",
-    "sent": "neutral",
+    "text": "Problème écran tactile iPhone - Communauté Apple",
+    "cat": "system_bug",
+    "sent": "negative",
     "date": "",
     "src": "WebFR",
     "region": "FR"
    },
    {
-    "text": "Problème écran tactile iPhone - Communauté Apple",
-    "cat": "system_bug",
-    "sent": "negative",
+    "text": "Assistance Apple en panne? Présentation en temps réel de l'assistance ...",
+    "cat": "service",
+    "sent": "neutral",
     "date": "",
     "src": "WebFR",
     "region": "FR"
