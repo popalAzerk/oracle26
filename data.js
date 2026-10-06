@@ -1,57 +1,88 @@
 window.PULSE_DATA = {
- "updated": "2026-10-05",
- "period": "échantillon du 05/10/2026 — collecte nocturne Harken, classification Laya",
- "total": 50,
+ "updated": "2026-10-06",
+ "period": "échantillon du 06/10/2026 — collecte nocturne Harken, classification Laya",
+ "total": 80,
  "counts": {
-  "process": 24,
-  "battery": 7,
-  "screen": 6,
-  "service": 4,
-  "system_bug": 3,
-  "pricing": 3,
-  "warranty": 2,
-  "sensory": 1
+  "system_bug": 29,
+  "process": 18,
+  "battery": 17,
+  "emerging": 8,
+  "screen": 3,
+  "pricing": 2,
+  "warranty": 1,
+  "sensory": 1,
+  "service": 1
  },
  "sentiment": {
-  "neutral": 31,
-  "negative": 12,
-  "positive": 7
+  "neutral": 25,
+  "negative": 40,
+  "positive": 15
  },
- "avgConf": 0.753,
+ "avgConf": 0.746,
  "examples": {
   "process": [
    "Apua ! Amerikkalainen-suomalainen.  I want to down grade my iphone. I want my crackberry back! I want to repair my oldmac.?????? kiitos!",
-   "New Tech Repair Tidbits: your labor rate is probably too low. Most shops divide by paid hours, not billable ones. Free calculator inside, plus iPhone 18 Pro ben"
+   "New Tech Repair Tidbits: your labor rate is probably too low. Most shops divide by paid hours, not billable ones. Free calculator inside, plus iPhone 18 Pro ben…"
   ],
-  "warranty": [
-   "iPhone Duo Has a Replaceable Inner Display Cover for Just $19 With AppleCare",
-   "Apple confirms iPhone Duo inner display cover layer is replaceable https://deadstack.net/cluster/30111\n#tech #hardware #mobiletech #iphone #durability #repair #"
-  ],
-  "system_bug": [
-   "Seeing the “Apple Account Missing Age Information” error on your iPhone? 📱 It can block access to certain Apple services, but it’s usually fixable by checking y",
-   "iFixit's iPhone 18 Pro teardown: the display frame cracked or pulled away on 3 of 4 units. Put frame damage and water resistance on the work order before you op"
+  "battery": [
+   "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…",
+   "my phone battery overheating love it…literally only an iPhone 14 Pro which is not that old but the recent updates have turned this into a toaster"
   ],
   "pricing": [
-   "Apple's iPhone 18 Pro out-of-warranty prices: $129 battery, $329 screen, $249 rear camera. That's their price, not your floor. Build yours first.\n\nhttps://mailc",
-   "Harga Repair Back Glass iPhone 11 Terkini 2026\n\nHarga repair back glass iPhone 11 di Malaysia lazimnya bermula sekitar RM150 dan boleh melebihi RM1,000 bergantu"
+   "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
+   "Harga Repair Back Glass iPhone 11 Terkini 2026\n\nHarga repair back glass iPhone 11 di Malaysia lazimnya bermula sekitar RM150 dan boleh melebihi RM1,000 bergantu…"
   ],
-  "screen": [
-   "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ",
-   "How to choose the right iPhone replacement screen\n\nHow to choose the right iPhone replacement screen A cracked or damaged iPhone screen doesn't always mean you "
-  ],
-  "service": [
-   "Apple Service Center Near Me | Fast & Reliable Apple Device Repair\n\nLooking for an Apple Service Center Near Me? Get professional Apple device repair services f",
-   "iPhone Charging Port Repair Danapur | Expert Service\n\nLooking for iPhone charging port repair in Danapur? Get professional solutions for charging problems, loos"
+  "warranty": [
+   "iPhone Duo Has a Replaceable Inner Display Cover for Just $19 With AppleCare"
   ],
   "sensory": [
    "‘Shop Different’ Review: The Genius of Retail (The Wall Street Journal/Jason Snell)"
   ],
-  "battery": [
-   "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/",
-   "yeah that should be good!! and a new battery is about €100 at apple out of pocket (including the service/repair) and i feel like people reaaaaally underutilize "
+  "system_bug": [
+   "@overcastfm I’m getting ‘Publisher Server Error’ trying to download ‘Risk’ and ‘The New Yorker: The Writer’s Voice’ - I’ve tried on my iPhone Air on IOS 27 all …",
+   "Does anyone else’s iPhone 16 pro randomly start overheating?"
+  ],
+  "screen": [
+   "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ…",
+   "How to choose the right iPhone replacement screen\n\nHow to choose the right iPhone replacement screen A cracked or damaged iPhone screen doesn't always mean you …"
+  ],
+  "service": [
+   "iPhone Charging Port Repair Danapur | Expert Service\n\nLooking for iPhone charging port repair in Danapur? Get professional solutions for charging problems, loos…"
+  ],
+  "emerging": [
+   "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
+   "Apple touts iphone thermal design: Apple highlights advancements in iphone thermal management, claiming improved performance and reduced overheating. many users…"
   ]
  },
  "history": [
+  {
+   "date": "2026-09-21",
+   "total": 64,
+   "counts": {
+    "screen": 3,
+    "battery": 6,
+    "pricing": 5,
+    "process": 35,
+    "service": 3,
+    "system_bug": 6,
+    "emerging": 4,
+    "warranty": 2
+   }
+  },
+  {
+   "date": "2026-09-28",
+   "total": 26,
+   "counts": {
+    "battery": 5,
+    "process": 11,
+    "warranty": 2,
+    "system_bug": 2,
+    "pricing": 1,
+    "service": 2,
+    "screen": 2,
+    "sensory": 1
+   }
+  },
   {
    "date": "2026-10-05",
    "total": 50,
@@ -64,6 +95,21 @@ window.PULSE_DATA = {
     "service": 4,
     "sensory": 1,
     "battery": 7
+   }
+  },
+  {
+   "date": "2026-10-06",
+   "total": 80,
+   "counts": {
+    "process": 18,
+    "battery": 17,
+    "pricing": 2,
+    "warranty": 1,
+    "sensory": 1,
+    "system_bug": 29,
+    "screen": 3,
+    "service": 1,
+    "emerging": 8
    }
   }
  ]
@@ -110,6 +156,21 @@ window.PULSE_HISTORY = [
    "service": 4,
    "sensory": 1,
    "battery": 7
+  }
+ },
+ {
+  "date": "2026-10-06",
+  "total": 80,
+  "counts": {
+   "process": 18,
+   "battery": 17,
+   "pricing": 2,
+   "warranty": 1,
+   "sensory": 1,
+   "system_bug": 29,
+   "screen": 3,
+   "service": 1,
+   "emerging": 8
   }
  }
 ];
