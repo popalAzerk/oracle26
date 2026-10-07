@@ -1,18 +1,18 @@
 window.PULSE_FR = {
- "updated": "2026-10-06",
+ "updated": "2026-10-07",
  "period": "collecte Google News FR + Mastodon, mise à jour nocturne",
  "fr": {
   "label": "France",
-  "total": 3,
+  "total": 4,
   "counts": {
-   "system_bug": 3
+   "system_bug": 4
   },
   "sentiment": {
-   "neutral": 0,
+   "neutral": 1,
    "negative": 3,
    "positive": 0
   },
-  "avgConf": 0.779,
+  "avgConf": 0.831,
   "examples": {
    "system_bug": [
     {
@@ -58,6 +58,14 @@ window.PULSE_FR = {
     "sent": "negative",
     "date": "2024-07-14",
     "src": "Mastodon",
+    "region": "FR"
+   },
+   {
+    "text": "Itunes ne reconnait pas mon iphone : quelles sont les solutions ?",
+    "cat": "system_bug",
+    "sent": "neutral",
+    "date": "",
+    "src": "WebFR",
     "region": "FR"
    }
   ]
