@@ -1,57 +1,43 @@
 window.PULSE_DATA = {
- "updated": "2026-10-06",
- "period": "échantillon du 06/10/2026 — collecte nocturne Harken, classification Laya",
+ "updated": "2026-10-07",
+ "period": "échantillon du 07/10/2026 — collecte nocturne Harken, classification Laya",
  "total": 80,
  "counts": {
-  "system_bug": 29,
-  "process": 18,
-  "battery": 17,
-  "emerging": 8,
-  "screen": 3,
-  "pricing": 2,
-  "warranty": 1,
-  "sensory": 1,
-  "service": 1
+  "system_bug": 36,
+  "battery": 28,
+  "process": 9,
+  "emerging": 5,
+  "screen": 1,
+  "pricing": 1
  },
  "sentiment": {
-  "neutral": 25,
-  "negative": 40,
+  "neutral": 12,
+  "negative": 53,
   "positive": 15
  },
- "avgConf": 0.746,
+ "avgConf": 0.756,
  "examples": {
-  "process": [
-   "Apua ! Amerikkalainen-suomalainen.  I want to down grade my iphone. I want my crackberry back! I want to repair my oldmac.?????? kiitos!",
-   "New Tech Repair Tidbits: your labor rate is probably too low. Most shops divide by paid hours, not billable ones. Free calculator inside, plus iPhone 18 Pro ben…"
-  ],
   "battery": [
    "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…",
-   "my phone battery overheating love it…literally only an iPhone 14 Pro which is not that old but the recent updates have turned this into a toaster"
-  ],
-  "pricing": [
-   "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
-   "Harga Repair Back Glass iPhone 11 Terkini 2026\n\nHarga repair back glass iPhone 11 di Malaysia lazimnya bermula sekitar RM150 dan boleh melebihi RM1,000 bergantu…"
-  ],
-  "warranty": [
-   "iPhone Duo Has a Replaceable Inner Display Cover for Just $19 With AppleCare"
-  ],
-  "sensory": [
-   "‘Shop Different’ Review: The Genius of Retail (The Wall Street Journal/Jason Snell)"
-  ],
-  "system_bug": [
-   "@overcastfm I’m getting ‘Publisher Server Error’ trying to download ‘Risk’ and ‘The New Yorker: The Writer’s Voice’ - I’ve tried on my iPhone Air on IOS 27 all …",
-   "Does anyone else’s iPhone 16 pro randomly start overheating?"
+   "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…"
   ],
   "screen": [
-   "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ…",
-   "How to choose the right iPhone replacement screen\n\nHow to choose the right iPhone replacement screen A cracked or damaged iPhone screen doesn't always mean you …"
+   "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ…"
   ],
-  "service": [
-   "iPhone Charging Port Repair Danapur | Expert Service\n\nLooking for iPhone charging port repair in Danapur? Get professional solutions for charging problems, loos…"
+  "process": [
+   "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
+   "I can see the end of the arguement, but to me PERSONALLY, after I gave up on \"rights to repair\" as an idea, cuz my shitbox old phone is worse to repair than my …"
+  ],
+  "pricing": [
+   "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…"
+  ],
+  "system_bug": [
+   "If you want to absolutely destroy you iPhone battery, you can read about OpenAI’s new model and watch your battery drain 1% per min. Great AI coded website! ope…",
+   "so I built that device and discovered an 802.1x bug in apple IOS and reported it to Apple having them dead to rights. Took about 4 hours of escalations until I …"
   ],
   "emerging": [
-   "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
-   "Apple touts iphone thermal design: Apple highlights advancements in iphone thermal management, claiming improved performance and reduced overheating. many users…"
+   "Here’s a sharp one for you:\n\n**\"Breaking: The new iPhone 16 still can’t hold a charge past noon, but hey, at least the ‘spatial computing’ makes your battery dr…",
+   "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…"
   ]
  },
  "history": [
@@ -98,18 +84,15 @@ window.PULSE_DATA = {
    }
   },
   {
-   "date": "2026-10-06",
+   "date": "2026-10-07",
    "total": 80,
    "counts": {
-    "process": 18,
-    "battery": 17,
-    "pricing": 2,
-    "warranty": 1,
-    "sensory": 1,
-    "system_bug": 29,
-    "screen": 3,
-    "service": 1,
-    "emerging": 8
+    "battery": 28,
+    "screen": 1,
+    "process": 9,
+    "pricing": 1,
+    "system_bug": 36,
+    "emerging": 5
    }
   }
  ]
@@ -159,18 +142,15 @@ window.PULSE_HISTORY = [
   }
  },
  {
-  "date": "2026-10-06",
+  "date": "2026-10-07",
   "total": 80,
   "counts": {
-   "process": 18,
-   "battery": 17,
-   "pricing": 2,
-   "warranty": 1,
-   "sensory": 1,
-   "system_bug": 29,
-   "screen": 3,
-   "service": 1,
-   "emerging": 8
+   "battery": 28,
+   "screen": 1,
+   "process": 9,
+   "pricing": 1,
+   "system_bug": 36,
+   "emerging": 5
   }
  }
 ];
