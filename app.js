@@ -38,6 +38,7 @@ $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
 /* ---------- graphique principal: barres horizontales animées ((function topIssues(){
   try {
   const list = $('issues-list');
+  window.ISS_STEPS = 'list='+(!!list)+' PI='+(typeof window.PULSE_ISSUES)+' len='+(window.PULSE_ISSUES?window.PULSE_ISSUES.issues.length:'-');
   if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
   const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
   PULSE_ISSUES.issues.forEach((it,i)=>{
