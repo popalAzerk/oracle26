@@ -159,3 +159,24 @@ footer a{color:var(--acc);text-decoration:none}
   #prog .pdelta{ flex-basis:52px }
 }
 #prog .progdates{ font-size:10px; color:var(--mut); padding:0 0 10px; letter-spacing:.05em }
+
+/* ---------- panneau détail composant (clic sur le tableau principal) ---------- */
+#cat-detail{ border:1px solid rgba(255,255,255,.1); border-radius:12px;
+  padding:16px; margin-top:14px; background:rgba(255,255,255,.03) }
+#cat-detail .cdhead{ display:flex; align-items:center; gap:10px; margin-bottom:12px }
+#cat-detail .cicon{ font-size:18px }
+#cat-detail .clabel{ font-size:14px; font-weight:600; color:#e8e8e8; flex:1 }
+#cat-detail .cdelta{ font-size:12px; font-weight:600 }
+#cat-detail .cdclose{ background:none;border:1px solid rgba(255,255,255,.15);
+  color:var(--mut); width:26px;height:26px; border-radius:6px; cursor:pointer;
+  font-size:12px; line-height:1 }
+#cat-detail .cdclose:hover{ color:#e8e8e8 }
+#cat-detail .cdcomments{ margin-top:14px; display:flex; flex-direction:column; gap:8px }
+#cat-detail .cdq{ margin:0; padding:10px 12px; background:rgba(255,255,255,.04);
+  border-left:3px solid var(--c, #4ae3ff); border-radius:6px;
+  font-size:11px; color:#cfcfcf; line-height:1.5 }
+/* tableau principal : les lignes réagissent au survol */
+.brow{ cursor:pointer; border-radius:8px; transition:background .15s }
+.brow:hover{ background:rgba(255,255,255,.05) }
+/* prog sans colonne série */
+#prog .pval{ display:none }

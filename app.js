@@ -48,8 +48,43 @@ sorted.forEach(([k,v], i)=>{
     <div class="btrack"><div class="bfill" style="--w:${Math.round(v/max*100)}%;--d:${.5+i*.08}s"></div></div>
     <div class="bval">${fmt(v)}</div>
     <div class="bpct">${Math.round(v/DATA.total*100)}%</div>`;
+  row.style.cursor='pointer';
+  row.dataset.cat = k;
   barsEl.appendChild(row);
 });
+/* clic composant dans le tableau principal → panneau détail (courbe + comments) */
+(function catDetail(){
+  const panel = document.createElement('div');
+  panel.id='cat-detail'; panel.hidden=true;
+  barsEl.parentNode.appendChild(panel);
+  barsEl.addEventListener('click', e=>{
+    const row = e.target.closest('.brow');
+    if(!row){ return; }
+    const k = row.dataset.cat;
+    const m = CAT_META[k]||{label:k,color:'#888',icon:'❓'};
+    const serie = HIST.map(h=>(h.counts||{})[k]||0);
+    const comments = (DATA.examples && DATA.examples[k]) || [];
+    const delta = serie.length>1 ? serie[serie.length-1]-serie[serie.length-2] : 0;
+    const arrow = delta>0?'▲':delta<0?'▼':'—';
+    const dcol = delta>0?'var(--neg)':delta<0?'#30d158':'var(--mut)';
+    panel.hidden=false;
+    panel.innerHTML = `
+      <div class="cdhead">
+        <span class="cicon" style="color:${m.color}">${ICONS[k]||''}</span>
+        <span class="clabel">${m.label}</span>
+        <span class="cdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
+        <button class="cdclose" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <canvas id="cat-spark" style="width:100%;height:90px"></canvas>
+      <div class="cdcomments">
+        ${comments.length? comments.map(c=>`<blockquote class="cdq">« ${(c||'').replace(/</g,'&lt;')} »</blockquote>`).join('')
+          : '<p class="emute">Aucun commentaire collecté sur ce composant.</p>'}
+      </div>`;
+    setTimeout(()=>{ const c=$('cat-spark'); if(c) spark(c, serie, m.color); }, 50);
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    panel.querySelector('.cdclose').onclick = ()=>{ panel.hidden=true; };
+  });
+})();
 
 /* ---------- courbe (sparkline historique) ---------- */
 function spark(canvas, points, color, opts={}){
@@ -100,7 +135,6 @@ function spark(canvas, points, color, opts={}){
       <span class="picon">${ICONS[c]||'·'}</span>
       <span class="plab">${m.label}</span>
       <canvas class="pspark" data-serie="${serie.join(',')}" style="width:120px;height:34px"></canvas>
-      <span class="pval">Série&nbsp;: ${serie.join(' · ')}</span>
       <span class="pdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
     </div>`;
   }).join('');
