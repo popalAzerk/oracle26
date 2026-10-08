@@ -35,10 +35,12 @@ counter($('kpi-cats'), Object.keys(DATA.counts).length);
 counter($('kpi-neg'), DATA.sentiment?.negative||0);
 $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
 
-/* ---------- graphique principal: barres horizontales animées ((function topIssues(){
+/* ---------- graphique principal: barres horizontales animées (top pannes) ---------- */
+const barsEl = $('bars');
+
+(function topIssues(){
   try {
   const list = $('issues-list');
-  window.ISS_STEPS = 'list='+(!!list)+' PI='+(typeof window.PULSE_ISSUES)+' len='+(window.PULSE_ISSUES?window.PULSE_ISSUES.issues.length:'-');
   if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
   const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
   PULSE_ISSUES.issues.forEach((it,i)=>{
@@ -67,8 +69,6 @@ $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
   } catch(e) { window.ISSUES_ERR = e.message; }
 })();
 
-top pannes) ---------- */
-const barsEl = $('bars');
 const sorted = Object.entries(DATA.counts).sort((a,b)=>b[1]-a[1]);
 const max = sorted[0][1] || 1;
 sorted.forEach(([k,v], i)=>{
