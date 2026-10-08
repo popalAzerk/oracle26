@@ -218,7 +218,7 @@ function cleanTitle(t){ return (t||'').replace(/\s[-–]\s[^-––]{2,40}$/,'')
           const full = (i.text || '').replace(/</g,'&lt;');
           return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${cleanTitle(shown)}</a>
             <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${frdate(i.date)}</span>
-            ${i.text_tr && i.text_tr.length<40 && full.length>i.text_tr.length? `<button class="enplus" type="button" data-full="${full}">En savoir plus</button>`:''}
+            ${(i.text_tr && i.text_tr.length > 100) || full.length > 140 ? `<button class="enplus" type="button" data-full="${(i.text_tr && i.text_tr.length > full.length*0.7) ? i.text_tr.replace(/</g,'&lt;') : full}">En savoir plus</button>`:''}
             </li>`;
         }).join('')}</ul>
       </details>`;
