@@ -112,39 +112,7 @@ function spark(canvas, points, color, opts={}){
   if (opts.dots!==false) pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],5,0,7); ctx.fillStyle=color; ctx.fill(); });
 }
 /* ---------- progression par composant : une courbe par item trouvé ---------- */
-(function progression(){
-  const wrap = $('prog');
-  if (!wrap || !HIST.length) return;
-  if (HIST.length < 2) {
-    wrap.innerHTML = '<p style="color:var(--mut);font-size:12px">Première collecte enregistrée (' + HIST[0].date + ') — la progression apparaît à partir de la deuxième.</p>';
-    document.getElementById('hist').classList.add('in');
-    return;
-  }
-  HIST.forEach(h => h.counts = h.counts || {});
-  const cats = ALL_CATS.filter(c => HIST.some(h => h.counts[c] > 0));
-  const legend = '<div class="progdates">Collectes du ' + HIST[0].date.slice(5).replace('-','/') + ' à ' + HIST[HIST.length-1].date.slice(5).replace('-','/') + ' — flèche ▲/▼ = variation dernière collecte</div>';
-  const rows = cats.map(c => {
-    const serie = HIST.map(h => h.counts[c] || 0);
-    const last = serie[serie.length-1];
-    const prev = serie[serie.length-2];
-    const delta = last - prev;
-    const m = CAT_META[c] || {label:c, color:'#888', icon:'❓'};
-    const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '—';
-    const dcol = delta > 0 ? 'var(--neg)' : delta < 0 ? '#30d158' : 'var(--mut)';
-    return `<div class="progrow" style="--c:${m.color}">
-      <span class="picon">${ICONS[c]||'·'}</span>
-      <span class="plab">${m.label}</span>
-      <canvas class="pspark" data-serie="${serie.join(',')}" style="width:120px;height:34px"></canvas>
-      <span class="pdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
-    </div>`;
-  }).join('');
-  wrap.innerHTML = legend + rows;
-  wrap.querySelectorAll('canvas.pspark').forEach(cv => {
-    const serie = cv.dataset.serie.split(',').map(Number);
-    spark(cv, serie, getComputedStyle(cv.closest('.progrow')).getPropertyValue('--c').trim() || '#4ae3ff');
-  });
-  document.getElementById('hist').classList.add('in');
-})();
+
 
 /* ---------- exemples concrets par composant (les phrases réelles) ---------- */
 const exEl = $('examples');
