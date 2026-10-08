@@ -202,7 +202,7 @@ exCats.forEach(([k,v], i)=>{
     return;
   }
   // palette 9 couleurs :
-  const PAL = ['#4ae3ff','#3672ff','#30d158','#ffd60a','#ff9f0a','#ff453a','#bf5af2','#64d2ff','#a3a3ad'];
+  const PAL = ['#4ae3ff','#3672ff','#30d158','#ffd60a','#ff9f0a','#ff453a','#bf5af2','#64d2ff','#a3a3ad','#ff6b9d','#7fe97f','#c9a0ff'];
   const W = c.width = c.clientWidth*2, H = c.height = c.clientHeight*2;
   let a0 = -Math.PI/2, p = 0;
   (function draw(t){
