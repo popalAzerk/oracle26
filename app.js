@@ -17,7 +17,25 @@ const CAT_META = {
 const ALL_CATS = Object.keys(CAT_META);
 
 /* ---------- top issues : faits confirmés, sourcés ---------- */
-(function topIssues(){
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function fmt(n){ return n.toLocaleString('fr-FR'); }
+function counter(el, target, dur=1100){
+  const t0 = performance.now();
+  (function f(t){
+    const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3);
+    el.textContent = fmt(Math.round(target*e));
+    if (k<1) requestAnimationFrame(f);
+  })(t0);
+}
+
+/* ---------- header: compteurs ---------- */
+counter($('kpi-total'), DATA.total);
+counter($('kpi-cats'), Object.keys(DATA.counts).length);
+counter($('kpi-neg'), DATA.sentiment?.negative||0);
+$('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
+
+/* ---------- graphique principal: barres horizontales animées ((function topIssues(){
   const list = $('issues-list');
   if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
   const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
@@ -46,25 +64,7 @@ const ALL_CATS = Object.keys(CAT_META);
   });
 })();
 
-/* ---------- helpers ---------- */
-const $ = id => document.getElementById(id);
-function fmt(n){ return n.toLocaleString('fr-FR'); }
-function counter(el, target, dur=1100){
-  const t0 = performance.now();
-  (function f(t){
-    const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3);
-    el.textContent = fmt(Math.round(target*e));
-    if (k<1) requestAnimationFrame(f);
-  })(t0);
-}
-
-/* ---------- header: compteurs ---------- */
-counter($('kpi-total'), DATA.total);
-counter($('kpi-cats'), Object.keys(DATA.counts).length);
-counter($('kpi-neg'), DATA.sentiment?.negative||0);
-$('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
-
-/* ---------- graphique principal: barres horizontales animées (top pannes) ---------- */
+top pannes) ---------- */
 const barsEl = $('bars');
 const sorted = Object.entries(DATA.counts).sort((a,b)=>b[1]-a[1]);
 const max = sorted[0][1] || 1;
