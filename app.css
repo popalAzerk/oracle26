@@ -34,7 +34,7 @@ main{position:relative;z-index:2}
 .hud-brand{font:600 12px/1 var(--mono);letter-spacing:.24em;color:#e8f2ff}
 .hud-brand i{font-style:normal;color:var(--mag);margin:0 5px}
 .hud-sub{font-size:9px;letter-spacing:.24em;color:var(--t3)}
-.hud-link{font-size:10px;letter-spacing:.24em;color:var(--cyan);text-decoration:none;border:1px solid var(--bord);padding:8px 14px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.25s;background:rgba(74,227,255,.05)}
+.hud-link{font-size:10px;letter-spacing:.24em;color:var(--cyan);text-decoration:none;border:1px solid var(--bord);padding:8px 14px;white-space:nowrap;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.25s;background:rgba(74,227,255,.05)}
 .hud-link:hover{background:rgba(74,227,255,.14);text-shadow:0 0 8px var(--cyan)}
 
 /* ---- HERO : typo géante + anneau astre ---- */
@@ -107,7 +107,7 @@ main{position:relative;z-index:2}
 /* ---- 03 preuves : citations massives ---- */
 .profcard{padding:36px 0;border-bottom:1px dashed rgba(74,227,255,.16);position:relative}
 .profcard blockquote{font:300 clamp(17px,2.2vw,26px)/1.65 var(--mono);color:#e8f2ff;letter-spacing:-.005em}
-.profcard blockquote::before{content:'«';color:var(--mag);font-size:2em;position:absolute;left:-14px;top:22px;opacity:.8}
+.profcard blockquote::before{content:'« ';color:var(--mag);font-size:2em;position:absolute;left:-14px;top:18px;opacity:.8}
 .profcard .who{margin-top:14px;font-size:9.5px;letter-spacing:.22em;color:var(--t3)}
 .profcard .who b{color:var(--cyan);font-weight:400}
 
