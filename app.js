@@ -87,7 +87,7 @@ function spark(canvas, points, color, opts={}){
   }
   HIST.forEach(h => h.counts = h.counts || {});
   const cats = ALL_CATS.filter(c => HIST.some(h => h.counts[c] > 0));
-  wrap.innerHTML = '<div class="progdates">Collectes du ' + HIST[0].date.slice(5).replace('-','/') + ' à ' + HIST[HIST.length-1].date.slice(5).replace('-','/') + ' — flèche ▲/▼ = variation dernière collecte</div>';
+  const legend = '<div class="progdates">Collectes du ' + HIST[0].date.slice(5).replace('-','/') + ' à ' + HIST[HIST.length-1].date.slice(5).replace('-','/') + ' — flèche ▲/▼ = variation dernière collecte</div>';
   const rows = cats.map(c => {
     const serie = HIST.map(h => h.counts[c] || 0);
     const last = serie[serie.length-1];
@@ -104,7 +104,7 @@ function spark(canvas, points, color, opts={}){
       <span class="pdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
     </div>`;
   }).join('');
-  wrap.innerHTML = rows;
+  wrap.innerHTML = legend + rows;
   wrap.querySelectorAll('canvas.pspark').forEach(cv => {
     const serie = cv.dataset.serie.split(',').map(Number);
     spark(cv, serie, getComputedStyle(cv.closest('.progrow')).getPropertyValue('--c').trim() || '#4ae3ff');
