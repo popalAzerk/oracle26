@@ -1,6 +1,6 @@
 window.PULSE_DATA = {
- "updated": "2026-10-07",
- "period": "échantillon du 07/10/2026 — collecte nocturne Harken, classification Laya",
+ "updated": "2026-10-08",
+ "period": "échantillon du 08/10/2026 — collecte nocturne Harken, classification Laya",
  "total": 80,
  "counts": {
   "system_bug": 36,
@@ -84,7 +84,7 @@ window.PULSE_DATA = {
    }
   },
   {
-   "date": "2026-10-07",
+   "date": "2026-10-08",
    "total": 80,
    "counts": {
     "battery": 28,
@@ -142,7 +142,7 @@ window.PULSE_HISTORY = [
   }
  },
  {
-  "date": "2026-10-07",
+  "date": "2026-10-08",
   "total": 80,
   "counts": {
    "battery": 28,
