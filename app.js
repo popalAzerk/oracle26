@@ -189,33 +189,40 @@ exCats.forEach(([k,v], i)=>{
   exEl.appendChild(card);
 });
 
-/* ---------- sentiment (radial animé) ---------- */
-(function radial(){
-  const c = $('gauge'), ctx = c.getContext('2d');
-  const W=c.width=c.clientWidth*2, H=c.height=c.clientHeight*2;
-  const s = (DATA.sentiment||{neutral:1});
-  const sum = s.neutral+s.negative+s.positive||1;
-  const parts = [['neu','#64d2ff',s.neutral],['neg','#ff453a',s.negative],['pos','#30d158',s.positive]];
-  let a0 = -Math.PI/2;
-  let p = 0;
+/* ---------- modèles déclarés (radial animé, cumul depuis le début) ---------- */
+(function radialModels(){
+  const c = $('gauge'); if (!c) return;
+  const MC = window.PULSE_MODEL_COUNTS || {};
+  const rows = Object.entries(MC).map(([mo, probs]) => [mo, Object.values(probs).reduce((s,n)=>s+n,0)])
+    .filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+  const tot = rows.reduce((s, r) => s + r[1], 0);
+  if (!tot) {
+    const lab = $('gauge-labels');
+    if (lab) lab.innerHTML = '<p class="emute">Aucun modèle identifié pour l\'instant — se remplit à chaque collecte.</p>';
+    return;
+  }
+  // palette 9 couleurs :
+  const PAL = ['#4ae3ff','#3672ff','#30d158','#ffd60a','#ff9f0a','#ff453a','#bf5af2','#64d2ff','#a3a3ad'];
+  const W = c.width = c.clientWidth*2, H = c.height = c.clientHeight*2;
+  let a0 = -Math.PI/2, p = 0;
   (function draw(t){
+    const ctx = c.getContext('2d');
     ctx.clearRect(0,0,W,H);
     const e = 1-Math.pow(1-Math.min(1,p),3); p += .02;
     let an = a0;
-    parts.forEach(([k,col,v])=>{
-      const ang = v/sum*Math.PI*2*e;
+    rows.forEach(([mo, n], i)=>{
+      const ang = n/tot*Math.PI*2*e;
       ctx.beginPath();
       ctx.arc(W/2,H/2, W/2-24, an+.02, an+ang-.02);
-      ctx.strokeStyle=col; ctx.lineWidth=26; ctx.lineCap='butt'; ctx.stroke();
+      ctx.strokeStyle = PAL[i%PAL.length]; ctx.lineWidth = 26; ctx.lineCap='butt'; ctx.stroke();
       an += ang;
     });
     if (p<1.001) requestAnimationFrame(draw);
   })(0);
-  // labels:
-  const lab=$('gauge-labels');
-  lab.innerHTML = parts.map(([k,col,v])=>`<span style="color:${col}">●</span> ${
-    {neu:'neutre',neg:'négatif',pos:'positif'}[k]
-  } ${Math.round(v/sum*100)}%`).join('<br>');
+  const lab = $('gauge-labels');
+  if (lab) lab.innerHTML = rows.map(([mo, n], i)=>
+    `<span style="color:${PAL[i%PAL.length]}">●</span> ${mo} ${Math.round(n/tot*100)}%`
+  ).join('<br>');
 })();
 
 /* ---------- footer (crédit + période) ---------- */
