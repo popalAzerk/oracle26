@@ -80,7 +80,11 @@ sorted.forEach(([k,v], i)=>{
         ${comments.length? comments.map(c=>{const t=(c&&c.text_tr)||c&&c.text||c||'';return `<blockquote class="cdq">« ${String(t).replace(/</g,'&lt;')} »</blockquote>`}).join('')
           : '<p class="emute">Aucun commentaire collecté sur ce composant.</p>'}
       </div>`;
-    setTimeout(()=>{ const c=$('cat-spark'); if(c) spark(c, serie, m.color); }, 50);
+    const drawSpark = ()=>{ const c=$('cat-spark'); if(!c) return;
+      if(c.clientWidth<10){ requestAnimationFrame(drawSpark); return; }
+      spark(c, serie, m.color); };
+    requestAnimationFrame(()=>requestAnimationFrame(drawSpark));
+    window.addEventListener('resize', ()=>{ if(!panel.hidden){ const c=$('cat-spark'); if(c) spark(c, serie, m.color); } }, {passive:true}); /* cat-spark-resize */
     panel.scrollIntoView({behavior:'smooth', block:'nearest'});
     panel.querySelector('.cdclose').onclick = ()=>{ panel.hidden=true; };
   });
