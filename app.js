@@ -2,17 +2,14 @@
 /* Graphique futuriste, animé, sans 3D. Fond noir, néon, mono. */
 const DATA = window.PULSE_DATA;
 const HIST = window.PULSE_HISTORY || [];
-const ICONS = {"process": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"/></svg>", "battery": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"1\" y=\"6\" width=\"18\" height=\"12\" rx=\"2\" ry=\"2\"/><line x1=\"23\" y1=\"13\" x2=\"23\" y2=\"11\"/><line x1=\"5\" y1=\"10\" x2=\"5\" y2=\"14\"/><line x1=\"9\" y1=\"10\" x2=\"9\" y2=\"14\"/></svg>", "screen": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\"/><line x1=\"10\" y1=\"18\" x2=\"14\" y2=\"18\"/></svg>", "service": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 18v-6a9 9 0 0 1 18 0v6\"/><path d=\"M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z\"/></svg>", "system_bug": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>", "pricing": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"23\"/><path d=\"M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6\"/></svg>", "warranty": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg>", "sensory": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 11V6a2 2 0 0 0-4 0v5\"/><path d=\"M14 10V4a2 2 0 0 0-4 0v6\"/><path d=\"M10 10.5V6a2 2 0 0 0-4 0v8\"/><path d=\"M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15\"/></svg>", "emerging": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"23 6 13.5 15.5 8.5 10.5 1 18\"/><polyline points=\"17 6 23 6 23 12\"/></svg>"};
 const CAT_META = {
-  process:     { label:'Procédure / DIY',        color:'#8e8e93', icon:'🛠️', desc:'Comment réparer soi-même — tutoriels, étapes, outillage.' },
-  battery:     { label:'Batterie',               color:'#30d158', icon:'🔋', desc:'Autonomie, dégradation, remplacement de batterie.' },
-  screen:      { label:'Écran / affichage',      color:'#2997ff', icon:'📱', desc:'Écran cassé, tactile, remplacement, prix d\'un écran.' },
-  service:     { label:'Expérience SAV',         color:'#30b0c7', icon:'🧑‍🔧', desc:'SAV, délais, diagnostic, attitude des techniciens.' },
-  system_bug:  { label:'Bug système / iOS',      color:'#ff453a', icon:'⚠️', desc:'Plantage, app, Wi-Fi, Bluetooth, lenteurs iOS.' },
-  pricing:     { label:'Prix / tarifs',          color:'#64d2ff', icon:'💶', desc:'Tarifs réparation, devis, coût hors garantie.' },
-  warranty:    { label:'Garantie / AppleCare',   color:'#ffd60a', icon:'🛡️', desc:'AppleCare, refus de garantie, éligibilité.' },
-  sensory:     { label:'Sensoriel',              color:'#bf5af2', icon:'🎙️', desc:'Son, Face ID, capteurs, haptique, photo.' },
-  emerging:    { label:'Émergent',               color:'#ff9f0a', icon:'🌊', desc:'Nouvelle anomalie inattendue, comportement bizarre.' }
+  screen:   { label:'Écran / affichage', color:'#2997ff', icon:'📱', desc:'Écran cassé, tactile, lignes, affichage, remplacement.' },
+  battery:  { label:'Batterie',          color:'#30d158', icon:'🔋', desc:'Autonomie, drain, gonflement, remplacement.' },
+  audio:    { label:'Audio',             color:'#bf5af2', icon:'🔈', desc:'Haut-parleurs, micro, appels inaudibles, grésillement.' },
+  buttons:  { label:'Boutons',           color:'#8e8e93', icon:'🔘', desc:'Bouton latéral, volume, Touch ID, bouton action.' },
+  charging: { label:'Charge',            color:'#ffd60a', icon:'⚡', desc:'Port, câble, charge lente, ne charge plus.' },
+  network:  { label:'Réseau',            color:'#30b0c7', icon:'📶', desc:'Cellulaire, Wi-Fi, Bluetooth, signal, antenne.' },
+  camera:   { label:'Caméra',            color:'#ff453a', icon:'📷', desc:'Photos floues, objectif, capteur, flash.' }
 };
 const ALL_CATS = Object.keys(CAT_META);
 
@@ -74,7 +71,7 @@ sorted.forEach(([k,v], i)=>{
   const row = document.createElement('div');
   row.className='brow'; row.style.setProperty('--c', m.color);
   row.innerHTML = `
-    <div class="bicon" style="color:var(--c)">${ICONS[k]||''}</div>
+    <div class="bicon" style="color:var(--c)">${m.icon||''}</div>
     <div class="blabel">${m.label}</div>
     <div class="btrack"><div class="bfill" style="--w:${Math.round(v/max*100)}%;--d:${.5+i*.08}s"></div></div>
     <div class="bval">${fmt(v)}</div>
@@ -101,7 +98,7 @@ sorted.forEach(([k,v], i)=>{
     panel.hidden=false;
     panel.innerHTML = `
       <div class="cdhead">
-        <span class="cicon" style="color:${m.color}">${ICONS[k]||''}</span>
+        <span class="cicon" style="color:${m.color}">${m.icon||''}</span>
         <span class="clabel">${m.label}</span>
         <span class="cdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
         <button class="cdclose" type="button" aria-label="Fermer">✕</button>
@@ -175,7 +172,7 @@ exCats.forEach(([k,v], i)=>{
   card.className='excard'; card.style.setProperty('--c', m.color);
   card.innerHTML = `
     <summary>
-      <span class="eicon" style="color:var(--c)">${ICONS[k]||''}</span>
+      <span class="eicon" style="color:var(--c)">${m.icon||''}</span>
       <span class="elabel">${m.label}</span>
       <span class="eval">${fmt(v)} ${v>1?'mentions':'mention'}</span>
       <span class="earrow">▾</span>

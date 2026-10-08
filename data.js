@@ -1,224 +1,136 @@
 window.PULSE_DATA = {
  "updated": "2026-10-08",
- "period": "échantillon du 08/10/2026 — collecte nocturne Harken, classification Laya",
- "total": 80,
+ "period": "échantillon backfill matériel — composants matériels (hormis logiciel/procédure/prix)",
+ "total": 88,
  "counts": {
-  "system_bug": 36,
-  "battery": 28,
-  "process": 9,
-  "emerging": 5,
-  "screen": 1,
-  "pricing": 1
+  "battery": 47,
+  "screen": 17,
+  "charging": 14,
+  "camera": 4,
+  "network": 4,
+  "buttons": 2
  },
  "sentiment": {
-  "neutral": 12,
-  "negative": 53,
-  "positive": 15
+  "neutral": 14,
+  "negative": 56,
+  "positive": 18
  },
- "avgConf": 0.756,
+ "avgConf": 0.726,
  "examples": {
   "battery": [
    {
-    "text": "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…",
-    "text_tr": "envois postaux et échanges d'iPhone 18 Pro Max : exécutez Prepare to Ship en premier. La batterie est de plus de 20 Wh et la vidange peut prendre jusqu'à 2 heures. Commencez à l'admission.\n\nhttps :/…"
+    "text": "#AppleUpdate26.6.1 has a bug that causes certain devices to believe the battery is overheating when it’s not.\n\nIn 2026, Apple suggests I try to find an older iP…",
+    "text_tr": "#AppleUpdate26.6.1 a un bogue qui fait croire à certains appareils que la batterie surchauffe alors qu'elle ne le fait pas.\n\nEn 2026, Apple me suggère d'essayer de trouver un iP plus ancien…"
    },
    {
-    "text": "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…",
-    "text_tr": "envois postaux et échanges d'iPhone 18 Pro Max : exécutez Prepare to Ship en premier. La batterie est de plus de 20 Wh et la vidange peut prendre jusqu'à 2 heures. Commencez à l'admission.\n\nhttps :/…"
+    "text": "The battery life on the iPhone is so bad now. It should not take 15 minutes for my phone to charge to 80% from 77%??? \n\nAnd then it has the nerve to start overh…",
+    "text_tr": "La durée de vie de la batterie de l'iPhone est si mauvaise maintenant. Cela ne devrait pas prendre 15 minutes pour que mon téléphone se charge à 80% de 77% ? ? ? \n\nEt puis il a le culot de commencer à déborder…"
    }
   ],
   "screen": [
+   {
+    "text": "iPhone or iPad Screen Flickering or Not Working? Complete Fix Guide\n\nHi, I’m Jessica, and I still remember the frustration I felt when my iPhone screen suddenly…",
+    "text_tr": "l'écran de l'iPhone ou de l'iPad clignote ou ne fonctionne pas ? Guide complet des correctifs\n\nBonjour, je m'appelle Jessica, et je me souviens encore de la frustration que j'ai ressentie lorsque mon iPhone s'est soudainement affiché..."
+   },
    {
     "text": "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ…",
     "text_tr": "merci j'avais un iphone 14 pro mais il a eu des dégâts d'eau alors que je buvais une bière sous la douche après une rupture et le réparateur du téléphone a installé le mauvais type…"
    }
   ],
-  "process": [
+  "charging": [
    {
-    "text": "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
-    "text_tr": "Problème survenu lors de la résolution d'une erreur de connexion iCloud inconnue\n\nOk, donc si vous me suivez, vous saurez probablement que je change d'avis et que je traite beaucoup et lorsque j'essaie de…"
+    "text": "Is it a coincidence that I’m charging my iPhone 17 twice a day now instead of once a day until just last week? iPhone 18 hits the market and all of a sudden I’m…",
+    "text_tr": "Est-ce une coïncidence que je recharge mon iPhone 17 deux fois par jour maintenant au lieu d'une fois par jour jusqu'à la semaine dernière ? L'iPhone 18 arrive sur le marché et tout d'un coup je suis…"
    },
-   {
-    "text": "I can see the end of the arguement, but to me PERSONALLY, after I gave up on \"rights to repair\" as an idea, cuz my shitbox old phone is worse to repair than my …",
-    "text_tr": "Je peux voir la fin de l'argumentation, mais pour moi PERSONNELLEMENT, après avoir abandonné le « droit de réparer » comme idée, mon vieux téléphone de merde est pire à réparer que mon …"
-   }
-  ],
-  "pricing": [
-   {
-    "text": "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
-    "text_tr": "Moi : Je devrais regarder le nouvel iPhone. Mon 15 a ce problème de surchauffe parce que le titane était un métal stupide. Je me demande s'il y a de bonnes affaires.\n\nVerizon : Commerce…"
-   }
-  ],
-  "system_bug": [
-   {
-    "text": "If you want to absolutely destroy you iPhone battery, you can read about OpenAI’s new model and watch your battery drain 1% per min. Great AI coded website! ope…",
-    "text_tr": "Si vous voulez absolument détruire la batterie de votre iPhone, vous pouvez en savoir plus sur le nouveau modèle d'OpenAI et regarder votre batterie se vider de 1% par minute. Excellent site Web codé par IA ! OPE…"
-   },
-   {
-    "text": "so I built that device and discovered an 802.1x bug in apple IOS and reported it to Apple having them dead to rights. Took about 4 hours of escalations until I …",
-    "text_tr": "j'ai donc construit cet appareil et j'ai découvert un bogue 802.1x dans Apple IOS et je l'ai signalé à Apple pour qu'ils soient morts. Il a fallu environ 4 heures d'escalades jusqu'à ce que je …"
-   }
-  ],
-  "emerging": [
    {
     "text": "Here’s a sharp one for you:\n\n**\"Breaking: The new iPhone 16 still can’t hold a charge past noon, but hey, at least the ‘spatial computing’ makes your battery dr…",
     "text_tr": "En voici une nette pour vous :\n\n**\"Breaking : The new iPhone 16 still can' t hold a charge after noon, but hey, at least the ‘spatial computing’ makes your battery dr..."
+   }
+  ],
+  "buttons": [
+   {
+    "text": "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
+    "text_tr": "Moi : Je devrais regarder le nouvel iPhone. Mon 15 a ce problème de surchauffe parce que le titane était un métal stupide. Je me demande s'il y a de bonnes affaires.\n\nVerizon : Commerce…"
    },
+   {
+    "text": "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
+    "text_tr": "Problème survenu lors de la résolution d'une erreur de connexion iCloud inconnue\n\nOk, donc si vous me suivez, vous saurez probablement que je change d'avis et que je traite beaucoup et lorsque j'essaie de…"
+   }
+  ],
+  "camera": [
    {
     "text": "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
     "text_tr": "De Google Pixel 10 Pro (utilise des Pixels depuis le Pixel 2) à iPhone 17 Pro Max. Les pixels ont empiré avec chaque modèle, et il y a des émissions persistantes…"
+   },
+   "I finally went to Las Vegas’s Neon Museum. It was so hot it wasn’t going to open until 9pm, which then got delayed to 9:30. Even at that hour, my iPhone kept te…"
+  ],
+  "network": [
+   {
+    "text": "@overcastfm I’m getting ‘Publisher Server Error’ trying to download ‘Risk’ and ‘The New Yorker: The Writer’s Voice’ - I’ve tried on my iPhone Air on IOS 27 all …",
+    "text_tr": "@overcastfm Je reçois « Erreur du serveur de l'éditeur » en essayant de télécharger « Risk » et « The New Yorker : The Writer's Voice » - J'ai tous essayé sur mon iPhone Air sur IOS 27…"
+   },
+   {
+    "text": "Ugh, finally fixed my iPhone wifi issue. Stupid router's fault",
+    "text_tr": "Ugh, j'ai enfin résolu le problème de wifi de mon iPhone. Défaut stupide du routeur"
    }
   ]
  },
+ "model_counts": {
+  "iPhone 14 Pro": {
+   "screen": 1,
+   "battery": 1
+  },
+  "iPhone 18 Pro Max": {
+   "battery": 6
+  },
+  "iPhone 11": {
+   "screen": 1,
+   "network": 1
+  },
+  "iPhone 18 Pro": {
+   "battery": 2,
+   "camera": 2,
+   "charging": 1
+  },
+  "iPhone 17 Pro Max": {
+   "camera": 1
+  },
+  "iPhone 16 Pro": {
+   "charging": 1,
+   "battery": 1
+  },
+  "iPhone 13": {
+   "battery": 1
+  },
+  "iPhone 17 Pro": {
+   "charging": 2
+  },
+  "iPhone 16": {
+   "screen": 1,
+   "charging": 1
+  },
+  "iPhone 17": {
+   "charging": 1
+  }
+ },
  "history": [
   {
-   "date": "2026-09-21",
-   "total": 64,
-   "counts": {
-    "screen": 3,
-    "battery": 6,
-    "pricing": 5,
-    "process": 35,
-    "service": 3,
-    "system_bug": 6,
-    "emerging": 4,
-    "warranty": 2
-   }
-  },
-  {
-   "date": "2026-09-28",
-   "total": 26,
-   "counts": {
-    "battery": 5,
-    "process": 11,
-    "warranty": 2,
-    "system_bug": 2,
-    "pricing": 1,
-    "service": 2,
-    "screen": 2,
-    "sensory": 1
-   }
-  },
-  {
-   "date": "2026-10-05",
-   "total": 50,
-   "counts": {
-    "process": 24,
-    "warranty": 2,
-    "system_bug": 3,
-    "pricing": 3,
-    "screen": 6,
-    "service": 4,
-    "sensory": 1,
-    "battery": 7
-   }
-  },
-  {
    "date": "2026-10-08",
-   "total": 80,
+   "total": 88,
    "counts": {
-    "battery": 28,
-    "screen": 1,
-    "process": 9,
-    "pricing": 1,
-    "system_bug": 36,
-    "emerging": 5
+    "battery": 47,
+    "screen": 17,
+    "charging": 14,
+    "buttons": 2,
+    "camera": 4,
+    "network": 4
    }
   }
  ]
 };
 
-window.PULSE_HISTORY = [
- {
-  "date": "2026-09-21",
-  "total": 64,
-  "counts": {
-   "screen": 3,
-   "battery": 6,
-   "pricing": 5,
-   "process": 35,
-   "service": 3,
-   "system_bug": 6,
-   "emerging": 4,
-   "warranty": 2
-  }
- },
- {
-  "date": "2026-09-28",
-  "total": 26,
-  "counts": {
-   "battery": 5,
-   "process": 11,
-   "warranty": 2,
-   "system_bug": 2,
-   "pricing": 1,
-   "service": 2,
-   "screen": 2,
-   "sensory": 1
-  }
- },
- {
-  "date": "2026-10-05",
-  "total": 50,
-  "counts": {
-   "process": 24,
-   "warranty": 2,
-   "system_bug": 3,
-   "pricing": 3,
-   "screen": 6,
-   "service": 4,
-   "sensory": 1,
-   "battery": 7
-  }
- },
- {
-  "date": "2026-10-08",
-  "total": 80,
-  "counts": {
-   "battery": 28,
-   "screen": 1,
-   "process": 9,
-   "pricing": 1,
-   "system_bug": 36,
-   "emerging": 5
-  }
- }
-];
-window.PULSE_MODEL_COUNTS = {
- "iPhone 14 Pro": {
-  "screen": 1,
-  "battery": 1
- },
- "iPhone 18 Pro Max": {
-  "battery": 6
- },
- "iPhone 11": {
-  "process": 1,
-  "system_bug": 1
- },
- "iPhone 18 Pro": {
-  "battery": 2,
-  "emerging": 2,
-  "process": 1
- },
- "iPhone 17 Pro Max": {
-  "emerging": 1
- },
- "iPhone 16 Pro": {
-  "system_bug": 1,
-  "battery": 1
- },
- "iPhone 13": {
-  "system_bug": 1
- },
- "iPhone 17 Pro": {
-  "system_bug": 2
- },
- "iPhone 16": {
-  "system_bug": 1,
-  "emerging": 1
- },
- "iPhone 17": {
-  "battery": 1
- }
-};
+window.PULSE_HISTORY = [{"date": "2026-10-08", "total": 88, "counts": {"battery": 47, "screen": 17, "charging": 14, "buttons": 2, "camera": 4, "network": 4}}];
+
+window.PULSE_MODEL_COUNTS = {"iPhone 14 Pro": {"screen": 1, "battery": 1}, "iPhone 18 Pro Max": {"battery": 6}, "iPhone 11": {"screen": 1, "network": 1}, "iPhone 18 Pro": {"battery": 2, "camera": 2, "charging": 1}, "iPhone 17 Pro Max": {"camera": 1}, "iPhone 16 Pro": {"charging": 1, "battery": 1}, "iPhone 13": {"battery": 1}, "iPhone 17 Pro": {"charging": 2}, "iPhone 16": {"screen": 1, "charging": 1}, "iPhone 17": {"charging": 1}};
+
+window.PULSE_MODELS = [];

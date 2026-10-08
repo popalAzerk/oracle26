@@ -7,32 +7,32 @@
   "battery": 6
  },
  "iPhone 11": {
-  "process": 1,
-  "system_bug": 1
+  "screen": 1,
+  "network": 1
  },
  "iPhone 18 Pro": {
   "battery": 2,
-  "emerging": 2,
-  "process": 1
+  "camera": 2,
+  "charging": 1
  },
  "iPhone 17 Pro Max": {
-  "emerging": 1
+  "camera": 1
  },
  "iPhone 16 Pro": {
-  "system_bug": 1,
+  "charging": 1,
   "battery": 1
  },
  "iPhone 13": {
-  "system_bug": 1
+  "battery": 1
  },
  "iPhone 17 Pro": {
-  "system_bug": 2
+  "charging": 2
  },
  "iPhone 16": {
-  "system_bug": 1,
-  "emerging": 1
+  "screen": 1,
+  "charging": 1
  },
  "iPhone 17": {
-  "battery": 1
+  "charging": 1
  }
 }
