@@ -163,7 +163,7 @@ exCats.forEach(([k,v], i)=>{
     </summary>
     <div class="ebody">
       <p class="edesc">${m.desc}</p>
-      ${exs.length? exs.map(x=>`<blockquote class="eq">« ${(x||'').replace(/</g,'&lt;')} »</blockquote>`).join('')
+      ${exs.length? exs.map(x=>{const t=(x&&x.text_tr)||x||'';const u=(x&&x.text)||'';const full=t.length<u.length&&u?t+' <span class="etr-mute">'+u+'</span>':t;return `<blockquote class="eq">« ${(full||'').replace(/</g,'&lt;')} »</blockquote>`}).join('')
         : '<p class="emute">Aucun exemple pour l\'instant.</p>'}
       ${exs.length? `<a class="emore" href="https://github.com/popalAzerk/oracle26/archive/refs/heads/main.tar.gz" download>Télécharger les données brutes</a>`:''}
     </div>`;
