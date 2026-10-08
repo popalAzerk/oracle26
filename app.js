@@ -36,6 +36,7 @@ counter($('kpi-neg'), DATA.sentiment?.negative||0);
 $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
 
 /* ---------- graphique principal: barres horizontales animées ((function topIssues(){
+  try {
   const list = $('issues-list');
   if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
   const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
@@ -62,6 +63,7 @@ $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
     list.appendChild(el);
     el.style.setProperty('--d', (.15+i*.08)+'s');
   });
+  } catch(e) { window.ISSUES_ERR = e.message; }
 })();
 
 top pannes) ---------- */
