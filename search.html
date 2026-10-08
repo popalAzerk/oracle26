@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recherche sources Apple — Pulse</title>
+<link rel="stylesheet" href="search.css?v=1">
+</head>
+<body>
+<header id="hud">
+  <div><span class="dot"></span>PULSE&nbsp;· <span class="brand">RECHERCHE</span></div>
+  <div>Sources Apple · monde entier</div>
+  <div><span class="dot"></span>LIVE</div>
+</header>
+<div style="text-align:center;margin:10px"><a href="/" style="color:#4ae3ff;font-size:11px">← retour Pulse</a></div>
+<section id="search-sec" class="rx">
+  <div class="stitle">Recherche</div>
+  <h2>Trouver des sources dans le monde entier</h2>
+  <form id="searchform">
+    <input id="q" type="search" placeholder="ex. batterie gonflée iPhone 15" autocomplete="off">
+    <button type="submit">Rechercher</button>
+  </form>
+  <div id="filters"></div>
+  <div id="results" aria-live="polite"></div>
+</section>
+<script>window.SEARCH_API = localStorage.pulse_searx || 'https://searx.popalazerk.com';</script>
+<script src="search.js?v=1"></script>
+</body>
+</html>
