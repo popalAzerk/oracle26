@@ -7,7 +7,7 @@
 <meta name="description" content="Dashboard temps réel des problèmes client Apple : tendances, historique, exemples concrets.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=5">
+<link rel="stylesheet" href="app.css?v=6">
 </head>
 <body>
 <canvas id="grain"></canvas>
@@ -40,12 +40,10 @@
 
 <!-- ============ HISTORIQUE ============ -->
 <section id="hist" class="rx">
-  <div class="stitle">Historique</div>
-  <h2>Volume total — semaines écoulées</h2>
-  <canvas id="spark-total" style="width:100%;height:110px"></canvas>
-  <div class="stitle" style="margin-top:44px">Carte thermique — collectes récentes</div>
-  <h2>Composant × date</h2>
-  <div id="heat"></div>
+  <div class="stitle">Progression</div>
+  <h2>Chaque composant, collecte après collecte</h2>
+  <p style="color:var(--mut);font-size:12px;margin-bottom:18px">Une ligne par composant trouvé sur le net — la courbe montre si le problème monte ou redescend.</p>
+  <div id="prog"></div>
 </section>
 
 <!-- ============ SENTIMENT ============ -->
@@ -66,14 +64,6 @@
   <div id="examples"></div>
 </section>
 
-<!-- ============ FRANCE / AURA ============ -->
-<section id="fr" class="rx">
-  <div class="stitle">France</div>
-  <h2>La France — et l'Auvergne-Rhône-Alpes</h2>
-  <p style="color:var(--mut);font-size:12px;margin-bottom:20px">Communautés d'utilisateurs francophones (Mastodon, puis Reddit dès que le flux sera autorisé). Les verbatims sont déjà en français — la région ARA est isolée quand elle est identifiable.</p>
-  <div id="fr-cards"></div>
-</section>
-
 <footer>
   <div id="updated"></div>
   <div>Collecte nocturne Harken (HN + Bluesky) · classification Laya · <a href="https://github.com/popalAzerk/oracle26">repo oracle26</a></div>
@@ -81,7 +71,6 @@
 </footer>
 
 <script src="data.js?v=$(date +%Y%m%d%H)"></script>
-<script src="data.fr.js?v=202610080548"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

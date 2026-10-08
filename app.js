@@ -76,39 +76,40 @@ function spark(canvas, points, color, opts={}){
   // points
   if (opts.dots!==false) pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],5,0,7); ctx.fillStyle=color; ctx.fill(); });
 }
-const histTotal = HIST.map(h=>h.total);
-if (histTotal.length > 1) { setTimeout(()=>{ spark($('spark-total'), histTotal, '#4ae3ff'); }, 500); }
-else { $('spark-total').closest('.rx').style.display='none'; }
-
-/* ---------- heatmap 7 jours x 8 composants (animée en cascade) ---------- */
-const heatEl = $('heat');
-const lastH = HIST.slice(-8);
-const cats = ALL_CATS.filter(c=>lastH.some(h=>h.counts[c]));
-const hmax = Math.max(...lastH.flatMap(h=>cats.map(c=>h.counts[c]||0)))
-lastH.forEach((h,i)=>{
-  const rowD = document.createElement('div');
-  rowD.className='hrow';
-  const dLbl = document.createElement('div'); dLbl.className='hdate'; dLbl.textContent=h.date.slice(5);
-  rowD.appendChild(dLbl);
-  cats.forEach((c,j)=>{
-    const v = h.counts[c]||0;
-    const cell = document.createElement('div');
-    cell.className='hcell';
-    const alpha = v? (.18+.82*v/hmax) : .06;
-    cell.style.setProperty('--a', alpha);
-    cell.style.setProperty('--c', CAT_META[c].color);
-    cell.style.animationDelay = (.04*(i*cats.length+j))+'s';
-    cell.title = `${h.date} · ${CAT_META[c].label}: ${v}`;
-    cell.textContent = v||'';
-    rowD.appendChild(cell);
+/* ---------- progression par composant : une courbe par item trouvé ---------- */
+(function progression(){
+  const wrap = $('prog');
+  if (!wrap || !HIST.length) return;
+  if (HIST.length < 2) {
+    wrap.innerHTML = '<p style="color:var(--mut);font-size:12px">Première collecte enregistrée (' + HIST[0].date + ') — la progression apparaît à partir de la deuxième.</p>';
+    document.getElementById('hist').classList.add('in');
+    return;
+  }
+  HIST.forEach(h => h.counts = h.counts || {});
+  const cats = ALL_CATS.filter(c => HIST.some(h => h.counts[c] > 0));
+  const rows = cats.map(c => {
+    const serie = HIST.map(h => h.counts[c] || 0);
+    const last = serie[serie.length-1];
+    const prev = serie[serie.length-2];
+    const delta = last - prev;
+    const m = CAT_META[c] || {label:c, color:'#888', icon:'❓'};
+    const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '—';
+    const dcol = delta > 0 ? 'var(--neg)' : delta < 0 ? '#30d158' : 'var(--mut)';
+    return `<div class="progrow" style="--c:${m.color}">
+      <span class="picon">${ICONS[c]||'·'}</span>
+      <span class="plab">${m.label}</span>
+      <canvas class="pspark" data-serie="${serie.join(',')}" style="width:120px;height:34px"></canvas>
+      <span class="pval">Série&nbsp;: ${serie.join(' · ')}</span>
+      <span class="pdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = rows;
+  wrap.querySelectorAll('canvas.pspark').forEach(cv => {
+    const serie = cv.dataset.serie.split(',').map(Number);
+    spark(cv, serie, getComputedStyle(cv.closest('.progrow')).getPropertyValue('--c').trim() || '#4ae3ff');
   });
-  const ttl = document.createElement('div'); ttl.className='httl'; ttl.textContent=h.total;
-  rowD.appendChild(ttl);
-  heatEl.appendChild(rowD);
-});
-const cols = document.createElement('div'); cols.className='hrow hhead';
-cols.innerHTML = `<div class="hdate"></div>` + cats.map(c=>`<div class="hcell hh" title="${CAT_META[c].label}" style="color:${CAT_META[c].color}">${ICONS[c]||'·'}</div>`).join('') + `<div class="httl">Σ</div>`;
-heatEl.prepend(cols);
+  document.getElementById('hist').classList.add('in');
+})();
 
 /* ---------- exemples concrets par composant (les phrases réelles) ---------- */
 const exEl = $('examples');
@@ -182,66 +183,3 @@ const io = new IntersectionObserver(es=>es.forEach(e=>{
   if (e.isIntersecting) e.target.classList.add('in');
 }), {threshold:.12});
 document.querySelectorAll('.rx').forEach(el=>io.observe(el));
-
-/* ---------- France / ARA (PULSE_FR) ---------- */
-const MOIS = {jan:'janv',feb:'févr',mar:'mars',apr:'avr',may:'mai',jun:'juin',jul:'juil',aug:'août',sep:'sept',oct:'oct',nov:'nov',dec:'déc'};
-function frdate(d){
-  if (!d) return '';
-  const m = d.match(/(\w{3}),(\s*)(\d{1,2})\s+(\w{3})/);
-  if (m) return `${m[3]} ${MOIS[m[4].toLowerCase().slice(0,3)]||m[4]}`;
-  return d.slice(5,10);
-}
-function cleanTitle(t){ return (t||'').replace(/\s[-–]\s[^-––]{2,40}$/,'').trim(); }
-(function(){
-  const FR = window.PULSE_FR;
-  if (!FR || !window.PULSE_DATA) return;
-  const wrap = $('fr-cards');
-  if (!wrap) return;
-  const mk = (d, label) => {
-    if (!d || !d.total) return null;
-    const card = document.createElement('div');
-    card.className = 'frcard';
-    const bars = Object.entries(d.counts).slice(0,6).sort((a,b)=>b[1]-a[1]);
-    const mx = bars[0]?.[1] || 1;
-    card.innerHTML = `
-      <div class="frhead"><span class="frname">${label}</span>
-        <span class="frn">${d.total} signalements</span></div>
-      <div class="frbars">${bars.map(([k,v]) => {
-        const m = CAT_META[k]||{label:k,color:'#888',icon:'❓'};
-        return `<div class="frbar"><span class="frlab">${ICONS[k]||''}${m.label}</span>
-          <span class="frtrack"><span class="frfill" style="--c:${m.color};--w:${Math.round(v/mx*100)}%"></span></span>
-          <span class="frv">${v}</span></div>`;}).join('')}</div>
-      <details class="frdetails"><summary>Voir les signalements (${d.items.length})</summary>
-        <ul class="frlist">${d.items.slice(0,20).map(i => {
-          const m = CAT_META[i.cat]||{label:i.cat,color:'#888'};
-          const shown = (i.text_tr || i.text || '').replace(/</g,'&lt;');
-          const full = (i.text || '').replace(/</g,'&lt;');
-          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${cleanTitle(shown)}</a>
-            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${frdate(i.date)}</span>
-            ${(i.text_tr && i.text_tr.length > 100) || full.length > 140 ? `<button class="enplus" type="button" data-full="${(i.text_tr && i.text_tr.length > full.length*0.7) ? i.text_tr.replace(/</g,'&lt;') : full}">En savoir plus</button>`:''}
-            </li>`;
-        }).join('')}</ul>
-      </details>`;
-    return card;
-  };
-  document.querySelectorAll('.enplus').forEach(b => b.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    const li = b.closest('li');
-    const full = b.dataset.full;
-    const a = li.querySelector('a');
-    if (!li.dataset.open) { li.dataset.orig = a.textContent; a.textContent = full; li.dataset.open = '1'; b.textContent = 'Réduire'; }
-    else { a.textContent = li.dataset.orig; li.dataset.open = ''; b.textContent = 'En savoir plus'; }
-  }));
-  const c1 = mk(FR.aura, 'Auvergne-Rhône-Alpes');
-  const c2 = mk(FR.fr, 'France entière');
-  if (c1) wrap.appendChild(c1);
-  if (c2) wrap.appendChild(c2);
-  if (!(c1||c2)) {
-    const wait = document.createElement('div');
-    wait.className = 'frcard frwait';
-    wait.innerHTML = `<div class="frhead"><span class="frname">veille en cours</span></div>
-      <p style="color:var(--mut);font-size:12px;line-height:1.6">Collecte du signal utilisateurs lancée (Mastodon FR, puis Reddit dès que le flux sera autorisé). Premier signalement attendu à la collecte de 2 h du matin.</p>`;
-    wrap.appendChild(wait);
-  }
-  if (c1||c2||true) { document.getElementById('fr').classList.add('in'); }
-})();
