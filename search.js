@@ -1,5 +1,5 @@
 /* Pulse Search — recherche multi-sources via SearXNG (NAS) + iFixit API */
-const API = '';  // via function /api/search (même origine)            // ex. '' = même origine /api
+const API = 'https:/'+'/searx.popalazerk.com'; // direct (CORS via CF Transform Rule)            // ex. '' = même origine /api
 const IFIXIT = 'https://www.ifixit.com/api/2.0/search/';
 
 const FILTERS = [
@@ -38,7 +38,7 @@ function renderFilters(){
 
 async function callSearx(q){
   const qq = [q, fragF, fragR].filter(Boolean).join(' ');
-  const u = `${API}/api/search?q=${encodeURIComponent(qq)}&format=json&language=${lang}&safesearch=1`;
+  const u = `${API}/search?q=${encodeURIComponent(qq)}&format=json&language=${lang}&safesearch=1`;
   const r = await fetch(u, {headers:{'Accept':'application/json'}});
   if(!r.ok) throw new Error('searx '+r.status);
   return r.json();
