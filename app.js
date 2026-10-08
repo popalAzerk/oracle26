@@ -120,7 +120,7 @@ sorted.forEach(([k,v], i)=>{
             <span class="cdmname">${mo}</span>
             <span class="cdmbar"><span class="cdmfill" style="width:${pct}%"></span></span>
             <span class="cdmpct">${pct}%</span>
-          </div>`; }).join('') + '<div class="cdmnote">' + tot + ' mentions avec modèle identifié (sur 314 mentions collectées) — cumulé du ' + ((window.PULSE_DATA&&PULSE_DATA.updated)||'') + ' backfill' + ' au ' + '</div>';
+          </div>`; }).join('') + '<div class="cdmnote">' + tot + ' mentions avec modèle identifié — cumulé du backfill (09/21) au ' + ((window.PULSE_DATA&&PULSE_DATA.updated)||'') + ', mise à jour à chaque collecte.</div>';
         })()}
       </div>
       ${(window.PULSE_SOURCES&&PULSE_SOURCES.sources[k]&&PULSE_SOURCES.sources[k].length)?`<div class="cdpress">
