@@ -16,23 +16,43 @@
   "charging": 1
  },
  "iPhone 17 Pro Max": {
-  "camera": 1
+  "camera": 1,
+  "charging": 14,
+  "audio": 5,
+  "battery": 2,
+  "screen": 3,
+  "network": 1
  },
  "iPhone 16 Pro": {
   "charging": 1,
   "battery": 1
  },
  "iPhone 13": {
-  "battery": 1
+  "battery": 1,
+  "buttons": 1
  },
  "iPhone 17 Pro": {
-  "charging": 2
+  "charging": 2,
+  "audio": 1,
+  "screen": 1
  },
  "iPhone 16": {
   "screen": 1,
   "charging": 1
  },
  "iPhone 17": {
-  "charging": 1
+  "charging": 6,
+  "battery": 3,
+  "screen": 1
+ },
+ "iPhone 15 Pro": {
+  "battery": 1
+ },
+ "iPhone 14 Pro Max": {
+  "screen": 1,
+  "buttons": 1
+ },
+ "iPhone 16 Pro Max": {
+  "screen": 1
  }
 }

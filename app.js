@@ -9,7 +9,8 @@ const CAT_META = {
   buttons:  { label:'Boutons',           color:'#8e8e93', icon:'🔘', desc:'Bouton latéral, volume, Touch ID, bouton action.' },
   charging: { label:'Charge',            color:'#ffd60a', icon:'⚡', desc:'Port, câble, charge lente, ne charge plus.' },
   network:  { label:'Réseau',            color:'#30b0c7', icon:'📶', desc:'Cellulaire, Wi-Fi, Bluetooth, signal, antenne.' },
-  camera:   { label:'Caméra',            color:'#ff453a', icon:'📷', desc:'Photos floues, objectif, capteur, flash.' }
+  camera:   { label:'Caméra',            color:'#ff453a', icon:'📷', desc:'Photos floues, objectif, capteur, flash.' },
+  cosmetic: { label:'Esthétique',         color:'#ff6b9d', icon:'✨', desc:'Décoloration, peinture écaillée, rayures, anodisation.' }
 };
 const ALL_CATS = Object.keys(CAT_META);
 
