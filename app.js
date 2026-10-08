@@ -107,9 +107,21 @@ sorted.forEach(([k,v], i)=>{
         <button class="cdclose" type="button" aria-label="Fermer">✕</button>
       </div>
       <canvas id="cat-spark" style="width:100%;height:90px"></canvas>
-      <div class="cdcomments">
-        ${comments.length? comments.map(c=>{const t=(c&&c.text_tr)||c&&c.text||c||'';return `<blockquote class="cdq">« ${String(t).replace(/</g,'&lt;')} »</blockquote>`}).join('')
-          : '<p class="emute">Aucun commentaire collecté sur ce composant.</p>'}
+      <div class="cdmodels">
+        <div class="cdmtitle">RÉPARTITION PAR MODÈLE — depuis le début du logiciel</div>
+        ${(function(){
+          const MC = window.PULSE_MODEL_COUNTS || {};
+          const rows = Object.entries(MC).map(([mo, probs]) => [mo, probs[k] || 0])
+            .filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+          const tot = rows.reduce((s, r) => s + r[1], 0);
+          if (!tot) return '<p class="emute">Aucun modèle identifié encore pour ce composant — la répartition se remplit à chaque collecte.</p>';
+          return rows.map(([mo, n]) => { const pct = Math.round(n / tot * 100); return `
+          <div class="cdmrow">
+            <span class="cdmname">${mo}</span>
+            <span class="cdmbar"><span class="cdmfill" style="width:${pct}%"></span></span>
+            <span class="cdmpct">${pct}%</span>
+          </div>`; }).join('') + '<div class="cdmnote">' + tot + ' mentions avec modèle identifié (sur 314 mentions collectées) — cumulé du ' + ((window.PULSE_DATA&&PULSE_DATA.updated)||'') + ' backfill' + ' au ' + '</div>';
+        })()}
       </div>
       ${(window.PULSE_SOURCES&&PULSE_SOURCES.sources[k]&&PULSE_SOURCES.sources[k].length)?`<div class="cdpress">
         <div class="cdptitle">DANS LA PRESSE</div>

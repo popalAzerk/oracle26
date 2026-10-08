@@ -194,3 +194,13 @@ footer a{color:var(--acc);text-decoration:none}
 .cdpsrc{font-size:10px;color:var(--acc,#4ae3ff);flex:0 0 auto;white-space:nowrap}
 .cdpart{padding-right:2px}
 .cdpsrc{margin-left:8px}
+
+/* ---- répartition par modèle ---- */
+.cdmodels{margin-top:14px;border-top:1px dashed rgba(255,255,255,.12);padding-top:12px}
+.cdmtitle{font-size:10px;letter-spacing:.12em;color:var(--mut);margin-bottom:10px}
+.cdmrow{display:flex;align-items:center;gap:10px;padding:4px 0}
+.cdmname{font-size:12px;flex:0 0 118px;color:#d8d8e2}
+.cdmbar{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.cdmfill{display:block;height:100%;background:linear-gradient(90deg,var(--acc,#4ae3ff),#3672ff);border-radius:5px}
+.cdmpct{font-size:11px;flex:0 0 38px;text-align:right;color:#fff}
+.cdmnote{margin-top:8px;font-size:10.5px;color:var(--mut);line-height:1.5}
