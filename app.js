@@ -77,7 +77,7 @@ sorted.forEach(([k,v], i)=>{
       </div>
       <canvas id="cat-spark" style="width:100%;height:90px"></canvas>
       <div class="cdcomments">
-        ${comments.length? comments.map(c=>`<blockquote class="cdq">« ${(c||'').replace(/</g,'&lt;')} »</blockquote>`).join('')
+        ${comments.length? comments.map(c=>{const t=(c&&c.text_tr)||c&&c.text||c||'';return `<blockquote class="cdq">« ${String(t).replace(/</g,'&lt;')} »</blockquote>`}).join('')
           : '<p class="emute">Aucun commentaire collecté sur ce composant.</p>'}
       </div>`;
     setTimeout(()=>{ const c=$('cat-spark'); if(c) spark(c, serie, m.color); }, 50);
