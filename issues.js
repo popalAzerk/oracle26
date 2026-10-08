@@ -1,75 +1,125 @@
-window.PULSE_ISSUES = {
+window.PULSE_SOURCES = {
  "updated": "2026-10-09",
- "issues": [
-  {
-   "id": "att",
-   "title": "iPhone 18 Pro Max : perte de réseau confirmée par Apple",
-   "date": "2026-10-02",
-   "tag": "Rappel produit",
-   "short": "Un petit nombre de Pro Max sur AT&T perdent tout service. iOS 27.0.1 + carrier update préviennent les nouveaux cas — les appareils déjà touchés exigent un remplacement matériel gratuit.",
-   "more": "Apple a confirmé le 2 octobre que les iPhone 18 Pro Max concernés ne récupèrent jamais le service par logiciel : seul un échange matériel (gratuit, via Apple ou AT&T) restaure le téléphone. AT&T a envoyé un SMS à ses clients pour forcer la mise à jour. En France, le même panneau matériel peut se manifester via d'autres opérateurs — un 18 Pro Max sans aucune barre malgré réinitialisation = candidat à l'échange.",
-   "src": "9to5Mac · Macworld",
-   "url": "https://www.macworld.com/article/3250214/apple-confirms-iphone-cellular-issue-admits-affected-units-cant-be-fixed.html"
-  },
-  {
-   "id": "screen",
-   "title": "iPhone 18 Pro : lignes vertes/roses à l'écran, sans fix logiciel",
-   "date": "2026-10-01",
-   "tag": "Écran",
-   "short": "Des lignes vertes et roses apparaissent sur des 18 Pro et survivent aux réinitialisations complètes. iOS 27.0.1 ne les corrige pas — défaut probablement matériel.",
-   "more": "Rapports corroborés par plusieurs médias (9to5Mac/Mashable, AppleInsider, PhoneArena). Face ID freeze et artefacts photo 2x ont été corrigés par iOS 27.0.1 (28 sept.) mais pas les lignes d'écran. Les acheteurs day-1 ont couru contre la fenêtre de retour 14 jours (close le 02/10). Un 18 Pro avec lignes = réparation écran à 405 € hors garantie.",
-   "src": "goldinvestors · techaeris",
-   "url": "https://techaeris.com/2026/09/28/iphone-18-pro-plagued-by-3-early-bugs"
-  },
-  {
-   "id": "ifixit",
-   "title": "Teardown iFixit 7/10 : l'écran déchire à la dépose sur 3 des 4 unités",
-   "date": "2026-09-21",
-   "tag": "Réparabilité",
-   "short": "Le cadre plastique de l'écran 18 Pro/Pro Max se déchire lors de l'ouverture sur 3 des 4 téléphones testés. Bac batterie vissé (bon point), diaphragme variable à 6 lames (réparation coûteuse).",
-   "more": "iFixit démonte le « petit œil mécanique » : le diaphragme variable compte 6 lames minuscules — si une lame se bloque, la réparation caméra est longue et chère. Le cadre plastique fragile de l'écran complique toute intervention (batterie, Face ID). Bonus : batterie >20 Wh, vidange ~2 h, refroidissement agrandi. iFixit : « skip the upgrade » côté photo.",
-   "src": "iFixit News",
-   "url": "https://www.ifixit.com/News/119329/inside-the-tiny-unfixable-eye-iphone-18-pro-and-pro-max-teardown"
-  },
-  {
-   "id": "prices",
-   "title": "Réparations France : batterie 149 €, écran 405 € sur 18 Pro",
-   "date": "2026-09-30",
-   "tag": "Prix",
-   "short": "Le remplacement batterie hors garantie passe à 149 € (vs 135 € sur 16/17 Pro). L'écran atteint 405 €. Le prix du 18 Pro grimpe à 1 469 € (+150 €).",
-   "more": "La hausse s'explique par des batteries plus grandes et la pression sur la mémoire. Autre piège contractuel : la protection du prix Apple court 14 jours à partir de la RÉCEPTION (pas de la commande), et Apple n'a jamais publié de délai équivalent pour souscrire AppleCare après achat.",
-   "src": "Clubic · MacObserver",
-   "url": "https://www.macobserver.com/fr/actualites/le-compte-a-rebours-de-14-jo"
-  },
-  {
-   "id": "ios26",
-   "title": "iOS 26 : l'« iPhone 16 ruiné », drain batterie et lenteurs généralisées",
-   "date": "2026-08-27",
-   "tag": "iOS",
-   "short": "iOS 26.4.1 « désastreux » sur 16 Pro, 26.5.2 vide la batterie (80 % → 3 % en une journée), lenteurs signalées aussi sur 15/14/13/12/11 — 129 « même question » sur le thread Apple.",
-   "more": "La hausse s'explique par des batteries plus grandes et la pression sur la mémoire (source : Clubbic 630316). iOS 26.6.1 (17 août) redonne de l'autonomie sur tous les modèles sauf un (test iAppleBytes/iphon.fr).",
-   "src": "mac4ever · iphon.fr · Reddit",
-   "url": "https://www.mac4ever.com/iphone/197330-ios-26-5-2-vide-la-batterie-de-certains-i"
-  },
-  {
-   "id": "swell",
-   "title": "iPhone 15 Pro : batterie gonflée après iOS 26, écran soulevé",
-   "date": "2026-08-20",
-   "tag": "Sécurité",
-   "short": "Thread Apple « Urgent Safety Issue » : batterie gonflée juste après la maj, écran soulevé du châssis, demande de prise en charge gratuite. Cas Genius Bar classique.",
-   "more": "Le propriétaire exige que Apple couvre remplacement batterie ou appareil. Rappel SAV : un iPhone qui s'ouvre au niveau de l'écran = STOP, ne pas recharger, diagnostic batterie immédiat. Vérifier santé batterie et gonflement avant toute autre intervention.",
-   "src": "Apple Community",
-   "url": "https://discussions.apple.com/thread/256166868"
-  },
-  {
-   "id": "ios27",
-   "title": "iOS 27 accélère les vieux iPhone — l'iPhone 11 confirmé",
-   "date": "2026-10-07",
-   "tag": "iOS",
-   "short": "Contrairement à l'habitude, iOS 27 booste les anciens modèles : l'iPhone 11 est officiellement compatible et plus rapide. En face, le 17 Pro Max accumule les problèmes de micro.",
-   "more": "Forbes confirme le support iPhone 11 sous iOS 27 ; Macworld mesure un gain de fluidité sur les vieux appareils. Le 17 Pro Max accumule : micro inaudible depuis octobre (2 passages en Store sans résolution), charge filaire défaillante corrigée par 26.5.1. iOS 27.2 attendu cette semaine (9to5Mac du 07/10).",
-   "src": "Forbes · Macworld · 9to5Mac",
-   "url": "https://www.forbes.com/sites/davidphelan/2026/06/08/apple-ios-27-iphone-11-suppo"
-  }
- ]
+ "sources": {
+  "screen": [
+   {
+    "title": "iPhone 18 Pro : lignes vertes et roses à l'écran, sans fix logiciel",
+    "date": "01/10",
+    "src": "GoldInvestors",
+    "url": "https://goldinvestors.news/2026/10/apples-1199-iphone-18-pro-faces-a-screen-fail"
+   },
+   {
+    "title": "3 bugs confirmés au lancement du 18 Pro, dont les lignes d'écran",
+    "date": "28/09",
+    "src": "Techaeris",
+    "url": "https://techaeris.com/2026/09/28/iphone-18-pro-plagued-by-3-early-bugs"
+   },
+   {
+    "title": "Les premiers 18 Pro voient des lignes vertes et roses",
+    "date": "29/09",
+    "src": "Yahoo Tech",
+    "url": "https://tech.yahoo.com/phones/articles/iphone-18-pro-owners-already-17"
+   }
+  ],
+  "battery": [
+   {
+    "title": "La batterie de l'iPhone 18 Pro passe à 149 € en France (+14 €)",
+    "date": "30/09",
+    "src": "AstuceDeGeek",
+    "url": "https://www.astucedegeek.fr/la-reparation-de-la-batterie-de-liphone-18-pro-une-depense-encore-plus-salee-pour-les-utilisateurs/"
+   },
+   {
+    "title": "iPhone 15 Pro : batterie gonflée après iOS 26, écran soulevé",
+    "date": "08/26",
+    "src": "Apple Community",
+    "url": "https://discussions.apple.com/thread/256166868"
+   },
+   {
+    "title": "iOS 26.5.2 vide la batterie de certains iPhone",
+    "date": "27/07",
+    "src": "Mac4Ever",
+    "url": "https://www.mac4ever.com/iphone/197330-ios-26-5-2-vide-la-batterie-de-certains-i"
+   }
+  ],
+  "system_bug": [
+   {
+    "title": "Apple confirme : les 18 Pro Max AT&T touchés exigent un remplacement",
+    "date": "03/10",
+    "src": "Macworld",
+    "url": "https://www.macworld.com/article/3250214/apple-confirms-iphone-cellular-issue-admits-affected-units-cant-be-fixed.html"
+   },
+   {
+    "title": "iOS 27.0.1 corrige le bug Face ID (gel + redémarrage) du 18 Pro",
+    "date": "28/09",
+    "src": "Husham",
+    "url": "https://husham.com/iphone-18-pro-face-id-freeze-restart-bug-ios-27-0-1-fix"
+   },
+   {
+    "title": "iOS 26 ralentissement extrême des iPhone (129 réactions)",
+    "date": "09/25",
+    "src": "Apple Community",
+    "url": "https://communities.apple.com/fr/thread/256137300"
+   }
+  ],
+  "pricing": [
+   {
+    "title": "Écran 405 €, batterie 149 € : les réparations 18 Pro en France",
+    "date": "30/09",
+    "src": "AstuceDeGeek",
+    "url": "https://www.astucedegeek.fr/la-reparation-de-la-batterie-de-liphone-18-pro-une-depense-encore-plus-salee-pour-les-utilisateurs/"
+   },
+   {
+    "title": "Protection du prix 14 j dès la réception, délai AppleCare jamais publié",
+    "date": "12/09",
+    "src": "MacObserver",
+    "url": "https://www.macobserver.com/fr/actualites/le-compte-a-rebours-de-14-jo"
+   },
+   {
+    "title": "Test : l'iPhone 18 Pro à 1 469 €, +150 € sur un an",
+    "date": "23/09",
+    "src": "Frandroid",
+    "url": "https://www.frandroid.com/test/3254233_test-iphone-18-pro"
+   }
+  ],
+  "process": [
+   {
+    "title": "Teardown iFixit 7/10 : le cadre d'écran déchire sur 3 des 4 unités",
+    "date": "20/09",
+    "src": "iFixit",
+    "url": "https://www.ifixit.com/News/119329/inside-the-tiny-unfixable-eye-iphone-18-pro-and-pro-max-teardown"
+   },
+   {
+    "title": "Le diaphragme variable : réparation délicate si une lame bloque",
+    "date": "21/09",
+    "src": "The Register",
+    "url": "https://www.theregister.com/personal-tech/2026/09/21/skip-the-upgrade-aperture/"
+   },
+   {
+    "title": "Lames de caméra sensibles révélées par le teardown",
+    "date": "21/09",
+    "src": "AppleInsider",
+    "url": "https://appleinsider.com/articles/26/09/21/sensitive-camera-blades-and-more-shown-in-iphone-18-pro-teardown"
+   }
+  ],
+  "emerging": [
+   {
+    "title": "iOS 27 accélère réellement les vieux iPhone — iPhone 11 confirmé",
+    "date": "08/06",
+    "src": "Forbes",
+    "url": "https://www.forbes.com/sites/davidphelan/2026/06/08/apple-ios-27-iphone-11-support-finally-confirmed/"
+   },
+   {
+    "title": "iPhone 17 Pro Max : micro inaudible, 2 passages en Store sans fix",
+    "date": "10/26",
+    "src": "Apple Community",
+    "url": "https://discussions.apple.com/thread/256241334"
+   },
+   {
+    "title": "iOS 27.2 : date de sortie attendue cette semaine",
+    "date": "07/10",
+    "src": "9to5Mac",
+    "url": "https://9to5mac.com/2026/10/07/ios-27-2-release-date-new-iphone-features/"
+   }
+  ]
+ }
 };
