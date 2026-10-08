@@ -1,269 +1,236 @@
-/* ============ PULSE DASH — Genius Bar Ops ============ */
-/* Graphique futuriste, animé, sans 3D. Fond noir, néon, mono. */
-const DATA = window.PULSE_DATA;
-const HIST = window.PULSE_HISTORY || [];
-const CAT_META = {
-  screen:   { label:'Écran / affichage', color:'#2997ff', icon:'📱', desc:'Écran cassé, tactile, lignes, affichage, remplacement.' },
-  battery:  { label:'Batterie',          color:'#30d158', icon:'🔋', desc:'Autonomie, drain, gonflement, remplacement.' },
-  audio:    { label:'Audio',             color:'#bf5af2', icon:'🔈', desc:'Haut-parleurs, micro, appels inaudibles, grésillement.' },
-  buttons:  { label:'Boutons',           color:'#8e8e93', icon:'🔘', desc:'Bouton latéral, volume, Touch ID, bouton action.' },
-  charging: { label:'Charge',            color:'#ffd60a', icon:'⚡', desc:'Port, câble, charge lente, ne charge plus.' },
-  network:  { label:'Réseau',            color:'#30b0c7', icon:'📶', desc:'Cellulaire, Wi-Fi, Bluetooth, signal, antenne.' },
-  camera:   { label:'Caméra',            color:'#ff453a', icon:'📷', desc:'Photos floues, objectif, capteur, flash.' },
-  cosmetic: { label:'Esthétique',         color:'#ff6b9d', icon:'✨', desc:'Décoloration, peinture écaillée, rayures, anodisation.' }
-};
-const ALL_CATS = Object.keys(CAT_META);
+/* ===== PULSE v2 — mécaniques : preloader rituel, anneau-astre, occlusion typo,
+   sections numérotées, reveals stagger, compteurs eased ===== */
+'use strict';
+const DATA = window.PULSE_DATA || {};
+const MC = window.PULSE_MODEL_COUNTS || {};
+const CY = '#4ae3ff', MG = '#ff2ea6';
+const PAL = ['#6ff0ff','#4ae3ff','#2fd8e8','#28a8d8','#3d7bd9','#ffd60a','#e8b23a','#c98f2e','#a86f28','#8f8f9f','#757585','#5c5c6a','#ff6bd8','#c95fb0'];
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 
-/* ---------- top issues : faits confirmés, sourcés ---------- */
-/* ---------- helpers ---------- */
-const $ = id => document.getElementById(id);
-function fmt(n){ return n.toLocaleString('fr-FR'); }
-function counter(el, target, dur=1100){
-  const t0 = performance.now();
-  (function f(t){
-    const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3);
-    el.textContent = fmt(Math.round(target*e));
-    if (k<1) requestAnimationFrame(f);
-  })(t0);
-}
-
-/* ---------- header: compteurs ---------- */
-counter($('kpi-total'), DATA.total);
-counter($('kpi-cats'), Object.keys(DATA.counts).length);
-counter($('kpi-neg'), DATA.sentiment?.negative||0);
-$('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
-
-/* ---------- graphique principal: barres horizontales animées (top pannes) ---------- */
-const barsEl = $('bars');
-
-(function topIssues(){
-  const list = $('issues-list');
-  if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
-  const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
-  PULSE_ISSUES.issues.forEach((it,i)=>{
-    const el = document.createElement('article');
-    el.className = 'iss';
-    el.innerHTML = `
-      <div class="isshead" role="button" tabindex="0">
-        <span class="itag" style="color:${TAGC[it.tag]||'#888'}">${it.tag}</span>
-        <span class="issdate">${it.date}</span>
-      </div>
-      <h3 class="isstitle">${it.title}</h3>
-      <p class="issshort">${it.short}</p>
-      <div class="issmore" hidden>
-        <p>${it.more}</p>
-        <p class="isssrc">Source : <a href="${it.url}" target="_blank" rel="noopener">${it.src}</a></p>
-      </div>
-      <button class="issbtn" type="button">En savoir plus</button>`;
-    const more = el.querySelector('.issmore');
-    const btn = el.querySelector('.issbtn');
-    const toggle = ()=>{ more.hidden = !more.hidden; btn.textContent = more.hidden ? 'En savoir plus' : 'Réduire'; };
-    btn.onclick = toggle;
-    el.querySelector('.isshead').onclick = toggle;
-    list.appendChild(el);
-    el.style.setProperty('--d', (.15+i*.08)+'s');
-  });
-})();
-
-const sorted = Object.entries(DATA.counts).sort((a,b)=>b[1]-a[1]);
-const max = sorted[0][1] || 1;
-sorted.forEach(([k,v], i)=>{
-  const m = CAT_META[k]||{label:k,color:'#888',icon:'❓',desc:''};
-  const row = document.createElement('div');
-  row.className='brow'; row.style.setProperty('--c', m.color);
-  row.innerHTML = `
-    <div class="bicon" style="color:var(--c)">${m.icon||''}</div>
-    <div class="blabel">${m.label}</div>
-    <div class="btrack"><div class="bfill" style="--w:${Math.round(v/max*100)}%;--d:${.5+i*.08}s"></div></div>
-    <div class="bval">${fmt(v)}</div>
-    <div class="bpct">${Math.round(v/DATA.total*100)}%</div>`;
-  row.style.cursor='pointer';
-  row.dataset.cat = k;
-  barsEl.appendChild(row);
-});
-/* clic composant dans le tableau principal → panneau détail (courbe + comments) */
-(function catDetail(){
-  const panel = document.createElement('div');
-  panel.id='cat-detail'; panel.hidden=true;
-  barsEl.parentNode.appendChild(panel);
-  barsEl.addEventListener('click', e=>{
-    const row = e.target.closest('.brow');
-    if(!row){ return; }
-    const k = row.dataset.cat;
-    const m = CAT_META[k]||{label:k,color:'#888',icon:'❓'};
-    const serie = HIST.map(h=>(h.counts||{})[k]||0);
-    const comments = (DATA.examples && DATA.examples[k]) || [];
-    const delta = serie.length>1 ? serie[serie.length-1]-serie[serie.length-2] : 0;
-    const arrow = delta>0?'▲':delta<0?'▼':'—';
-    const dcol = delta>0?'var(--neg)':delta<0?'#30d158':'var(--mut)';
-    panel.hidden=false;
-    panel.innerHTML = `
-      <div class="cdhead">
-        <span class="cicon" style="color:${m.color}">${m.icon||''}</span>
-        <span class="clabel">${m.label}</span>
-        <span class="cdelta" style="color:${dcol}">${arrow} ${delta>0?'+':''}${delta}</span>
-        <button class="cdclose" type="button" aria-label="Fermer">✕</button>
-      </div>
-      <canvas id="cat-spark" style="width:100%;height:90px"></canvas>
-      <div class="cdmodels">
-        <div class="cdmtitle">RÉPARTITION PAR MODÈLE — depuis le début du logiciel</div>
-        ${(function(){
-          const MC = window.PULSE_MODEL_COUNTS || {};
-          const rows = Object.entries(MC).map(([mo, probs]) => [mo, probs[k] || 0])
-            .filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
-          const tot = rows.reduce((s, r) => s + r[1], 0);
-          if (!tot) return '<p class="emute">Aucun modèle identifié encore pour ce composant — la répartition se remplit à chaque collecte.</p>';
-          return rows.map(([mo, n]) => { const pct = Math.round(n / tot * 100); return `
-          <div class="cdmrow">
-            <span class="cdmname">${mo}</span>
-            <span class="cdmbar"><span class="cdmfill" style="width:${pct}%"></span></span>
-            <span class="cdmpct">${pct}%</span>
-          </div>`; }).join('') + '<div class="cdmnote">' + tot + ' mentions avec modèle identifié — cumulé du backfill (09/21) au ' + ((window.PULSE_DATA&&PULSE_DATA.updated)||'') + ', mise à jour à chaque collecte.</div>';
-        })()}
-      </div>
-      ${(window.PULSE_SOURCES&&PULSE_SOURCES.sources[k]&&PULSE_SOURCES.sources[k].length)?`<div class="cdpress">
-        <div class="cdptitle">DANS LA PRESSE</div>
-        ${PULSE_SOURCES.sources[k].map(ar=>`<a class="cdpart" href="${ar.url}" target="_blank" rel="noopener"><span class="cdpdate">${ar.date}</span><span class="cdpttl">${ar.title}</span><span class="cdpsrc">${ar.src} →</span></a>`).join('')}
-      </div>`:''}`;
-    const drawSpark = ()=>{ const c=$('cat-spark'); if(!c) return;
-      if(c.clientWidth<10){ requestAnimationFrame(drawSpark); return; }
-      spark(c, serie, m.color); };
-    requestAnimationFrame(()=>requestAnimationFrame(drawSpark));
-    window.addEventListener('resize', ()=>{ if(!panel.hidden){ const c=$('cat-spark'); if(c) spark(c, serie, m.color); } }, {passive:true}); /* cat-spark-resize */
-    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-    panel.querySelector('.cdclose').onclick = ()=>{ panel.hidden=true; };
-  });
-})();
-
-/* ---------- courbe (sparkline historique) ---------- */
-function spark(canvas, points, color, opts={}){
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width = canvas.clientWidth*2, H = canvas.height = (canvas.clientHeight||70)*2;
-  ctx.scale(1,1);
-  const pad = 14;
-  const min = Math.min(...points), max = Math.max(...points);
-  const rng = (max-min)||1;
-  const pts = points.map((v,i)=>[ pad + i*(W-2*pad)/(points.length-1||1), H-pad - (v-min)/rng*(H-2*pad) ]);
-  // grille
-  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=2;
-  for(let g=1; g<4; g++){ ctx.beginPath(); ctx.moveTo(0, pad+g*(H-2*pad)/4); ctx.lineTo(W, pad+g*(H-2*pad)/4); ctx.stroke(); }
-  // ligne
-  ctx.beginPath();
-  pts.forEach((p,i)=> i? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
-  ctx.strokeStyle=color; ctx.lineWidth=4; ctx.lineJoin='round'; ctx.lineCap='round';
-  ctx.stroke();
-  // halo
-  const g2 = ctx.createLinearGradient(0,0,0,H);
-  g2.addColorStop(0, color+'33'); g2.addColorStop(1, color+'00');
-  ctx.lineTo(pts[pts.length-1][0], H-pad); ctx.lineTo(pts[0][0], H-pad); ctx.closePath();
-  ctx.fillStyle=g2; ctx.fill();
-  // points
-  if (opts.dots!==false) pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],5,0,7); ctx.fillStyle=color; ctx.fill(); });
-}
-/* ---------- progression par composant : une courbe par item trouvé ---------- */
-
-
-/* ---------- exemples concrets par composant (les phrases réelles) ---------- */
-const exEl = $('examples');
-const exCats = Object.entries(DATA.counts).sort((a,b)=>b[1]-a[1]);
-exCats.forEach(([k,v], i)=>{
-  const m = CAT_META[k]||{label:k,color:'#888',icon:'❓',desc:''};
-  const exs = (DATA.examples && DATA.examples[k]) || [];
-  const card = document.createElement('details');
-  card.className='excard'; card.style.setProperty('--c', m.color);
-  card.innerHTML = `
-    <summary>
-      <span class="eicon" style="color:var(--c)">${m.icon||''}</span>
-      <span class="elabel">${m.label}</span>
-      <span class="eval">${fmt(v)} ${v>1?'mentions':'mention'}</span>
-      <span class="earrow">▾</span>
-    </summary>
-    <div class="ebody">
-      <p class="edesc">${m.desc}</p>
-      ${exs.length? exs.map(x=>{const t=(x&&x.text_tr)||x||'';const u=(x&&x.text)||'';const full=t.length<u.length&&u?t+' <span class="etr-mute">'+u+'</span>':t;return `<blockquote class="eq">« ${(full||'').replace(/</g,'&lt;')} »</blockquote>`}).join('')
-        : '<p class="emute">Aucun exemple pour l\'instant.</p>'}
-      ${exs.length? `<a class="emore" href="https://github.com/popalAzerk/oracle26/archive/refs/heads/main.tar.gz" download>Télécharger les données brutes</a>`:''}
-    </div>`;
-  exEl.appendChild(card);
-});
-
-/* ---------- modèles déclarés (radial animé, cumul depuis le début) ---------- */
-(function radialModels(){
-  const c = $('gauge'); if (!c) return;
-  const MC = window.PULSE_MODEL_COUNTS || {};
-  const rows = Object.entries(MC).map(([mo, probs]) => [mo, Object.values(probs).reduce((s,n)=>s+n,0)])
-    .filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
-  const tot = rows.reduce((s, r) => s + r[1], 0);
-  if (!tot) {
-    const lab = $('gauge-labels');
-    if (lab) lab.innerHTML = '<p class="emute">Aucun modèle identifié pour l\'instant — se remplit à chaque collecte.</p>';
-    return;
-  }
-  // palette 9 couleurs :
-  const PAL = ['#6ff0ff','#4ae3ff','#2fa8e8','#2878d8','#3d5bd9','#ffd60a','#e8b23a','#c98f2e','#a86f28','#8f8f9f','#757585','#5c5c6a'];
-  const W = c.width = c.clientWidth*2, H = c.height = c.clientHeight*2;
-  let a0 = -Math.PI/2, p = 0;
-  (function draw(t){
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0,0,W,H);
-    const e = 1-Math.pow(1-Math.min(1,p),3); p += .02;
-    let an = a0;
-    rows.forEach(([mo, n], i)=>{
-      const ang = n/tot*Math.PI*2*e;
-      ctx.beginPath();
-      ctx.arc(W/2,H/2, W/2-24, an+.02, an+ang-.02);
-      ctx.strokeStyle = PAL[i%PAL.length]; ctx.lineWidth = 26; ctx.lineCap='butt'; ctx.stroke();
-      an += ang;
-    });
-    if (p<1.001) requestAnimationFrame(draw);
-  })(0);
-  const lab = $('gauge-labels');
-  if (lab) lab.innerHTML = rows.map(([mo, n], i)=>
-    `<span style="color:${PAL[i%PAL.length]}">●</span> ${mo} ${Math.round(n/tot*100)}%`
-  ).join('<br>');
-})();
-
-/* ---------- footer (crédit + période) ---------- */
-$('updated').textContent = 'données : ' + (DATA.updated||'') + ' · ' + (DATA.period||'');
-
-/* ---------- starfield : particules animées (HUD) ---------- */
-(function starfield(){
-  const g = $('starfield'); if (!g) return;
-  const ctx = g.getContext('2d');
-  g.width = innerWidth; g.height = innerHeight;
-  const N = 70;
-  const pts = Array.from({length:N}, () => ({
-    x: Math.random()*g.width, y: Math.random()*g.height,
-    r: Math.random()*1.4+.4, p: Math.random()*Math.PI*2,
-    s: .4+Math.random()*.8
-  }));
-  (function draw(t){
-    ctx.clearRect(0,0,g.width,g.height);
-    for (const p of pts){
-      const a = .25 + .55*Math.abs(Math.sin(t/1400*p.s + p.p));
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(74,227,255,${a})`;
-      ctx.shadowColor = '#4ae3ff'; ctx.shadowBlur = 6;
-      ctx.fill();
+/* ---------- preloader ---------- */
+(function(){
+  const arc = $('.pl-arc'), cnt = $('.pl-count');
+  if (!arc) return;
+  let p = 0;
+  const iv = setInterval(()=>{
+    p = Math.min(1, p + .018 + Math.random()*.02);
+    arc.style.strokeDashoffset = 276 * (1 - p);
+    cnt.textContent = String(Math.round(p * (DATA.total || 1))).padStart(3,'0');
+    if (p >= 1){
+      clearInterval(iv);
+      setTimeout(()=> $('#preloader').classList.add('off'), 280);
     }
+  }, 26);
+  setTimeout(()=> $('#preloader').classList.add('off'), 3600); // filet de sécurité
+})();
+
+/* ---------- fond : particules + grille tron ---------- */
+(function(){
+  const c = $('#fx'); if(!c) return;
+  const x = c.getContext('2d');
+  let W, H, pts = [];
+  function size(){
+    W = c.width = innerWidth; H = c.height = innerHeight;
+    pts = Array.from({length: Math.min(90, W/14)}, ()=>({
+      x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.3+.3,
+      p:Math.random()*6.28, s:.4+Math.random()*.9,
+      m: Math.random() < .12 ? MG : CY   // 12% magenta
+    }));
+  }
+  size(); addEventListener('resize', size);
+  (function draw(t){
+    x.clearRect(0,0,W,H);
+    // grille perspective bas d'écran :
+    const gh = H*.34;
+    x.strokeStyle = 'rgba(74,227,255,.10)'; x.lineWidth = 1;
+    for (let i=0;i<=16;i++){
+      const xx = (i/16)*W;
+      x.beginPath(); x.moveTo(xx, H-gh); x.lineTo(W*.5 + (xx-W*.5)*3.2, H); x.stroke();
+    }
+    for (let j=0;j<5;j++){
+      const y = H - gh + (j/4)*gh;
+      x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke();
+    }
+    x.globalAlpha = .8;
+    for (const q of pts){
+      const a = .2 + .5*Math.abs(Math.sin(t/1500*q.s + q.p));
+      x.beginPath(); x.arc(q.x, q.y, q.r, 0, 6.29);
+      x.fillStyle = q.m; x.globalAlpha = a; x.shadowColor=q.m; x.shadowBlur=7;
+      x.fill();
+    }
+    x.globalAlpha = 1; x.shadowBlur = 0;
     requestAnimationFrame(draw);
   })(0);
 })();
 
-/* ---------- grain CRT léger ---------- */
-(function grain(){
-  const g = $('grain'); const ctx = g.getContext('2d');
-  const W = g.width = innerWidth, H = g.height = innerHeight;
-  ctx.globalAlpha=.05;
-  for(let i=0;i<900;i++){
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(Math.random()*W, Math.random()*H, 1, 1);
+/* ---------- anneau-astre (donut rayon variable = % modèle) ---------- */
+function astro(el, rows, opt){
+  if (!el || !rows.length) return;
+  opt = opt || {};
+  const W = el.width, H = el.height, cx = W/2, cy = H/2;
+  const tot = rows.reduce((s,r)=>s+r[1],0);
+  let p = 0;
+  function frame(t){
+    const e = 1 - Math.pow(1 - Math.min(1,p), 3); p += .016;
+    const x = el.getContext('2d');
+    x.clearRect(0,0,W,H);
+    let an = -Math.PI/2;
+    rows.forEach((r, i)=>{
+      const ang = (r[1]/tot) * 6.2832 * e;
+      // largeur du segment ∝ part (mecanique "astre à facettes") :
+      const w1 = (W/2 - 30) * (.42 + .45 * r[1]/tot);
+      x.beginPath();
+      x.arc(cx, cy, w1, an + .035, an + ang - .035);
+      x.strokeStyle = PAL[i % PAL.length];
+      x.lineWidth = Math.max(10, W*.05 * (0.5 + r[1]/tot*1.6));
+      x.lineCap = 'butt';
+      x.shadowColor = PAL[i % PAL.length]; x.shadowBlur = 18;
+      x.stroke();
+      // télémétrie : petites lignes radiales entre segments
+      x.shadowBlur = 0;
+      x.strokeStyle = 'rgba(232,242,255,.25)'; x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(cx + Math.cos(an)*24, cy + Math.sin(an)*24);
+      x.lineTo(cx + Math.cos(an)*(w1 + 16), cy + Math.sin(an)*(w1 + 16));
+      x.stroke();
+      an += ang;
+    });
+    // noyau :
+    const g = x.createRadialGradient(cx,cy,0,cx,cy,W*.12);
+    g.addColorStop(0,'rgba(74,227,255,.9)'); g.addColorStop(.5,'rgba(74,227,255,.25)'); g.addColorStop(1,'transparent');
+    x.fillStyle = g;
+    x.beginPath(); x.arc(cx,cy,W*.12*e,0,6.29); x.fill();
+    if (p < 1.02 && !opt.once) requestAnimationFrame(frame);
   }
+  requestAnimationFrame(frame);
+}
+
+/* compteurs eased */
+function cnt(el, target, dur){
+  if (!el) return;
+  let t0 = null;
+  function step(t){
+    if (!t0) t0 = t;
+    const k = Math.min(1, (t - t0)/dur);
+    const e = 1 - Math.pow(1-k, 3);
+    el.textContent = String(Math.round(e*target)).padStart(3,'0');
+    if (k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ---------- HERO : anneau = répartition composants ---------- */
+(function(){
+  const rows = Object.entries(DATA.counts || {}).sort((a,b)=>b[1]-a[1]);
+  const el = $('#astro');
+  astro(el, rows);
+  const tot = rows.reduce((s,r)=>s+r[1],0);
+  cnt($('#astro-total'), tot, 1900);
+  const cats = $('#astro-cats'); if (cats) cats.textContent = rows.length;
+  // hud-maj + footer :
+  const up = $('#hud-maj'); if (up) up.textContent = 'MAJ ' + (DATA.updated || '--');
+  const fu = $('#foot-upd'); if (fu) fu.textContent = 'DONNÉES DU ' + (DATA.updated || '--');
+  if ($('#hud-clock')) setInterval(()=>{ $('#hud-clock').textContent = new Date().toTimeString().slice(0,8); }, 1000);
 })();
 
-/* ---------- reveal on scroll (IntersectionObserver) ---------- */
-const io = new IntersectionObserver(es=>es.forEach(e=>{
-  if (e.isIntersecting) e.target.classList.add('in');
-}), {threshold:.12});
-document.querySelectorAll('.rx').forEach(el=>io.observe(el));
+/* ---------- 01 SIGNATURE ---------- */
+(function(){
+  const rows = Object.entries(MC).map(([m, pr])=>[m, Object.values(pr).reduce((s,n)=>s+n,0)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+  const el = $('#astro2');
+  astro(el, rows, {once:false});
+  const leg = $('#sig-leg');
+  const tot = rows.reduce((s,r)=>s+r[1],0);
+  if (leg) leg.innerHTML = rows.map((r,i)=>
+    `<div class="sig-row" style="--c:${PAL[i%PAL.length]}"><i></i><span class="n">${r[0]}</span><b>${r[1]}<em>· ${Math.round(r[1]/tot*100)}%</em></b></div>`).join('');
+})();
+
+/* ---------- 02 COMPOSANTS ---------- */
+(function(){
+  const META = {
+    battery:{l:'Batterie',i:'🔋',c:'#30d158',d:'Autonomie, drain, gonflement'},
+    screen:{l:'Écran / affichage',i:'📱',c:'#2997ff',d:'Lignes, tactile, écran noir'},
+    charging:{l:'Charge',i:'⚡',c:'#ffd60a',d:'Port, charge lente, ne charge plus'},
+    cosmetic:{l:'Esthétique',i:'✨',c:'#ff2ea6',d:'Décoloration, peinture, rayures'},
+    audio:{l:'Audio',i:'🔊',c:'#bf5af2',d:'HP, micro, grésillement'},
+    buttons:{l:'Boutons',i:'🔘',c:'#8e8e93',d:'Side button, volume, action'},
+    network:{l:'Réseau',i:'📶',c:'#30b0c7',d:'Cellulaire, Wi-Fi, Bluetooth'},
+    camera:{l:'Caméra',i:'📷',c:'#ff453a',d:'Objectif, flou, stabilisation'}
+  };
+  const rows = Object.entries(DATA.counts || {}).sort((a,b)=>b[1]-a[1]);
+  const tot = rows.reduce((s,r)=>s+r[1],0) || 1;
+  const box = $('#comps');
+  box.innerHTML = rows.map(([k,n])=>{
+    const m = META[k] || {l:k,i:'◈',c:'#8f8f9f',d:''};
+    return `<div class="comp rv" data-cat="${k}" style="--c:${m.c}">
+      <div class="ic">${m.i}</div>
+      <div class="lb">${m.l}<small>${m.d || ''}</small></div>
+      <div class="track"><div class="fill" style="--w:${Math.round(n/tot*100)}%"></div></div>
+      <div class="val"><b>${String(n).padStart(2,'0')}</b><small>${Math.round(n/tot*100)} %</small></div>
+    </div>`;
+  }).join('');
+})();
+
+/* ---------- détail au clic ---------- */
+(function(){
+  const box = $('#comps'), det = $('#detail');
+  box.addEventListener('click', e=>{
+    const row = e.target.closest('.comp'); if (!row) return;
+    const k = row.dataset.cat;
+    const open = det.dataset.cat === k && !det.hidden;
+    det.hidden = open; det.dataset.cat = open ? '' : k;
+    if (open) return;
+    const META = {
+      battery:{l:'Batterie',c:'#30d158'},screen:{l:'Écran / affichage',c:'#2997ff'},
+      charging:{l:'Charge',c:'#ffd60a'},cosmetic:{l:'Esthétique',c:'#ff2ea6'},
+      audio:{l:'Audio',c:'#bf5af2'},buttons:{l:'Boutons',c:'#8e8e93'},
+      network:{l:'Réseau',c:'#30b0c7'},camera:{l:'Caméra',c:'#ff453a'}};
+    const m = META[k] || {l:k, c:'#8f8f9f'};
+    // répartition modèles :
+    const rows = Object.entries(MC).map(([mo, pr])=>[mo, pr[k]||0]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+    const tot = rows.reduce((s,r)=>s+r[1],0) || 1;
+    // verbatims :
+    const exs = (DATA.examples || {})[k] || [];
+    // presse :
+    const P = (window.PULSE_SOURCES && window.PULSE_SOURCES.sources[k]) || [];
+    det.innerHTML = `
+      <button class="close" aria-label="Fermer">✕</button>
+      <h3><span style="display:inline-block;width:9px;height:9px;background:${m.c};box-shadow:0 0 8px ${m.c}"></span>${m.l.toUpperCase()} — RÉPARTITION PAR MODÈLE <i style="font-style:normal;color:var(--t3);font-size:9px;letter-spacing:.18em">DEPUIS LE DÉBUT</i></h3>
+      ${rows.map(r=>`<div class="mrow"><span class="mn">${r[0]}</span><span class="mt"><span class="mf" style="--w:${Math.round(r[1]/tot*100)}%"></span></span><span class="mp">${Math.round(r[1]/tot*100)} %</span></div>`).join('') || '<p style="color:var(--t3);font-size:11px">Aucun modèle identifié pour ce composant.</p>'}
+      ${exs.length ? `<div class="profs-t">COMMENT LES CLIENTS LE VIVENT</div>` + exs.map(x=>{
+        const t = (x && x.text_tr) || (x && x.text) || x || '';
+        return `<p class="prof" style="--c:${m.c}">${String(t).slice(0,220)}</p>`;}).join('') : ''}
+      ${P.length ? `<div class="prese"><div class="prese-t">DANS LA PRESSE</div>` + P.slice(0,3).map(a=>
+        `<a class="pres" href="${a.u}" target="_blank" rel="noopener"><span class="pt">${a.t}</span><span class="pm">${a.d || ''} · ${a.s} →</span></a>`).join('') + '</div>' : ''}`;
+    det.hidden = false;
+    det.querySelector('.close').onclick = ()=>{ det.hidden = true; det.dataset.cat=''; };
+    det.classList.add('rv'); requestAnimationFrame(()=>det.classList.add('in'));
+  });
+})();
+
+/* ---------- 03 PREUVES : citations massives ---------- */
+(function(){
+  const exs = DATA.examples || {};
+  const META = {battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff2ea6',audio:'#bf5af2',buttons:'#8e8e93',network:'#30b0c7',camera:'#ff453a'};
+  let cards = [];
+  for (const [k, lst] of Object.entries(exs)){
+    for (const x of (lst||[]).slice(0,1)){
+      const t = (x && x.text_tr) || (x && x.text) || x || '';
+      if (t && t.length > 30) cards.push({t, c: META[k] || '#8f8f9f', k});
+    }
+  }
+  const box = $('#profs');
+  if (box) box.innerHTML = cards.slice(0, 8).map(c=>
+    `<div class="profcard rv"><blockquote style="color:#e8f2ff">${c.t.slice(0,240)}</blockquote><div class="who">COMPOSANT <b>${c.k.toUpperCase()}</b> · SIGNAL CLIENT</div></div>`).join('');
+})();
+
+/* ---------- reveals stagger ---------- */
+(function(){
+  const io = new IntersectionObserver(es=>{
+    es.forEach((e)=>{ if (e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }});
+  }, {threshold:.12});
+  $$('.rv').forEach((el, i)=>{ el.style.transitionDelay = (i%6)*70 + 'ms'; io.observe(el); });
+})();

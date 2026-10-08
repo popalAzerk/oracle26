@@ -1,70 +1,46 @@
 <!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pulse — Tendances de pannes Apple</title>
-<meta name="description" content="Dashboard temps réel des problèmes client Apple : tendances, historique, exemples concrets.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=13">
-</head>
-<body>
-<canvas id="starfield"></canvas>
-<canvas id="grain"></canvas>
-
+<html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PULSE — Veille signal client · Genius Bar</title>
+<link rel="stylesheet" href="app.css?v=20">
+</head><body>
+<div id="preloader"><div class="pl-ring"><svg viewBox="0 0 100 100"><circle class="pl-track" cx="50" cy="50" r="44"/><circle class="pl-arc" cx="50" cy="50" r="44"/></svg></div><div class="pl-count">000</div><div class="pl-lbl">INITIALISATION DU SIGNAL</div></div>
+<canvas id="fx"></canvas>
 <header id="hud">
-  <div><span class="dot"></span>PULSE · <span class="brand">APPLE OPS</span></div>
-  <div>Veille signal client · Genius Bar</div>
-  <div><a href="/search.html" style="color:var(--acc,#4ae3ff);text-decoration:none;font-size:10px;letter-spacing:.08em">RECHERCHE →</a></div>
+ <div class="hud-corner tl"><span class="hud-brand">PULSE<i>·</i>APPLE</span><span class="hud-sub">VEILLE SIGNAL CLIENT · GENIUS BAR</span></div>
+ <div class="hud-corner tr"><a class="hud-link" href="search.html">RECHERCHE →</a></div>
+ <div class="hud-corner bl"><span class="hud-tel" id="hud-clock">--:--:--</span></div>
+ <div class="hud-corner br"><span class="hud-tel" id="hud-maj">MAJ --</span></div>
 </header>
-
-<!-- ============ HERO ============ -->
-<section id="hero">
-  <div>
-    <h1 style="letter-spacing:.08em">PULSE</h1>
-    <div class="kpis">
-      <div class="kpi"><div class="v" id="kpi-total">0</div><div class="l">Mentions actives</div></div>
-      <div class="kpi"><div class="v" id="kpi-cats">0</div><div class="l">Composants suivis</div></div>
-      <div class="kpi"><div class="v conf" id="conf-val">–%</div><div class="l">Confiance IA</div></div>
-      <div class="kpi"><div class="v" style="color:var(--neg)" id="kpi-neg">0</div><div class="l">Signal négatif</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ SENTIMENT ============ -->
-<section id="sent" class="rx">
-  <div class="stitle">Modèles déclarés</div>
-  <h2>D'où viennent les signaux — iPhone cités par les clients</h2>
-  <div id="sent-wrap">
-    <canvas id="gauge"></canvas>
-    <div id="gauge-labels"></div>
-  </div>
-</section>
-
-<!-- ============ TOP PANNES ============ -->
-<section id="top" class="rx">
-  <div class="stitle">Tendances · dernières 24 h</div>
-  <h2>Par composant, du plus au moins signalé</h2>
-  <div id="bars"></div>
-</section>
-
-<!-- ============ EXEMPLES ============ -->
-<section id="exemples" class="rx">
-  <div class="stitle">Preuves</div>
-  <h2>Ce que les clients disent — mot pour mot</h2>
-  <p style="color:var(--mut);font-size:12px;margin-bottom:20px">Clique sur un composant pour lire les phrases réelles qui l'ont déclenché.</p>
-  <div id="examples"></div>
-</section>
-
-<footer>
-  <div id="updated"></div>
-  <div>Collecte nocturne Harken (HN + Bluesky) · classification Laya · <a href="https://github.com/popalAzerk/oracle26">repo oracle26</a></div>
-  <div>popalazerk.com — à l'aide des sites loi-réparation et Genius Bar</div>
-</footer>
-
-<script src="data.js?v=20261013"></script>
-<script src="issues.js?v=2"></script>
-<script src="app.js?v=20261013c"></script>
-</body>
-</html>
+<main>
+ <section id="hero-sec">
+  <h1 class="giant">PULSE</h1>
+  <div class="rig"><canvas id="astro" width="640" height="640"></canvas>
+   <div class="astro-hud">
+    <div class="astro-tick"><i>SIGNAL COLLECTÉ</i><b id="astro-total">000</b></div>
+    <div class="astro-tick r"><i>COMPOSANTS SUIVIS</i><b id="astro-cats">0</b></div>
+   </div></div>
+  <p class="hero-sub">Ce que les clients Apple vivent vraiment. Classé par composant matériel, à chaque collecte nocturne.</p>
+  <div class="scroll-cue"><span></span>SCROLL POUR INSPECTER</div>
+ </section>
+ <section class="num-sec" id="s1">
+  <div class="num-h"><span class="num">01</span><span class="num-lbl">SIGNATURE DU SIGNAL</span></div>
+  <h2>D'où viennent les signaux — les iPhone cités</h2>
+  <div class="signature"><canvas id="astro2" width="720" height="720"></canvas><div id="sig-leg" class="sig-leg"></div></div>
+ </section>
+ <section class="num-sec" id="s2">
+  <div class="num-h"><span class="num">02</span><span class="num-lbl">COMPOSANTS · DU PLUS AU MOINS SIGNALÉ</span></div>
+  <h2>Là où ça casse</h2>
+  <div id="comps"></div><div id="detail" class="detail" hidden></div>
+ </section>
+ <section class="num-sec" id="s3">
+  <div class="num-h"><span class="num">03</span><span class="num-lbl">PREUVES · MOT POUR MOT</span></div>
+  <h2>La voix du comptoir Genius</h2>
+  <div id="profs"></div>
+ </section>
+ <footer><span class="hud-sub">PULSE v2 — collecte nocturne Harken + Laya</span><span class="hud-sub" id="foot-upd">DONNÉES DU --</span></footer>
+</main>
+<script src="data.js?v=20261014"></script>
+<script src="issues.js?v=4"></script>
+<script src="app.js?v=20261014"></script>
+</body></html>
