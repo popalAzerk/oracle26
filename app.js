@@ -39,7 +39,6 @@ $('conf-val').textContent = Math.round((DATA.avgConf||0)*100) + '%';
 const barsEl = $('bars');
 
 (function topIssues(){
-  try {
   const list = $('issues-list');
   if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
   const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
@@ -66,7 +65,6 @@ const barsEl = $('bars');
     list.appendChild(el);
     el.style.setProperty('--d', (.15+i*.08)+'s');
   });
-  } catch(e) { window.ISSUES_ERR = e.message; }
 })();
 
 const sorted = Object.entries(DATA.counts).sort((a,b)=>b[1]-a[1]);
