@@ -158,3 +158,4 @@ footer a{color:var(--acc);text-decoration:none}
   #prog .pval{ font-size:9px }
   #prog .pdelta{ flex-basis:52px }
 }
+#prog .progdates{ font-size:10px; color:var(--mut); padding:0 0 10px; letter-spacing:.05em }
