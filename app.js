@@ -214,12 +214,24 @@ function cleanTitle(t){ return (t||'').replace(/\s[-–]\s[^-––]{2,40}$/,'')
       <details class="frdetails"><summary>Voir les signalements (${d.items.length})</summary>
         <ul class="frlist">${d.items.slice(0,20).map(i => {
           const m = CAT_META[i.cat]||{label:i.cat,color:'#888'};
-          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${cleanTitle(i.text).replace(/</g,'&lt;')}</a>
-            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${frdate(i.date)}</span></li>`;
+          const shown = (i.text_tr || i.text || '').replace(/</g,'&lt;');
+          const full = (i.text || '').replace(/</g,'&lt;');
+          return `<li><a href="${i.url||'#'}" ${i.url?'target="_blank"':''}>${cleanTitle(shown)}</a>
+            <span class="frmeta" style="--c:${m.color}">${m.label} · ${i.src||''} · ${frdate(i.date)}</span>
+            ${i.text_tr && i.text_tr.length<40 && full.length>i.text_tr.length? `<button class="enplus" type="button" data-full="${full}">En savoir plus</button>`:''}
+            </li>`;
         }).join('')}</ul>
       </details>`;
     return card;
   };
+  document.querySelectorAll('.enplus').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const li = b.closest('li');
+    const full = b.dataset.full;
+    const a = li.querySelector('a');
+    if (!li.dataset.open) { li.dataset.orig = a.textContent; a.textContent = full; li.dataset.open = '1'; b.textContent = 'Réduire'; }
+    else { a.textContent = li.dataset.orig; li.dataset.open = ''; b.textContent = 'En savoir plus'; }
+  }));
   const c1 = mk(FR.aura, 'Auvergne-Rhône-Alpes');
   const c2 = mk(FR.fr, 'France entière');
   if (c1) wrap.appendChild(c1);

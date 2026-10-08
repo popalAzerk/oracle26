@@ -139,3 +139,8 @@ footer a{color:var(--acc);text-decoration:none}
 .frlist::-webkit-scrollbar{width:6px}
 .frlist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:99px}
 .frlist::-webkit-scrollbar-track{background:transparent}
+
+/* lien "En savoir plus" — dépliage verbatims */
+.enplus{ background:none;border:none;cursor:pointer;padding:0;
+  color:#64d2ff;font:inherit;font-size:11px;text-decoration:underline;
+  margin-top:4px;display:inline-block }

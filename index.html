@@ -7,7 +7,7 @@
 <meta name="description" content="Dashboard temps réel des problèmes client Apple : tendances, historique, exemples concrets.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=5">
 </head>
 <body>
 <canvas id="grain"></canvas>
@@ -23,7 +23,7 @@
   <div>
     <div class="sur">SIGNAL CLIENT APPLE</div>
     <h1>Ce qui se casse en ce moment<br>— détecté en continu.</h1>
-    <p class="sub">Chaque nuit, les conversations clients (réseaux, forums) sont collectées puis classées par composant. Le résultat alimente l'anticipation Genius&nbsp;Bar&nbsp;: que va-t-on nous apporter demain&nbsp;?</p>
+    <p class="sub" id="hero-sub">Que va-t-on nous apporter demain&nbsp;?</p>
     <div class="kpis">
       <div class="kpi"><div class="v" id="kpi-total">0</div><div class="l">Mentions actives</div></div>
       <div class="kpi"><div class="v" id="kpi-cats">0</div><div class="l">Composants suivis</div></div>
@@ -83,7 +83,7 @@
 </footer>
 
 <script src="data.js?v=$(date +%Y%m%d%H)"></script>
-<script src="data.fr.js?v=202610080217"></script>
-<script src="app.js?v=5"></script>
+<script src="data.fr.js?v=202610080548"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
