@@ -225,6 +225,31 @@ exCats.forEach(([k,v], i)=>{
 /* ---------- footer (crédit + période) ---------- */
 $('updated').textContent = 'données : ' + (DATA.updated||'') + ' · ' + (DATA.period||'');
 
+/* ---------- starfield : particules animées (HUD) ---------- */
+(function starfield(){
+  const g = $('starfield'); if (!g) return;
+  const ctx = g.getContext('2d');
+  g.width = innerWidth; g.height = innerHeight;
+  const N = 70;
+  const pts = Array.from({length:N}, () => ({
+    x: Math.random()*g.width, y: Math.random()*g.height,
+    r: Math.random()*1.4+.4, p: Math.random()*Math.PI*2,
+    s: .4+Math.random()*.8
+  }));
+  (function draw(t){
+    ctx.clearRect(0,0,g.width,g.height);
+    for (const p of pts){
+      const a = .25 + .55*Math.abs(Math.sin(t/1400*p.s + p.p));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(74,227,255,${a})`;
+      ctx.shadowColor = '#4ae3ff'; ctx.shadowBlur = 6;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })(0);
+})();
+
 /* ---------- grain CRT léger ---------- */
 (function grain(){
   const g = $('grain'); const ctx = g.getContext('2d');
