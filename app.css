@@ -8,7 +8,8 @@
 html{scroll-behavior:smooth;background:var(--noir)}
 body{background:var(--noir);color:#e8f2ff;font-family:var(--mono);overflow-x:hidden}
 ::selection{background:var(--mag);color:#020308}
-::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar{width:6px;height:6px}
+html{scrollbar-width:thin;scrollbar-color:rgba(74,227,255,.35) #020308}
 ::-webkit-scrollbar-track{background:var(--noir)}
 ::-webkit-scrollbar-thumb{background:rgba(74,227,255,.35)}
 #fx{position:fixed;inset:0;z-index:0;pointer-events:none}

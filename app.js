@@ -78,22 +78,22 @@ function astro(el, rows, opt){
     let an = -Math.PI/2;
     rows.forEach((r, i)=>{
       const ang = (r[1]/tot) * 6.2832 * e;
-      // largeur du segment ∝ part (mecanique "astre à facettes") :
-      const w1 = (W/2 - 30) * (.42 + .45 * r[1]/tot);
+      const col = PAL[i % PAL.length];
+      // rayon ∝ part ("astre à facettes") :
+      const w1 = (W/2 - 40) * (.45 + .40 * r[1]/tot);
+      const lw = Math.max(16, W * .052);
       x.beginPath();
-      x.arc(cx, cy, w1, an + .035, an + ang - .035);
-      x.strokeStyle = PAL[i % PAL.length];
-      x.lineWidth = Math.max(10, W*.05 * (0.5 + r[1]/tot*1.6));
-      x.lineCap = 'butt';
-      x.shadowColor = PAL[i % PAL.length]; x.shadowBlur = 18;
-      x.stroke();
-      // télémétrie : petites lignes radiales entre segments
+      x.arc(cx, cy, w1, an + .04, an + ang - .04);
+      x.strokeStyle = col; x.lineWidth = lw; x.lineCap = 'butt';
+      x.shadowColor = col; x.shadowBlur = 20; x.stroke();
       x.shadowBlur = 0;
-      x.strokeStyle = 'rgba(232,242,255,.25)'; x.lineWidth = 1;
+      // spoke : relie le bord du noyau au segment, dans la couleur :
+      x.strokeStyle = col; x.globalAlpha = .35; x.lineWidth = 1.2;
       x.beginPath();
-      x.moveTo(cx + Math.cos(an)*24, cy + Math.sin(an)*24);
-      x.lineTo(cx + Math.cos(an)*(w1 + 16), cy + Math.sin(an)*(w1 + 16));
+      x.moveTo(cx + Math.cos(an + ang/2)*W*.11, cy + Math.sin(an + ang/2)*W*.11);
+      x.lineTo(cx + Math.cos(an + ang/2)*(w1 - lw/2 - 6), cy + Math.sin(an + ang/2)*(w1 - lw/2 - 6));
       x.stroke();
+      x.globalAlpha = 1;
       an += ang;
     });
     // noyau :
