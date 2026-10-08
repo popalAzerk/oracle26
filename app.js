@@ -110,7 +110,11 @@ sorted.forEach(([k,v], i)=>{
       <div class="cdcomments">
         ${comments.length? comments.map(c=>{const t=(c&&c.text_tr)||c&&c.text||c||'';return `<blockquote class="cdq">« ${String(t).replace(/</g,'&lt;')} »</blockquote>`}).join('')
           : '<p class="emute">Aucun commentaire collecté sur ce composant.</p>'}
-      </div>`;
+      </div>
+      ${(window.PULSE_SOURCES&&PULSE_SOURCES.sources[k]&&PULSE_SOURCES.sources[k].length)?`<div class="cdpress">
+        <div class="cdptitle">DANS LA PRESSE</div>
+        ${PULSE_SOURCES.sources[k].map(ar=>`<a class="cdpart" href="${ar.url}" target="_blank" rel="noopener"><span class="cdpdate">${ar.date}</span><span class="cdpttl">${ar.title}</span><span class="cdpsrc">${ar.src} →</span></a>`).join('')}
+      </div>`:''}`;
     const drawSpark = ()=>{ const c=$('cat-spark'); if(!c) return;
       if(c.clientWidth<10){ requestAnimationFrame(drawSpark); return; }
       spark(c, serie, m.color); };
