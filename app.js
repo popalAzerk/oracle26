@@ -16,6 +16,36 @@ const CAT_META = {
 };
 const ALL_CATS = Object.keys(CAT_META);
 
+/* ---------- top issues : faits confirmés, sourcés ---------- */
+(function topIssues(){
+  const list = $('issues-list');
+  if(!list || !window.PULSE_ISSUES || !PULSE_ISSUES.issues.length) return;
+  const TAGC = {'Rappel produit':'#ff9f0a','Écran':'#4ae3ff','Réparabilité':'#30d158','Prix':'#ffd60a','iOS':'#bf5af2','Sécurité':'#ff453a'};
+  PULSE_ISSUES.issues.forEach((it,i)=>{
+    const el = document.createElement('article');
+    el.className = 'iss';
+    el.innerHTML = `
+      <div class="isshead" role="button" tabindex="0">
+        <span class="itag" style="color:${TAGC[it.tag]||'#888'}">${it.tag}</span>
+        <span class="issdate">${it.date}</span>
+      </div>
+      <h3 class="isstitle">${it.title}</h3>
+      <p class="issshort">${it.short}</p>
+      <div class="issmore" hidden>
+        <p>${it.more}</p>
+        <p class="isssrc">Source : <a href="${it.url}" target="_blank" rel="noopener">${it.src}</a></p>
+      </div>
+      <button class="issbtn" type="button">En savoir plus</button>`;
+    const more = el.querySelector('.issmore');
+    const btn = el.querySelector('.issbtn');
+    const toggle = ()=>{ more.hidden = !more.hidden; btn.textContent = more.hidden ? 'En savoir plus' : 'Réduire'; };
+    btn.onclick = toggle;
+    el.querySelector('.isshead').onclick = toggle;
+    list.appendChild(el);
+    el.style.setProperty('--d', (.15+i*.08)+'s');
+  });
+})();
+
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 function fmt(n){ return n.toLocaleString('fr-FR'); }

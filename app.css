@@ -180,3 +180,17 @@ footer a{color:var(--acc);text-decoration:none}
 .brow:hover{ background:rgba(255,255,255,.05) }
 /* prog sans colonne série */
 #prog .pval{ display:none }
+
+/* ---- top issues ---- */
+#issues-list{display:grid;gap:12px}
+.iss{border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 16px;background:rgba(255,255,255,.03)}
+.isshead{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.itag{font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.issdate{color:var(--mut);font-size:11px}
+.isstitle{margin:8px 0 6px;font-size:15px;line-height:1.35}
+.issshort{margin:0;color:#b9b9c3;font-size:13px;line-height:1.55}
+.issmore{margin-top:10px;border-top:1px dashed rgba(255,255,255,.12);padding-top:10px}
+.issmore p{margin:0 0 8px;color:#a8a8b2;font-size:12.5px;line-height:1.6}
+.isssrc a{color:var(--acc,#4ae3ff);text-decoration:none;border-bottom:1px dotted}
+.issbtn{margin-top:10px;background:none;border:1px solid rgba(255,255,255,.16);color:var(--acc,#4ae3ff);font:inherit;font-size:11px;letter-spacing:.06em;padding:6px 12px;border-radius:999px;cursor:pointer}
+.issbtn:hover{background:rgba(74,227,255,.08)}
