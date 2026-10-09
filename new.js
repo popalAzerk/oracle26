@@ -241,7 +241,11 @@ function openZoom(k){
   // verbatims + presse :
   const exs=(D.examples||{})[k]||[], pres=SRC[k]||[];
   const flux = (exs.length?`<div class="flxt">Comment les clients le vivent</div>`+exs.map(v=>{
-    const t=String((v&&v.text_tr)||v&&v.text||v||'');
+    let t=String((v&&v.text_tr)||v&&v.text||v||'');
+    // nettoyage artefacts scrape : fil d'Ariane / puces / doublons séparateurs
+    t=t.replace(/(^|\n)\s*(Accueil\s*>[\s\S]*?(?=\n|$))/g,'')
+       .replace(/Faits clés\s*-\s*[▪•·\-]*\s*/g,'')
+       .replace(/\n{2,}/g,'\n').trim();
     let vis=t.length>290?t.slice(0,290).replace(/\s+\S*$/,'')+'…':t;
     return `<p class="flx" style="--c:${col}">${vis}<span class="fsrc">signal client</span></p>`;}).join(''):'')
     +(pres.length?`<div class="flxt">Dans la presse</div>`+pres.slice(0,3).map(a=>
