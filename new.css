@@ -232,3 +232,7 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 #linkstat{font-size:8px;letter-spacing:.28em;color:var(--t3);margin-top:2px}
 #linkstat b{color:#5cf2ff;font-weight:400}
 /* paquets : légère traînée gérée en canvas (déjà) */
+
+/* compteur paquets : taille lisible */
+#linkstat{font-size:9px;letter-spacing:.26em;color:var(--t2);margin-top:4px}
+#linkstat b{font-size:13px;color:#5cf2ff;text-shadow:0 0 8px rgba(92,242,255,.8);font-variant-numeric:tabular-nums}

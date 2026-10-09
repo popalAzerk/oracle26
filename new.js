@@ -56,12 +56,12 @@ addEventListener('mousemove',e=>{
     // jonctions lumineuses clignotantes (activité réseau) :
     for(const j of junctions){
       const p=.5+.5*Math.sin(t*.001+j.ph);
-      x.beginPath();x.arc(j.x,j.y,1.6+p*1.2,0,6.29);
-      x.fillStyle='rgba(92,242,255,'+(.18+.4*p).toFixed(3)+')';
+      const r2=1.5+p*1.6;
+      x.beginPath();x.rect(j.x-r2,j.y-r2,r2*2,r2*2);
+      x.fillStyle='rgba(92,242,255,'+(.2+.45*p).toFixed(3)+')';
       x.fill();
-      x.beginPath();x.rect(j.x-1.5,j.y-1.5,3,3);
-      x.fillStyle='rgba(92,242,255,'+(.1+.25*p).toFixed(3)+')';
-      x.fill();
+      x.strokeStyle='rgba(92,242,255,'+(.28+p*.3).toFixed(3)+')';
+      x.lineWidth=1;x.strokeRect(j.x-r2-2,j.y-r2-2,(r2+2)*2,(r2+2)*2);
     }
     requestAnimationFrame(d);
   })(0);
