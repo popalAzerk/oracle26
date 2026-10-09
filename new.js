@@ -83,31 +83,30 @@ function placeMur(){
     // arcs brisés : 2 anneaux de 3-5 arcs d'amplitudes inégales, certains
     // doublés, avec ticks perpendiculaires et micro-carrés — jamais fermés
     const R=64, R2=92, rnd=Math.random;
-    function arcs(r, n){
+    function arcs(r0, n){
       let a=(rnd()*6.28), out='';
       for(let i=0;i<n;i++){
         const span=.6+rnd()*1.6, w=(i%2? 2.6: 1)+ (rnd()<.25?2.2:0);
         const a0=a, a1=a+span; a=a1+.25+rnd()*.8; // vide entre arcs
-        const x0=r+Math.cos(a0)*r0, y0=r+Math.sin(a0)*r0;
-        const x1=r+Math.cos(a1)*r0, y1=r+Math.sin(a1)*r0;
+        const x0=100+Math.cos(a0)*r0, y0=100+Math.sin(a0)*r0;
+        const x1=100+Math.cos(a1)*r0, y1=100+Math.sin(a1)*r0;
         const large=a1-a0>Math.PI?1:0;
         out+=`<path d="M ${x0} ${y0} A ${r0} ${r0} 0 ${large} 1 ${x1} ${y1}" stroke="rgba(120,235,255,${.35+rnd()*.4})" stroke-width="${w}" fill="none"/>`;
         // tick perpendiculaire à la fin :
         if(rnd()<.5){
-          const tx=r+Math.cos(a1)*(r0+5), ty=r+Math.sin(a1)*(r0+5);
-          const tx2=r+Math.cos(a1)*(r0-5), ty2=r+Math.sin(a1)*(r0-5);
+          const tx=100+Math.cos(a1)*(r0+5), ty=100+Math.sin(a1)*(r0+5);
+          const tx2=100+Math.cos(a1)*(r0-5), ty2=100+Math.sin(a1)*(r0-5);
           out+=`<line x1="${tx}" y1="${ty}" x2="${tx2}" y2="${ty2}" stroke="rgba(160,245,255,.7)" stroke-width="1.2"/>`;
         }
         // micro-carré semé :
         if(rnd()<.45){
-          const xm=r+Math.cos(a0)*r0, ym=r+Math.sin(a0)*r0;
+          const xm=100+Math.cos(a0)*r0, ym=100+Math.sin(a0)*r0;
           out+=`<rect x="${xm-1.6}" y="${ym-1.6}" width="3.2" height="3.2" fill="rgba(180,250,255,.6)"/>`;
         }
       }
       return out;
     }
-    const r0=R; // rayon utilisé par arcs()
-    const arcs1=arcs(R,4), arcs2=(function(){const save=r0; r0=R2; const v=arcs(R2,3); r0=save; return v;})();
+    const arcs1=arcs(R,4), arcs2=arcs(R2,3);
     // peigne radial sur un secteur (top-droit) : 9 blocs pleins/contours
     let pei='';
     for(let i=0;i<9;i++){
