@@ -43,8 +43,8 @@ function placeMur(){
     const jx=(Math.random()-.5)*24, jy=(Math.random()-.5)*24;
     const el=document.createElement('div');
     el.className='bsq';el.dataset.k=k;
-    el.style.setProperty('--dx',(cx+Math.cos(ang)*rad+jx-W/2)+'px');
-    el.style.setProperty('--dy',(cy+Math.sin(ang)*rad+jy-H/2)+'px');
+    el.style.setProperty('--dx',(cx+Math.cos(ang)*rad+jx)+'px');
+    el.style.setProperty('--dy',(cy+Math.sin(ang)*rad+jy)+'px');
     const d=Math.min(86, 30+n/nMax*58);
     el.innerHTML=`<div class="blk" style="--c:${COL[k]||'#8f8f9f'}">
       <div class="dot" style="--d:${d}px;--pt:${3+n/12}s;--pd:${i*.4}s"></div>
