@@ -33,18 +33,41 @@ function placeMur(){
   const mur=$('#mur'); if(!mur) return;
   mur.innerHTML='';
   const W=innerWidth,H=innerHeight,cx=W/2,cy=H*.44;
-  const RMAX = Math.min(W,H)*.40;   // tout doit tenir : max 40% du petit axe
+  const RMAX = Math.min(W,H)*.40;
+  // --- placement équilibré : angle de tranche fixe (~90° entre gros) ---
+  // Ordre par importance : 0 au centre, puis alternance haut/droite/bas/gauche
+  const ANG = [-90, 45, 175, 285, -35, 95, 215, 335].map(a=>a*Math.PI/180);
+  // rayon croissant par rang (0 centre, périphériques) — mais rayon MIN pour
+  // que les 4 premières sphères forment une vraie couronne, pas un grumeau :
+  const pos = [];
   rows.forEach((r,i)=>{
-    const [k,n]=r, nMax=rows[0][1];
-    // loi d'éloignement : 0 (centre) → RMAX, en pas réguliers
-    const rad = (i===0?0: RMAX * (i/(rows.length-1)));
-    // angle : répartition dorée autour du centre
-    const ang = -Math.PI/2 + i*2.399;   // phyllotaxe : angle d'or
-    const jx=(Math.random()-.5)*24, jy=(Math.random()-.5)*24;
+    const rad = (i===0?0: RMAX*(0.42+0.58*(i-1)/(rows.length-1)));
+    const ang = ANG[i] + (Math.random()-.5)*0.14;
+    pos.push({i, k:r[0], n:r[1], x:cx+Math.cos(ang)*rad+(Math.random()-.5)*20,
+                   y:cy+Math.sin(ang)*rad+(Math.random()-.5)*20});
+  });
+  // décollisions : 2 passes — si 2 blocs trop proches, éloigner le 2e radialement
+  for (let pass=0; pass<2; pass++){
+    for (let a=0;a<pos.length;a++){
+      for (let b=a+1;b<pos.length;b++){
+        const A=pos[a], B=pos[b], MARGIN=110;
+        const d=Math.hypot(A.x-B.x, A.y-B.y);
+        if (d < MARGIN && d > 0.01){
+          const push=(MARGIN-d)/2, ux=(B.x-A.x)/d, uy=(B.y-A.y)/d;
+          A.x-=ux*push; A.y-=uy*push; B.x+=ux*push; B.y+=uy*push;
+        }
+      }
+    }
+  }
+  // clamp aux marges sûres (pas sous le HUD haut / pas dans la légende bas) :
+  const MINX=170, MAXX=W-170, MINY=140, MAXY=H-150;
+  pos.forEach(p=>{p.x=Math.max(MINX,Math.min(MAXX,p.x));p.y=Math.max(MINY,Math.min(MAXY,p.y));});
+  rows.forEach((r,i)=>{
+    const p=pos[i], [k,n]=r, nMax=rows[0][1];
     const el=document.createElement('div');
     el.className='bsq';el.dataset.k=k;
-    el.style.setProperty('--dx',(cx+Math.cos(ang)*rad+jx)+'px');
-    el.style.setProperty('--dy',(cy+Math.sin(ang)*rad+jy)+'px');
+    el.style.setProperty('--dx',p.x+'px');
+    el.style.setProperty('--dy',p.y+'px');
     const d=Math.min(86, 30+n/nMax*58);
     el.innerHTML=`<div class="blk" style="--c:${COL[k]||'#8f8f9f'}">
       <div class="dot" style="--d:${d}px;--pt:${3+n/12}s;--pd:${i*.4}s"></div>
