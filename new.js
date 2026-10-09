@@ -24,7 +24,7 @@ addEventListener('mousemove',e=>{
     lines=[];junctions=[];
     const n=Math.round(Math.min(W*H/150000, 26));
     for(let i=0;i<n;i++){
-      const horiz=Math.random()<.6;
+      let horiz=Math.random()<.6;
       let px=Math.random()*W, py=Math.random()*H;
       const pts=[[px,py]];
       const seg=2+(Math.random()*3|0);
