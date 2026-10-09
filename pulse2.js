@@ -67,42 +67,30 @@ const TOUCH = 'ontouchstart' in window;
   const nMax=Math.max(...rows.map(r2=>r2[1]));
   rows.forEach(([k,n],i)=>{
     const an=-2.2+i*.19, hh=Math.max(4,(n/nMax)*26),
-          w1=3, cx2=100+Math.cos(an)*54, cy2=100+Math.sin(an)*54;
-    const cc=(COL[k]||'#8f8f9f').match(/^#(..)(..)(..)$/);
-    const cr=parseInt(cc[1],16),cg=parseInt(cc[2],16),cb=parseInt(cc[3],16);
-    // barre du peigne = de rad de base vers l'extérieur, perpendiculaire
-    const bx=100+Math.cos(an)*56, by=100+Math.sin(an)*56,
+          w1=3, bx=100+Math.cos(an)*56, by=100+Math.sin(an)*56,
           dx=Math.cos(an), dy=Math.sin(an),
           px=bx-dy*(w1/2), py=by+dx*(w1/2);
+    const cc=(COL[k]||'#8f8f9f').match(/^#(..)(..)(..)$/);
+    const cr=parseInt(cc[1],16),cg=parseInt(cc[2],16),cb=parseInt(cc[3],16);
     arcs+=`<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="3" height="${hh.toFixed(1)}" fill="rgba(${cr},${cg},${cb},.85)" transform="rotate(${(an*57.3).toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)})"/>`;
   });
   svg.innerHTML=arcs;
 })();
 
-/* ---------- placement des cartes autour du noyau ---------- */
+/* ---------- cartes autour du noyau ---------- */
 const CARDS=[];
 function buildCards(){
-  const wrap=$('#cards'), stage=$('#stage');
-  wrap.innerHTML='';
-  const W=innerWidth, H=innerHeight,
-        cx=W/2, cy=H*.44,
-        // rayons : 2 couronnes rectangulaires adaptées à l'écran
-        coll=rows.length<=6?3:4,       // colonnes par couronne
-        xHalf=Math.min(W*.42, 480), yTop=132, yStep2=190;
-  CARDS.length=0;
+  const wrap=$('#cards');
+  const W=innerWidth, H=innerHeight;
+  wrap.innerHTML='';CARDS.length=0;
   rows.forEach(([k,n],i)=>{
     const el=document.createElement('div');
     el.className='card';el.dataset.k=k;
-    // disposition : 4 en couronne 1 (proche), reste en couronne 2
-    const ringIdx=i<4?0:1, posIn=i<4?i:i-4,
-          per=(ringIdx===0?4:rows.length-4),
-          ang=(ringIdx===0? posIn*(6.2832/4)-2.36 : posIn*(6.2832/per)-1.2),
-          rad=ringIdx===0? Math.min(W,H)*.30 : Math.min(W,H)*.46;
-    let x=cx+Math.cos(ang)*rad*(xHalf/ (W*.46)), y=cy+Math.sin(ang)*rad;
-    // clamp HUD
-    x=Math.max(240, Math.min(W-260, x));
-    y=Math.max(yTop, Math.min(H-150, y));
-    el.style.left=x+'px';el.style.top=y+'px';
+    // colonnes gauche/droite, 4 lignes : le noyau reste libre au centre
+    const col=i%2, row=Math.floor(i/2);
+    const colX = col===0? W*.5-380 : W*.5+380;
+    const colY = H*.12 + row*((H*.72-112)/3);
+    el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
     const pct=Math.round(n/TOT*100);
@@ -110,14 +98,12 @@ function buildCards(){
       <div class="chead"><span class="chk"></span><span class="ct">${FR[k]||k}</span><span class="ck">${String(i+1).padStart(2,'0')}</span></div>
       <div class="cbody"><span class="cbig">${String(n).padStart(2,'0')}</span><span class="cpc">${pct}%</span></div>
       <div class="cprog"><i></i></div>
-      <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>${(MC&&Object.keys(MC).length)?'MODELS '+(Object.keys(MC[k]||{}).length||'—'):'—'}</b></div>`;
+      <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>&#9656; ${Object.keys(MC[k]||{}).length||0} MODÈLES</b></div>`;
     wrap.appendChild(el);
-    // animation de la barre : après apparition
     const bar=el.querySelector('.cprog i');
     setTimeout(()=>{bar.style.width=pct+'%';}, 400+i*120);
     el.addEventListener('click',()=>openZoom(k));
     CARDS.push({el,k});
-    // lien svg carte→noyau
   });
   drawLinks();
 }
