@@ -172,12 +172,15 @@ addEventListener('resize',()=>{
 
 /* ---------- tri des dates FR "jj/mm" ou "jj/aa" ---------- */
 function stamp(d){
+  // formats mixtes des sources : « 30/09 » = JJ/MM · « 08/26 » = MM/AA
   if(!d) return 0;
-  const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/?(\d{2,4})?/);
+  const m=String(d).match(/(\d{1,2})\/(\d{1,2})/);
   if(!m) return 0;
-  let [,j,mo,y]=[...m];
-  y=y? (y.length===2? 2000+ +y : +y) : new Date().getFullYear();
-  return y*10000+ +mo*100+ +j;
+  let [a,b]=[+m[1],+m[2]];
+  if(b>12) return (2000+b)*10000+ a*100+ 15;   // MM/AA → milieu du mois
+  if(a>12) return new Date().getFullYear()*10000+ b*100+ a; // JJ>31 impossible → JJ/MM
+  // les deux ≤12 : JJ/MM assumé (30/09, 08/03…)
+  return new Date().getFullYear()*10000+ b*100+ a;
 }
 
 /* ---------- zoom carte ---------- */
