@@ -103,12 +103,7 @@ function openZoom(k){
   const mt=mr.reduce((s,r)=>s+r[1],0)||1;
   // répartition orbitale des modèles : cercles concentriques (les cités
   // souvent = orbite interne). Rayon ∝ rang, taille ∝ part.
-  let orbs='';
-  mr.slice(0,10).forEach((r,i)=>{
-    const ring=(i===0?0:1+Math.floor(i/2.2));
-    rad=ring;
-  });
-  orbs=`<div class="zringwrap" style="--col:${col}">${mr.slice(0,10).map((r,i)=>{
+  let orbs=`<div class="zringwrap" style="--col:${col}">${mr.slice(0,10).map((r,i)=>{
     const ring=i===0?0:1+Math.floor(i/2.2);
     const rad=ring===0?0:60+ring*52;
     const size=20+Math.round(r[1]/mt*52);
