@@ -107,7 +107,7 @@ function placeMur(){
       return out;
     }
     let baseAn=-1.9;
-    const arcs1=arcs(R,4), arcs2=arcs(R2,3);
+    const arcs1=arcs(R,4); let arcs2=arcs(R2,3);
     // arc ACCENT blanc = tranche de la cat n°1 (angle miroir du peigne)
     {
       const a0b=baseAn-.07, a1b=baseAn+.14*1;
