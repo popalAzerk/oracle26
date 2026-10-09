@@ -1,46 +1,25 @@
 <!doctype html>
 <html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PULSE — Veille signal client · Genius Bar</title>
-<link rel="stylesheet" href="app.css?v=22">
+<title>PULSE — signal client Apple</title>
+<link rel="stylesheet" href="new.css?v=F">
 </head><body>
-<div id="preloader"><div class="pl-ring"><svg viewBox="0 0 100 100"><circle class="pl-track" cx="50" cy="50" r="44"/><circle class="pl-arc" cx="50" cy="50" r="44"/></svg></div><div class="pl-count">000</div><div class="pl-lbl">INITIALISATION DU SIGNAL</div></div>
 <canvas id="fx"></canvas>
-<header id="hud">
- <div class="hud-corner tl"><span class="hud-brand">PULSE<i>·</i>APPLE</span><span class="hud-sub">VEILLE SIGNAL CLIENT · GENIUS BAR</span></div>
- <div class="hud-corner tr"><a class="hud-link" href="search.html">RECHERCHE →</a></div>
- <div class="hud-corner bl"><span class="hud-tel" id="hud-clock">--:--:--</span></div>
- <div class="hud-corner br"><span class="hud-tel" id="hud-maj">MAJ --</span></div>
-</header>
-<main>
- <section id="hero-sec">
-  <h1 class="giant">PULSE</h1>
-  <div class="rig"><canvas id="astro" width="640" height="640"></canvas>
-   <div class="astro-hud">
-    <div class="astro-tick"><i>SIGNAL COLLECTÉ</i><b id="astro-total">000</b></div>
-    <div class="astro-tick r"><i>COMPOSANTS SUIVIS</i><b id="astro-cats">0</b></div>
-   </div></div>
-  <p class="hero-sub">Ce que les clients Apple vivent vraiment. Classé par composant matériel, à chaque collecte nocturne.</p>
-  <div class="scroll-cue"><span></span>SCROLL POUR INSPECTER</div>
- </section>
- <section class="num-sec" id="s1">
-  <div class="num-h"><span class="num">01</span><span class="num-lbl">SIGNATURE DU SIGNAL</span></div>
-  <h2>D'où viennent les signaux — les iPhone cités</h2>
-  <div class="signature"><canvas id="astro2" width="720" height="720"></canvas><div id="sig-leg" class="sig-leg"></div></div>
- </section>
- <section class="num-sec" id="s2">
-  <div class="num-h"><span class="num">02</span><span class="num-lbl">COMPOSANTS · DU PLUS AU MOINS SIGNALÉ</span></div>
-  <h2>Là où ça casse</h2>
-  <div id="comps"></div><div id="detail" class="detail" hidden></div>
- </section>
- <section class="num-sec" id="s3">
-  <div class="num-h"><span class="num">03</span><span class="num-lbl">PREUVES · MOT POUR MOT</span></div>
-  <h2>La voix du comptoir Genius</h2>
-  <div id="profs"></div>
- </section>
- <footer><span class="hud-sub">PULSE v2 — collecte nocturne Harken + Laya</span><span class="hud-sub" id="foot-upd">DONNÉES DU --</span></footer>
-</main>
+<div id="vignette"></div>
+<div id="mur"></div>
+
+<div id="hud"><div class="hb">PULSE<i>·</i>SIGNAL</div><div class="hs">VEILLE CLIENT · APPLE GENIUS BAR</div></div>
+<div id="hudr"></div>
+<div id="hudl"><div id="legende"></div></div>
+<div id="hudb"></div>
+
+<div id="zoom"><div id="zin"></div></div>
+
+<div id="intro">
+ <div class="it">PULSE</div><div class="il">LE SIGNAL COMME MATIÈRE</div>
+ <div class="ibar"><i></i></div>
+</div>
 <script src="data.js?v=20261014"></script>
 <script src="issues.js?v=4"></script>
-<script src="app.js?v=20261014b"></script>
+<script src="new.js?v=H"></script>
 </body></html>
