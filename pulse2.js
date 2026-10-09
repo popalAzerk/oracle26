@@ -101,19 +101,31 @@ function buildCards(){
     el.innerHTML=`
       <div class="chead"><span class="chk"></span><span class="ct">${FR[k]||k}</span><span class="ck">${String(i+1).padStart(2,'0')}</span></div>
       <div class="cbody"><span class="cbig">${String(n).padStart(2,'0')}</span><span class="cpc">${pct}%</span></div>
+      <div class="cspark">${sparkBars(k)}</div>
       <div class="cprog"><i></i></div>
       <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>&#9656; ${Object.keys(MC[k]||{}).length||0} MODÈLES</b></div>`;
     wrap.appendChild(el);
     const bar=el.querySelector('.cprog i');
     setTimeout(()=>{bar.style.width=pct+'%';}, 400+i*120);
+    // mini-graph : barres modèles montent en cascade après la carte
+    el.querySelectorAll('.sp i').forEach((si,j)=>{
+      setTimeout(()=>{ si.style.width=si.style.getPropertyValue('--w'); }, 700+i*120+j*90);
+    });
     el.addEventListener('click',()=>openZoom(k));
     CARDS.push({el,k});
   });
   // défensif : les liens exigent un layout complètement posé
-  try{ buildHist(); }catch(e){}
   try{ drawLinks(); }
   catch(e){ console.warn('drawLinks reporté:', e.message); }
   setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
+}
+/* ═══ mini-graphique animé par carte (répartition par modèle) ═══ */
+function sparkBars(k){
+  const list=Object.entries(MC[k]||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!list.length) return '';
+  const mx=list[0][1];
+  return list.map(([m,c],i)=>`
+    <div class="sp" title="${m}"><span class="spl">${m.replace('iPhone ','')}</span><span class="srail"><i style="--w:${Math.round(c/mx*100)}%"></i></span><b>${c}</b></div>`).join('');
 }
 function cardPt(el){
   const s=$('#stage').getBoundingClientRect(), r=el.getBoundingClientRect();
@@ -234,38 +246,8 @@ function closeZoom(){
 $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom()});
 
 /* ---------- HUD ---------- */
-
-/* ═══════════ HISTOGRAMME ANIMÉ ═══════════ */
-function buildHist(){
-  const h=$('#hist'); if(!h) return;
-  const W=860,H=144, bw=Math.floor(W/rows.length)-14;
-  let bars='', labels='', vals='';
-  const mx=Math.max(...rows.map(r=>r[1]));
-  rows.forEach((r,i)=>{
-    const x=8+i*(bw+14), hh=Math.max(6,(r[1]/mx)*(H-56)), y=H-30-hh;
-    bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh.toFixed(0)}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
-    labels+=`<text class="hlab" x="${x+bw/2}" y="${H-10}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
-    vals+=hh>26? `<text class="hval" x="${x+bw/2}" y="${(y+15).toFixed(0)}" text-anchor="middle">${r[1]}</text>` : `<text class="hval" x="${x+bw/2}" y="${(y-5).toFixed(0)}" text-anchor="middle">${r[1]}</text>`;
-  });
-  h.classList.add('on');
-  h.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${bars}${labels}${vals}</svg>`;
-  // animation : les barres partent de 0 et montent avec stagger
-  [...h.querySelectorAll('.hbar')].forEach((b,i)=>{
-    const hh=+b.getAttribute('height'), y=+b.getAttribute('y');
-    b.style.transformOrigin=`center ${y+hh}px`;
-    b.style.transform='scaleY(0)';
-    setTimeout(()=>{ b.style.transition='transform 1s cubic-bezier(.2,.8,.25,1)';
-      b.style.transform='scaleY(1)'; }, 200+i*110);
-  });
-  [...h.querySelectorAll('.hval')].forEach((v,i)=>{
-    v.style.opacity='0';
-    setTimeout(()=>{ v.style.transition='opacity .5s'; v.style.opacity='1'; }, 700+i*110);
-  });
-}
-
 (function(){
-  const srcCount=Object.values(SRC).reduce((a,v)=>a+v.length,0)||8;
-  $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
+$('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
   $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div><div id="linkstat"><b id="srclink">${srcCount}</b> SOURCES EN LIGNE</div>`;
   setInterval(()=>{const e=$('#hudr .clock');if(e)e.textContent=new Date().toTimeString().slice(0,8);},1000);
 })();

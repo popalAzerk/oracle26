@@ -163,15 +163,15 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
     padding:8px 12px;bottom:14px;right:14px;backdrop-filter:blur(4px)}
 }
 
-/* ═══ histogramme animé ═══ */
-#hist{position:fixed;left:50%;bottom:46px;transform:translateX(-50%);
-  width:min(940px,92vw);z-index:6;pointer-events:none;opacity:0;
-  transition:opacity .8s .5s}
-#hist.on{opacity:1}
-#hist .hbar{filter:drop-shadow(0 0 6px rgba(110,225,255,.25))}
-#hist .hlab{font:600 9px 'SF Mono',Menlo,monospace;fill:#7d8ea0;letter-spacing:.12em}
-#hist .hval{font:700 12px 'SF Mono',Menlo,monospace;fill:#e8f6ff}
-@media (max-width:760px){ #hist{bottom:60px} #hist .hlab{font-size:7px} }
 
-#hist{bottom:10px}
-@media (min-width:761px){ #hist{width:min(860px,86vw)} }
+/* ═══ mini-graphique par carte ═══ */
+.cspark{display:flex;flex-direction:column;gap:4px;margin:6px 0 9px}
+.cspark .sp{display:grid;grid-template-columns:56px 1fr 20px;align-items:center;gap:7px}
+.cspark .spl{font:600 8px var(--m,monospace);color:#93a7b8;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cspark .srail{display:block;position:relative;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.cspark .sp i{position:absolute;left:0;top:0;height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 40%,transparent));
+  box-shadow:0 0 8px color-mix(in srgb,var(--c) 35%,transparent);
+  transition:width .8s cubic-bezier(.2,.85,.25,1)}
+.cspark .sp b{font:700 10px var(--m,monospace);color:var(--c);text-align:right}
+@media (max-width:760px){ .cspark .sp{grid-template-columns:44px 1fr 16px;gap:5px} .cspark .spl{font-size:7px} }
