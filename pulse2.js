@@ -128,8 +128,8 @@ function sparkBars(k, n){
   // modèle (plus bas) au plus signalé (plus haut) — trend montante lisible
   const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>a[1]-b[1]).slice(-14);
   if(!list.length) return '';
-  const mx=Math.max(...list.map(x=>x[1]));
-  const Wv=100, Hv=40, lo=Hv-4, hi=5;
+  const mx=Math.max(...list.map(x=>x[1]), Math.round(TOT*.30)); // normalisation globale : les 2-3% restent PLATS (honnête)
+  const Wv=100, Hv=40, lo=Hv-5, hi=10;
   const pts=list.map(([m,c],i)=>{
     const x=3+i*((Wv-8)/Math.max(1,list.length-1));
     const y=lo-((c/mx)*(lo-hi));

@@ -166,8 +166,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 
 /* ═══ mini-graphe ligne+zone par carte (zigzag blanc + aire dégradée) ═══ */
 .cspark{margin:4px 0 6px}
-.cspark .zcwrap{position:relative;height:44px}
-.cspark .zlinfo{position:absolute;right:0;top:-3px;font:600 7.5px var(--fm,'SF Mono',monospace);
+.cspark .zcwrap{position:relative;height:48px;padding-top:4px}
+.cspark .zlinfo{position:absolute;right:0;top:-6px;font:600 7.5px var(--fm,'SF Mono',monospace);
   letter-spacing:.06em;color:color-mix(in srgb,var(--c) 70%,#9fc4dd);opacity:.75}
 .cspark .zline{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .cspark .zline .zarea{opacity:0;transition:opacity .9s ease .15s}
@@ -179,4 +179,4 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   transition:opacity .4s, transform .55s cubic-bezier(.2,1.5,.4,1)}
 .cspark .zhead.on{opacity:1;transform:scale(1)}
 .cspark .zhead circle:last-child{filter:drop-shadow(0 0 4px #fff)}
-@media (max-width:760px){ .cspark .zcwrap{height:38px} }
+@media (max-width:760px){ .cspark .zcwrap{height:40px;padding-top:3px} }
