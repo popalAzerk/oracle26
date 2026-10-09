@@ -172,3 +172,6 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 #hist .hlab{font:600 9px 'SF Mono',Menlo,monospace;fill:#7d8ea0;letter-spacing:.12em}
 #hist .hval{font:700 12px 'SF Mono',Menlo,monospace;fill:#e8f6ff}
 @media (max-width:760px){ #hist{bottom:60px} #hist .hlab{font-size:7px} }
+
+#hist{bottom:10px}
+@media (min-width:761px){ #hist{width:min(860px,86vw)} }

@@ -93,7 +93,7 @@ function buildCards(){
     const narrow = W<760;
     const offset = narrow? Math.min(W*.5-90, 120) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
-    const colY = (narrow? H*.30 : H*.12) + row*((narrow? H*.62 : H*.72-112)/3);
+    const colY = (narrow? H*.30 : H*.10) + row*((narrow? H*.62 : H*.62)/3);
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
@@ -238,13 +238,13 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 /* ═══════════ HISTOGRAMME ANIMÉ ═══════════ */
 function buildHist(){
   const h=$('#hist'); if(!h) return;
-  const W=940,H=210, bw=Math.floor(W/rows.length)-14;
+  const W=860,H=150, bw=Math.floor(W/rows.length)-14;
   let bars='', labels='', vals='';
   const mx=Math.max(...rows.map(r=>r[1]));
   rows.forEach((r,i)=>{
-    const x=8+i*(bw+14), hh=(r[1]/mx)*(H-64), y=H-34-hh;
-    bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
-    labels+=`<text class="hlab" x="${x+bw/2}" y="${H-14}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
+    const x=8+i*(bw+14), hh=Math.max(6,(r[1]/mx)*(H-52)), y=H-30-hh;
+    bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh.toFixed(0)}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
+    labels+=`<text class="hlab" x="${x+bw/2}" y="${H-10}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
     vals+=`<text class="hval" x="${x+bw/2}" y="${y-7}" text-anchor="middle">${r[1]}</text>`;
   });
   h.classList.add('on');
