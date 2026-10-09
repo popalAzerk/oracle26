@@ -256,14 +256,20 @@ $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.
 
 /* ---------- intro ---------- */
 (function(){
+  // filet : si l'intro n'a pas fini dans 4 s (crash silencieux), sortie forcée
+  setTimeout(()=>{ const it=document.getElementById('intro');
+    if(it && !it.classList.contains('off')){ it.classList.add('off');
+      if(!document.querySelectorAll('.card').length){ try{ buildCards(); }catch(e){} } }
+  }, 4000);
   // état initial noyau selon écran (le listener resize ne couvre le 1er load)
-  const fit=()=>{
-    const cw=document.getElementById('corewrap');
-    if(!cw) return;
+  try{
+  const cw=document.getElementById('corewrap');
+  const fit=()=>{ if(!cw) return;
     cw.style.width=cw.style.height=(innerWidth<760?Math.min(120,innerWidth*.3):Math.min(180,innerWidth*.18))+'px';
     cw.style.top=(innerWidth<760?'14%':'44%');
   };
   fit();addEventListener('resize',fit);
+  }catch(e){ console.warn('fit:', e.message); }
   const bar=$('#intro .ibar i');let p=0;
   const iv=setInterval(()=>{p=Math.min(1,p+.08+Math.random()*.08);bar.style.width=p*100+'%';
     if(p>=1){clearInterval(iv);setTimeout(()=>{$('#intro').classList.add('off');
