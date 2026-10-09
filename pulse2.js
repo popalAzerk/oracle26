@@ -95,7 +95,7 @@ function buildCards(){
     const narrow = W<760;
     const offset = narrow? Math.min(W*.5-90, 120) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
-    const colY = (narrow? H*.30 : H*.10) + row*((narrow? H*.62 : H*.62)/3);
+    const colY = (narrow? H*.30 : H*.155) + row*((narrow? H*.60 : H*.60)/3);
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
