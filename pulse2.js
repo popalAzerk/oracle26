@@ -130,6 +130,8 @@ function drawLinks(){
     // noeud d'ancrage côté carte
     out+=`<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="3" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".8"/>`;
   });
+  svg.innerHTML=out;
+  window.__LINK_DBG={out_len:out.length, cards:CARDS.length};
   // paquets lumineux en circulation sur les liens (animateMotion natif)
   svg.querySelectorAll('path.lk').forEach((path,i)=>{
     const pk=CARDS[i]&&CARDS[i].k; if(!pk) return;
