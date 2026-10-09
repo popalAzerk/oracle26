@@ -154,7 +154,7 @@ function sparkBars(k, n){
     <g class="zhead"><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.6" fill="var(--c)" opacity=".28"/>
       <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="1.7" fill="#fff"/></g>
   </svg>`;
-  return `<div class="zcwrap"><span class="zlinfo">${list[0][0].replace('iPhone ','')} · ${last[0].replace('iPhone ','')} — ${n} MODÈLES</span>${svg}</div>`;
+  return `<div class="zcwrap"><span class="zlinfo">${list[0][0].replace('iPhone ','')} · ${last[2].replace('iPhone ','')} — ${n} MODÈLES</span>${svg}</div>`;
 }
 function cardPt(el){
   const s=$('#stage').getBoundingClientRect(), r=el.getBoundingClientRect();
