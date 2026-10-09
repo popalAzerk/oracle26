@@ -239,14 +239,14 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 
 /* ===== PULSE 3.7 : mécanique HUD (arcs brisés, peigne, ticks) ===== */
 /* Le hub : anneau composé d'arcs SVG + canvas peigne — via pseudo + SVG */
-.hub .hubarc{position:absolute;inset:-26px;width:calc(100% + 52px);height:calc(100% + 52px);
-  pointer-events:none;animation:hubspein 40s linear infinite}
-.hub .hubarc.rev{inset:-38px;width:calc(100% + 76px);height:calc(100% + 76px);
-  animation:hubspein 65s linear infinite reverse}
-@keyframes hubspein{to{transform:rotate(360deg)}}
-/* peigne radial : blocs dressés autour d'un secteur du hub */
-.hub .peigne{position:absolute;inset:-14px;width:calc(100% + 28px);height:calc(100% + 28px);
-  pointer-events:none;animation:hubspein 90s linear infinite}
+/* svg de jauge du hub — UNIQUE règle (centrés sur le hubcore) */
+.hub .hubarc{position:absolute;left:50%;top:50%;width:156px;height:156px;
+  transform:translate(-50%,-50%);pointer-events:none;animation:hubspein 40s linear infinite}
+.hub .hubarc.rev{width:196px;height:196px;
+  transform:translate(-50%,-50%);animation:hubspein 65s linear infinite reverse}
+@keyframes hubspein{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.hub .peigne{position:absolute;left:50%;top:50%;width:156px;height:156px;
+  transform:translate(-50%,-50%);pointer-events:none;}
 /* micro-frise de carrés au-dessus/dessous du hub */
 .hub .fris{position:absolute;left:50%;width:64px;transform:translateX(-50%);display:flex;justify-content:space-between;pointer-events:none}
 .hub .fris i{width:3px;height:3px;background:rgba(92,242,255,var(--op,.8))}
@@ -260,7 +260,5 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 /* centrer les enfants absolus du hub sur le point 0,0 */
 .hub .hubcore{position:relative;transform:translate(-50%,-50%)}
 .hub .hubmesh{position:absolute;left:-78px;top:-78px;width:156px;height:156px}
-.hub .hubarc,.hub .hubarc.rev,.hub .peigne{left:-78px;top:-78px;inset:auto;width:156px;height:156px;
-  transform-origin:center center}
-.hub .hubarc{transform:translate(0,0)}
+
 .hub .fris.top{bottom:96px} .hub .fris.bot{top:96px}
