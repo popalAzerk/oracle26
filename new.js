@@ -241,7 +241,9 @@ function openZoom(k){
   // verbatims + presse :
   const exs=(D.examples||{})[k]||[], pres=SRC[k]||[];
   const flux = (exs.length?`<div class="flxt">Comment les clients le vivent</div>`+exs.map(v=>{
-    const t=(v&&v.text_tr)||v&&v.text||v||'';return `<p class="flx" style="--c:${col}">${String(t).slice(0,290)}<span class="fsrc">signal client</span></p>`;}).join(''):'')
+    const t=String((v&&v.text_tr)||v&&v.text||v||'');
+    let vis=t.length>290?t.slice(0,290).replace(/\s+\S*$/,'')+'…':t;
+    return `<p class="flx" style="--c:${col}">${vis}<span class="fsrc">signal client</span></p>`;}).join(''):'')
     +(pres.length?`<div class="flxt">Dans la presse</div>`+pres.slice(0,3).map(a=>
       `<a class="press" style="--c:${col}" href="${a.url}" target="_blank" rel="noopener"><span class="pt">${a.title}</span><span class="pm">${a.date||''} · ${a.src} →</span></a>`).join(''):'');
   $('#zin').innerHTML=`<div class="zhead"><div class="zc">COMPOSANT ${String(rows.findIndex(r=>r[0]===k)+1).padStart(2,'0')} / ${String(rows.length).padStart(2,'0')} · ${Math.round((D.counts[k]||0)/TOT*100)}% DU SIGNAL</div><h2 style="text-shadow:0 0 26px ${col}44">${FR[k]}</h2></div>
