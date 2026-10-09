@@ -126,6 +126,7 @@ function drawLinks(){
   const C={x:cc.left-s.left+cc.width/2, y:cc.top-s.top+cc.height/2};
   if(!isFinite(C.x)||!isFinite(C.y)){ requestAnimationFrame(drawLinks); return; }
   let out='';
+  window.__DL_DBG={cards:CARDS.length, finis:isFinite(C.x), core:Math.round(C.x)+','+Math.round(C.y)};
   CARDS.forEach(({el,k},i)=>{
     const p=cardPt(el);
     // contrôle : courbe douce vers le noyau
@@ -135,7 +136,7 @@ function drawLinks(){
     out+=`<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="3" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".8"/>`;
   });
   svg.innerHTML=out;
-  window.__LINK_DBG={out_len:out.length, cards:CARDS.length};
+  window.__LINK_DBG={out_len:out.length, cards:CARDS.length, children:svg.childElementCount};
   // paquets lumineux en circulation sur les liens (animateMotion natif)
   svg.querySelectorAll('path.lk').forEach((path,i)=>{
     const pk=CARDS[i]&&CARDS[i].k; if(!pk) return;
