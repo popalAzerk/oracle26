@@ -116,15 +116,19 @@ function placeMur(){
       arcs2+=`<path d="M ${x0} ${y0} A ${R2} ${R2} 0 0 1 ${x1} ${y1}" stroke="rgba(255,255,255,.92)" stroke-width="3.4" fill="none"/>`;
     }
     // peigne radial sur un secteur (top-droit) : 9 blocs pleins/contours
-    // peigne = HISTOGRAMME radial réel : hauteur ∝ mentions de chaque cat
-    const ns=rows.map(r=>r[1]);
+    // peigne = HISTOGRAMME radial : hauteur/épaisseur ∝ mentions, couleur
+    // de la catégorie, centré autour de la tranche n°1
+    const ns=rows.map(r=>r[1]); const nMax=Math.max(...ns);
     let pei='';
     for(let i=0;i<ns.length;i++){
-      const an=baseAn + i*.14, rad=R2-6,
-            hh=Math.max(3, (ns[i]/Math.max(...ns))*22),
+      const an=baseAn + (i-(ns.length-1)/2)*.16, rad=R2-6,
+            hh=Math.max(3,(ns[i]/nMax)*24),
             cx2=100+Math.cos(an)*rad, cy2=100+Math.sin(an)*rad,
-            w=2+(ns[i]/Math.max(...ns))*1.6;
-      pei+=`<rect x="${cx2-w/2}" y="${cy2-hh}" width="${w}" height="${hh}" fill="rgba(230,250,255,.82)" transform="rotate(${an*57.3+90} ${cx2} ${cy2})"/>`;
+            w=2.2+(ns[i]/nMax)*2;
+      const cc=COL[rows[i][0]]||'#8f8f9f';
+      const cm=cc.match(/^#(..)(..)(..)$/),
+            cr=parseInt(cm[1],16), cg=parseInt(cm[2],16), cb=parseInt(cm[3],16);
+      pei+=`<rect x="${cx2-w/2}" y="${cy2-hh}" width="${w}" height="${hh}" fill="rgba(${cr},${cg},${cb},.85)" transform="rotate(${(an*57.3+90).toFixed(1)} ${cx2.toFixed(1)} ${cy2.toFixed(1)})"/>`;
     }
     const svg1=`<svg class="hubarc" viewBox="0 0 200 200">${arcs1}</svg>`;
     const svg2=`<svg class="hubarc rev" viewBox="0 0 200 200">${arcs2}${pei}</svg>`;
