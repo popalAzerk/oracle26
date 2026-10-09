@@ -88,9 +88,12 @@ function buildCards(){
     const el=document.createElement('div');
     el.className='card';el.dataset.k=k;
     // colonnes gauche/droite, 4 lignes : le noyau reste libre au centre
+    // large : gouttière 380px · étroit (mobile) : 2 colonnes collées au bord
     const col=i%2, row=Math.floor(i/2);
-    const colX = col===0? W*.5-380 : W*.5+380;
-    const colY = H*.12 + row*((H*.72-112)/3);
+    const narrow = W<760;
+    const offset = narrow? Math.min(W*.5-90, 120) : 380;
+    const colX = col===0? W*.5-offset : W*.5+offset;
+    const colY = (narrow? H*.30 : H*.12) + row*((narrow? H*.62 : H*.72-112)/3);
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
@@ -119,8 +122,9 @@ function drawLinks(){
   const svg=$('#links'), s=$('#stage'), W=innerWidth,H=innerHeight;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.style.width=W+'px';svg.style.height=H+'px';
-  const cc=$('#corewrap').getBoundingClientRect();
+  const cc=$('#core').getBoundingClientRect();
   const C={x:cc.left-s.left+cc.width/2, y:cc.top-s.top+cc.height/2};
+  if(!isFinite(C.x)||!isFinite(C.y)){ requestAnimationFrame(drawLinks); return; }
   let out='';
   CARDS.forEach(({el,k},i)=>{
     const p=cardPt(el);
@@ -151,6 +155,12 @@ function drawLinks(){
   });
 }
 addEventListener('resize',()=>{buildCards()});
+// taille du noyau selon l'écran (évite d'engloutir les colonnes mobiles)
+addEventListener('resize',()=>{
+  const cw=document.getElementById('corewrap');
+  cw.style.width=cw.style.height=(innerWidth<760?Math.min(120,innerWidth*.3):Math.min(180,innerWidth*.18))+'px';
+  document.getElementById('corewrap').style.top=(innerWidth<760?'14%':'44%');
+});
 
 /* ---------- tri des dates FR "jj/mm" ou "jj/aa" ---------- */
 function stamp(d){
@@ -222,6 +232,14 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 
 /* ---------- intro ---------- */
 (function(){
+  // état initial noyau selon écran (le listener resize ne couvre le 1er load)
+  const fit=()=>{
+    const cw=document.getElementById('corewrap');
+    if(!cw) return;
+    cw.style.width=cw.style.height=(innerWidth<760?Math.min(120,innerWidth*.3):Math.min(180,innerWidth*.18))+'px';
+    cw.style.top=(innerWidth<760?'14%':'44%');
+  };
+  fit();addEventListener('resize',fit);
   const bar=$('#intro .ibar i');let p=0;
   const iv=setInterval(()=>{p=Math.min(1,p+.08+Math.random()*.08);bar.style.width=p*100+'%';
     if(p>=1){clearInterval(iv);setTimeout(()=>{$('#intro').classList.add('off');
