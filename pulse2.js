@@ -7,6 +7,8 @@ const FR  = {battery:'Batterie',screen:'Écran',charging:'Charge',cosmetic:'Esth
 const $ = s => document.querySelector(s);
 const rows = Object.entries(D.counts||{}).sort((a,b)=>b[1]-a[1]);
 const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
+// MC[model]={cat:n} → inversé : MC_BY_CAT[cat]={model:n}
+const MC_BY_CAT = (()=>{ const r={}; for(const [m,cats] of Object.entries(MC)) for(const [k2,v] of Object.entries(cats)) (r[k2]=r[k2]||{})[m]=v; return r; })();
 const NAV = typeof navigator!=='undefined'?navigator:{userAgent:''};
 const TOUCH = 'ontouchstart' in window;
 
@@ -103,7 +105,7 @@ function buildCards(){
       <div class="cbody"><span class="cbig">${String(n).padStart(2,'0')}</span><span class="cpc">${pct}%</span></div>
       <div class="cspark">${sparkBars(k)}</div>
       <div class="cprog"><i></i></div>
-      <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>&#9656; ${Object.keys(MC[k]||{}).length||0} MODÈLES</b></div>`;
+      <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>&#9656; ${Object.keys(MC_BY_CAT[k]||{}).length} MODÈLES</b></div>`;
     wrap.appendChild(el);
     const bar=el.querySelector('.cprog i');
     setTimeout(()=>{bar.style.width=pct+'%';}, 400+i*120);
@@ -121,7 +123,7 @@ function buildCards(){
 }
 /* ═══ mini-graphique animé par carte (répartition par modèle) ═══ */
 function sparkBars(k){
-  const list=Object.entries(MC[k]||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
   if(!list.length) return '';
   const mx=list[0][1];
   return list.map(([m,c],i)=>`
