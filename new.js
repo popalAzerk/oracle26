@@ -247,13 +247,15 @@ function openZoom(k){
     // si la citation commence par un fragment de navigation :
     // artefacts de scrape : préfixe navigation « Accueil > X > Y » (les
     // segments font <30 chars, coupés au DERNIER '>' des 120 premiers chars)
+    // ordre : (1) bloc 'Faits clés' + puces, (2) puis navigation résiduelle
+    t=t.replace(/Faits clés[\s\S]{0,6}?\n\n?[-▪•·\s]*/g,'')
+       .replace(/(^|\n)\s*[-▪•·]+\s*/g,'')
+       .replace(/\n{2,}/g,'\n').trim();
     const nav=t.slice(0,120);
     if(/^(?:Accueil|Home)\b/.test(nav)){
       const cut=nav.lastIndexOf('>');
-      if(cut>6){ t=t.slice(cut+1); }
+      if(cut>6){ t=t.slice(cut+1).replace(/^\s*/,''); }
     }
-    t=t.replace(/Faits clés\s*(-|—|\|)?\s*[▪•·]*\s*/g,'')
-       .replace(/\n{2,}/g,'\n').trim();
     let vis=t.length>290?t.slice(0,290).replace(/\s+\S*$/,'')+'…':t;
     return `<p class="flx" style="--c:${col}">${vis}<span class="fsrc">signal client</span></p>`;}).join(''):'')
     +(pres.length?`<div class="flxt">Dans la presse</div>`+pres.slice(0,3).map(a=>
