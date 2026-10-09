@@ -8,7 +8,7 @@ const rows = Object.entries(D.counts||{}).sort((a,b)=>b[1]-a[1]);
 const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
 
 /* parallax : offsets partagés (déclarés en tête pour éviter TDZ) */
-let PLX=0, PLY=0;
+var PLX=0, PLY=0;
 addEventListener('mousemove',e=>{
   PLX=(e.clientX/innerWidth-.5)*-18;
   PLY=(e.clientY/innerHeight-.5)*-14;
@@ -67,7 +67,7 @@ addEventListener('mousemove',e=>{
   })(0);
 })();
 
-let NODES=[];
+var NODES=[];
 function placeMur(){
   const mur=$('#mur'); if(!mur) return;
   mur.innerHTML='';
