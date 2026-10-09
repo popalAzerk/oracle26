@@ -110,8 +110,13 @@ function openZoom(k){
       const ring=i<3?1:(i<6?2:3);
       const rad=Math.round(MAXR*ring/3.4)+18;
       const size=Math.max(16,Math.round(16+r[1]/mt*40));
-      if(!seen[ring]){ seen[ring]=1; rings+=`<div class="zring" style="width:${rad*2}px;height:${rad*2}px"></div>`; }
-      const a=i*2.399+(ring*1.1);
+      if(!seen[ring]){ seen[ring]={n:0}; rings+=`<div class="zring" style="width:${rad*2}px;height:${rad*2}px"></div>`; }
+      // répartition RÉGULIÈRE par ring (pas d'angle d'or intra-ring = pas de
+      // clusters) : angle = base du ring + pas régulier
+      const perRing = ring===1?3:(ring===2?3:4);
+      const base = ring===1?-90:(ring===2?0:-90);
+      const slot = seen[ring].n++;
+      const a = (base + slot*(360/perRing))*Math.PI/180;
       mods+=`<div class="zmod" style="left:calc(50% + ${Math.round(Math.cos(a)*rad)}px);top:calc(50% + ${Math.round(Math.sin(a)*rad)}px);--d:${size}px;--col:${col}"><b></b><span>${r[0].replace('iPhone ','')}</span><i class="zp">${Math.round(r[1]/mt*100)} %</i></div>`;
     });
     return `<div class="zringwrap">${rings}${mods}</div>`;
