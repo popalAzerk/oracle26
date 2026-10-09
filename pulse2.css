@@ -157,3 +157,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 /* flux continu le long des liens */
 #links path.lk{animation:lkflow 1.6s linear infinite}
 @keyframes lkflow{to{stroke-dashoffset:-14}}
+
+@media (max-width:760px){
+  #hudb{background:rgba(6,11,17,.86);border:1px solid var(--bord);border-radius:8px;
+    padding:8px 12px;bottom:14px;right:14px;backdrop-filter:blur(4px)}
+}
