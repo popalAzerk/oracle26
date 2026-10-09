@@ -121,10 +121,10 @@ function placeMur(){
     const ns=rows.map(r=>r[1]); const nMax=Math.max(...ns);
     let pei='';
     for(let i=0;i<ns.length;i++){
-      const an=baseAn + (i-(ns.length-1)/2)*.16, rad=R2-6,
-            hh=Math.max(3,(ns[i]/nMax)*24),
+      const an=baseAn + (i-(ns.length-1)/2)*.2, rad=R2-6,
+            hh=Math.max(4,(ns[i]/nMax)*34),
             cx2=100+Math.cos(an)*rad, cy2=100+Math.sin(an)*rad,
-            w=2.2+(ns[i]/nMax)*2;
+            w=3+(ns[i]/nMax)*2.6;
       const cc=COL[rows[i][0]]||'#8f8f9f';
       const cm=cc.match(/^#(..)(..)(..)$/),
             cr=parseInt(cm[1],16), cg=parseInt(cm[2],16), cb=parseInt(cm[3],16);
