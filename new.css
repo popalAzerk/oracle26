@@ -236,3 +236,31 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 /* compteur paquets : taille lisible */
 #linkstat{font-size:9px;letter-spacing:.26em;color:var(--t2);margin-top:4px}
 #linkstat b{font-size:13px;color:#5cf2ff;text-shadow:0 0 8px rgba(92,242,255,.8);font-variant-numeric:tabular-nums}
+
+/* ===== PULSE 3.7 : mécanique HUD (arcs brisés, peigne, ticks) ===== */
+/* Le hub : anneau composé d'arcs SVG + canvas peigne — via pseudo + SVG */
+.hub .hubarc{position:absolute;inset:-26px;width:calc(100% + 52px);height:calc(100% + 52px);
+  pointer-events:none;animation:hubspein 40s linear infinite}
+.hub .hubarc.rev{inset:-38px;width:calc(100% + 76px);height:calc(100% + 76px);
+  animation:hubspein 65s linear infinite reverse}
+@keyframes hubspein{to{transform:rotate(360deg)}}
+/* peigne radial : blocs dressés autour d'un secteur du hub */
+.hub .peigne{position:absolute;inset:-14px;width:calc(100% + 28px);height:calc(100% + 28px);
+  pointer-events:none;animation:hubspein 90s linear infinite}
+/* micro-frise de carrés au-dessus/dessous du hub */
+.hub .fris{position:absolute;left:50%;width:64px;transform:translateX(-50%);display:flex;justify-content:space-between;pointer-events:none}
+.hub .fris i{width:3px;height:3px;background:rgba(92,242,255,var(--op,.8))}
+.hub .fris.top{bottom:calc(100% + 16px)} .hub .fris.bot{top:calc(100% + 16px)}
+
+/* sphères : halo renforcé par double contour façon réticule */
+.bsq .dot::after{content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid color-mix(in srgb, var(--c) 38%, transparent);
+  border-style:dashed}
+
+/* centrer les enfants absolus du hub sur le point 0,0 */
+.hub .hubcore{position:relative;transform:translate(-50%,-50%)}
+.hub .hubmesh{position:absolute;left:-78px;top:-78px;width:156px;height:156px}
+.hub .hubarc,.hub .hubarc.rev,.hub .peigne{left:0;top:0;inset:auto;width:156px;height:156px;
+  transform-origin:center}
+.hub .hubarc{transform:translate(0,0)}
+.hub .fris.top{bottom:96px} .hub .fris.bot{top:96px}

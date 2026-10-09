@@ -78,7 +78,50 @@ function placeMur(){
   const hub=document.createElement('div');
   hub.className='hub';
   hub.style.setProperty('--hx',cx+'px');hub.style.setProperty('--hy',cy+'px');
-  hub.innerHTML=`<div class="hubcore"><b>${TOT}</b><span>SIGNAL</span></div>`;
+  hub.innerHTML=`<div class="hubmesh"></div><div class="hubcore"><b>${TOT}</b><span>SIGNAL</span></div>`
+  + (function(){
+    // arcs brisés : 2 anneaux de 3-5 arcs d'amplitudes inégales, certains
+    // doublés, avec ticks perpendiculaires et micro-carrés — jamais fermés
+    const R=64, R2=92, rnd=Math.random;
+    function arcs(r, n){
+      let a=(rnd()*6.28), out='';
+      for(let i=0;i<n;i++){
+        const span=.6+rnd()*1.6, w=(i%2? 2.6: 1)+ (rnd()<.25?2.2:0);
+        const a0=a, a1=a+span; a=a1+.25+rnd()*.8; // vide entre arcs
+        const x0=r+Math.cos(a0)*r0, y0=r+Math.sin(a0)*r0;
+        const x1=r+Math.cos(a1)*r0, y1=r+Math.sin(a1)*r0;
+        const large=a1-a0>Math.PI?1:0;
+        out+=`<path d="M ${x0} ${y0} A ${r0} ${r0} 0 ${large} 1 ${x1} ${y1}" stroke="rgba(120,235,255,${.35+rnd()*.4})" stroke-width="${w}" fill="none"/>`;
+        // tick perpendiculaire à la fin :
+        if(rnd()<.5){
+          const tx=r+Math.cos(a1)*(r0+5), ty=r+Math.sin(a1)*(r0+5);
+          const tx2=r+Math.cos(a1)*(r0-5), ty2=r+Math.sin(a1)*(r0-5);
+          out+=`<line x1="${tx}" y1="${ty}" x2="${tx2}" y2="${ty2}" stroke="rgba(160,245,255,.7)" stroke-width="1.2"/>`;
+        }
+        // micro-carré semé :
+        if(rnd()<.45){
+          const xm=r+Math.cos(a0)*r0, ym=r+Math.sin(a0)*r0;
+          out+=`<rect x="${xm-1.6}" y="${ym-1.6}" width="3.2" height="3.2" fill="rgba(180,250,255,.6)"/>`;
+        }
+      }
+      return out;
+    }
+    const r0=R; // rayon utilisé par arcs()
+    const arcs1=arcs(R,4), arcs2=(function(){const save=r0; r0=R2; const v=arcs(R2,3); r0=save; return v;})();
+    // peigne radial sur un secteur (top-droit) : 9 blocs pleins/contours
+    let pei='';
+    for(let i=0;i<9;i++){
+      const an=(-1.9+ i*.13), rad=R2-6, hh=6+ rnd()*10;
+      const cx2=100+Math.cos(an)*rad, cy2=100+Math.sin(an)*rad;
+      const w=2+rnd()*2.2;
+      const solid=i%2===0;
+      pei+=`<rect x="${cx2-w/2}" y="${cy2-hh}" width="${w}" height="${hh}" ${solid?'fill="rgba(230,250,255,.85)"':'fill="none" stroke="rgba(140,240,255,.6)" stroke-width="1"'} transform="rotate(${an*57.3+90} ${cx2} ${cy2})"/>`;
+    }
+    const svg1=`<svg class="hubarc" viewBox="0 0 200 200">${arcs1}</svg>`;
+    const svg2=`<svg class="hubarc rev" viewBox="0 0 200 200">${arcs2}${pei}</svg>`;
+    return svg1+svg2;
+  })()
+  + `<div class="fris top">${Array.from({length:9},(_,i)=>`<i style="--op:${(0.9-i*.09).toFixed(2)}"></i>`).join('')}</div><div class="fris bot">${Array.from({length:9},(_,i)=>`<i style="--op:${(0.2+i*.09).toFixed(2)}"></i>`).join('')}</div>`;
   mur.appendChild(hub);
   NODES.push({el:hub,k:'__hub',base:{x:cx,y:cy},drift:{px:Math.random()*6.28,amp:5,sp:.0009}});
   const A1=[-90,40,150,255].map(a=>a*Math.PI/180),
