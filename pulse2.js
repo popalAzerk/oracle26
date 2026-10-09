@@ -109,10 +109,11 @@ function buildCards(){
     wrap.appendChild(el);
     const bar=el.querySelector('.cprog i');
     setTimeout(()=>{bar.style.width=pct+'%';}, 400+i*120);
-    // mini-graph : barres modèles montent en cascade après la carte
-    el.querySelectorAll('.sp i').forEach((si,j)=>{
-      setTimeout(()=>{ si.style.width=si.style.getPropertyValue('--w'); }, 700+i*120+j*90);
+    // mini-graphe vertical : barres montent en cascade puis flèche se dessine
+    el.querySelectorAll('.vbars i').forEach((bi,j)=>{
+      setTimeout(()=>{ bi.classList.add('up'); }, 500+i*120+j*55);
     });
+    setTimeout(()=>{ el.querySelectorAll('.sarrow').forEach(sa=>sa.classList.add('go')); }, 500+i*120+ el.querySelectorAll('.vbars i').length*55 +300);
     el.addEventListener('click',()=>openZoom(k));
     CARDS.push({el,k});
   });
@@ -121,13 +122,27 @@ function buildCards(){
   catch(e){ console.warn('drawLinks reporté:', e.message); }
   setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
 }
-/* ═══ mini-graphique animé par carte (répartition par modèle) ═══ */
+/* ═══ mini-graphe vertical animé par carte (barres + flèche ascendante) ═══ */
+const NMOD = Object.keys(MC).length;
 function sparkBars(k){
-  const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>a[1]-b[1]).slice(-14); // ascendant gauche→droite
   if(!list.length) return '';
-  const mx=list[0][1];
-  return list.map(([m,c],i)=>`
-    <div class="sp" title="${m}"><span class="spl">${m.replace('iPhone ','')}</span><span class="srail"><i style="--w:${Math.round(c/mx*100)}%"></i></span><b>${c}</b></div>`).join('');
+  const mx=list[list.length-1][1];
+  const bars=list.map(([m,c],i)=>`<i style="--h:${Math.max(12,Math.round(c/mx*100))}%;--i:${i}" title="${m} · ${c}"></i>`).join('');
+  // flèche épousant la tendance
+  const pts=list.map(([m,c],i)=>[4+i*(92/(list.length-1)), 36- Math.max(3,Math.round(c/mx*26))]);
+  const last=pts[pts.length-1];
+  let d='M'+pts[0][0]+' '+pts[0][1];
+  for(let j=1;j<pts.length;j++){ const p=pts[j-1],q=pts[j]; d+=` Q${((p[0]+q[0])/2).toFixed(1)} ${((p[1]+q[1])/2-1).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }
+  const arrow=`<svg class="sarrow" viewBox="0 0 100 40" preserveAspectRatio="none">
+    <defs><linearGradient id="ag-${k}" gradientUnits="userSpaceOnUse" x1="4" y1="36" x2="${last[0]}" y2="${last[1]}">
+      <stop offset="0" stop-color="var(--c)" stop-opacity="0"/><stop offset=".55" stop-color="var(--c)" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+    <path class="strail" d="${d}" pathLength="1" fill="none" stroke="url(#ag-${k})" stroke-width="2.2" stroke-linecap="round"/>
+    <g class="shead"><circle class="shalo" cx="${last[0]}" cy="${last[1]}" r="7" fill="var(--c)" opacity=".55"/>
+      <polygon points="${(last[0]+3).toFixed(1)},${(last[1]-3.4).toFixed(1)} ${(last[0]-3.6).toFixed(1)},${(last[1]-0.4).toFixed(1)} ${(last[0]-0.6).toFixed(1)},${(last[1]+3.2).toFixed(1)}" fill="#fff"/></g>
+  </svg>`;
+  return `<div class="vbwrap"><div class="vbars">${bars}</div><div class="vbase"></div>${arrow}</div>`;
 }
 function cardPt(el){
   const s=$('#stage').getBoundingClientRect(), r=el.getBoundingClientRect();
