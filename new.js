@@ -74,7 +74,7 @@ function placeMur(){
   const W=innerWidth,H=innerHeight,cx=W/2,cy=H*.44;
   const RMAX=Math.min(W,H)*.38;
   // — MAILLAGE RÉSEAU : hub central + composants sur 2 couronnes —
-  NODES=[];
+  NODES.length=0;
   const hub=document.createElement('div');
   hub.className='hub';
   hub.style.setProperty('--hx',cx+'px');hub.style.setProperty('--hy',cy+'px');
