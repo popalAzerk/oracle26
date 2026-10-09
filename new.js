@@ -103,13 +103,19 @@ function openZoom(k){
   const mt=mr.reduce((s,r)=>s+r[1],0)||1;
   // répartition orbitale des modèles : cercles concentriques (les cités
   // souvent = orbite interne). Rayon ∝ rang, taille ∝ part.
-  let orbs=`<div class="zringwrap" style="--col:${col}">${mr.slice(0,10).map((r,i)=>{
-    const ring=i===0?0:1+Math.floor(i/2.2);
-    const rad=ring===0?0:60+ring*52;
-    const size=20+Math.round(r[1]/mt*52);
-    const a=i*2.399; // angle d'or
-    return `<div class="zmod ${i===0?'sun':'orbmod'}" style="left:calc(50% + ${Math.cos(a)*rad}px);top:calc(50% + ${Math.sin(a)*rad}px);--d:${size}px;--col:${col}"><span>${r[0].replace('iPhone ','')}</span><b>${Math.round(r[1]/mt*100)}%</b></div>`;
-  }).join('')}</div>`;
+  orbs=(()=>{
+    const MAXR=200;
+    let rings='', mods='', seen={};
+    mr.slice(0,10).forEach((r,i)=>{
+      const ring=i<3?1:(i<6?2:3);
+      const rad=Math.round(MAXR*ring/3.4)+18;
+      const size=Math.max(16,Math.round(16+r[1]/mt*40));
+      if(!seen[ring]){ seen[ring]=1; rings+=`<div class="zring" style="width:${rad*2}px;height:${rad*2}px"></div>`; }
+      const a=i*2.399+(ring*1.1);
+      mods+=`<div class="zmod" style="left:calc(50% + ${Math.round(Math.cos(a)*rad)}px);top:calc(50% + ${Math.round(Math.sin(a)*rad)}px);--d:${size}px;--col:${col}"><b></b><span>${r[0].replace('iPhone ','')}</span><i class="zp">${Math.round(r[1]/mt*100)} %</i></div>`;
+    });
+    return `<div class="zringwrap">${rings}${mods}</div>`;
+  })();
   // verbatims + presse :
   const exs=(D.examples||{})[k]||[], pres=SRC[k]||[];
   const flux = (exs.length?`<div class="flxt">Comment les clients le vivent</div>`+exs.map(v=>{
