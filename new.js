@@ -255,6 +255,8 @@ function openZoom(k){
     if(/^(?:Accueil|Home)\b/.test(nav)){
       const cut=nav.lastIndexOf('>');
       if(cut>6){ t=t.slice(cut+1).replace(/^\s*/,''); }
+      // résidu : segment terminal isolé du fil (un mot court collé au texte)
+      t=t.replace(/^(?:Mobile|Tech|Technologie|News|Actualit(?:é|e)s?|Forum|Communaut(?:é|e)\s*[A-Za-z]*)\s+(?=[A-ZÀ-Ö])/,'');
     }
     let vis=t.length>290?t.slice(0,290).replace(/\s+\S*$/,'')+'…':t;
     return `<p class="flx" style="--c:${col}">${vis}<span class="fsrc">signal client</span></p>`;}).join(''):'')
