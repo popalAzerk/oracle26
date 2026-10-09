@@ -134,13 +134,12 @@ function drawLinks(){
   window.__DL_DBG={cards:CARDS.length, finis:isFinite(C.x), core:Math.round(C.x)+','+Math.round(C.y)};
   CARDS.forEach(({el,k},i)=>{
     const p=cardPt(el);
-    // contrôle : courbe douce vers le noyau
-    const mx=(C.x+p.x)/2+(p.y-C.y)*.08, my=(C.y+p.y)/2-(p.x-C.x)*.08;
-    const top={x:p.x, y:p.y-46}; // bord supérieur de la carte
-    const mx=(C.x+top.x)/2+(top.y-C.y)*.14, my=(C.y+top.y)/2-(top.x-C.x)*.14;
-    out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${top.x.toFixed(0)} ${top.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
+    // courbe douce : du noyau vers le bord supérieur de la carte
+    const dst={x:p.x, y:p.y-46};
+    const mx=(C.x+dst.x)/2+(dst.y-C.y)*.14, my=(C.y+dst.y)/2-(dst.x-C.x)*.14;
+    out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
     // noeud d'ancrage côté carte
-    out+=`<circle cx="${top.x.toFixed(0)}" cy="${top.y.toFixed(0)}" r="3.4" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".9"/>`;
+    out+=`<circle cx="${dst.x.toFixed(0)}" cy="${dst.y.toFixed(0)}" r="3.4" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".9"/>`;
   });
   svg.innerHTML=out;
   window.__LINK_DBG={out_len:out.length, cards:CARDS.length, children:svg.childElementCount};
