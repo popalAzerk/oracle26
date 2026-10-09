@@ -187,6 +187,11 @@ function placeMur(){
 })();
 
 /* parallax : offsets partagés (souris → tout le maillage suit) */
+addEventListener('mousemove',e=>{
+  PLX=(e.clientX/innerWidth-.5)*-18;
+  PLY=(e.clientY/innerHeight-.5)*-14;
+},{passive:true});
+
 /* ---------- HUD ---------- */
 (function(){
   const up=D.updated||'--';
