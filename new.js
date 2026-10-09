@@ -33,13 +33,14 @@ function placeMur(){
   const mur=$('#mur'); if(!mur) return;
   mur.innerHTML='';
   const W=innerWidth,H=innerHeight,cx=W/2,cy=H*.44;
+  const RMAX = Math.min(W,H)*.40;   // tout doit tenir : max 40% du petit axe
   rows.forEach((r,i)=>{
     const [k,n]=r, nMax=rows[0][1];
-    // rayon : le plus signalé au centre, les autres s'éloignent
-    const rad = (i===0?0: 90+ i*95 + Math.min(innerWidth,H)*.055);
+    // loi d'éloignement : 0 (centre) → RMAX, en pas réguliers
+    const rad = (i===0?0: RMAX * (i/(rows.length-1)));
     // angle : répartition dorée autour du centre
     const ang = -Math.PI/2 + i*2.399;   // phyllotaxe : angle d'or
-    const jx=(Math.random()-.5)*40, jy=(Math.random()-.5)*40;
+    const jx=(Math.random()-.5)*24, jy=(Math.random()-.5)*24;
     const el=document.createElement('div');
     el.className='bsq';el.dataset.k=k;
     el.style.setProperty('--dx',(cx+Math.cos(ang)*rad+jx-W/2)+'px');
