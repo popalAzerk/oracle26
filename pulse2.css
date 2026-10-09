@@ -32,7 +32,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 #stage{position:fixed;inset:0;z-index:5}
 #corewrap{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);
   width:min(180px,18vw);height:min(180px,18vw);z-index:6}
-#core{position:relative;width:100%;height:100%;filter:drop-shadow(0 0 22px rgba(60,220,255,.28))}
+#links{position:absolute;left:0;top:0}
+#core{position:absolute;inset:0;filter:drop-shadow(0 0 22px rgba(60,220,255,.28))}
 .cjarcs{position:absolute;inset:0;width:100%;height:100%;animation:cjspin 46s linear infinite}
 .cjarcs.rev{animation:cjspin 70s linear infinite reverse}
 @keyframes cjspin{to{transform:rotate(360deg)}}
