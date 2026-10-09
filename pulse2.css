@@ -165,11 +165,11 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 
 
 /* ═══ mini-graphe vertical par carte (réf. shutterstock 2724555541) ═══ */
-.cspark{margin:6px 0 8px;--m:var(--c)}
-.cspark .vbwrap{position:relative;height:52px}
+.cspark{margin:4px 0 6px;--m:var(--c)}
+.cspark .vbwrap{position:relative;height:34px}
 .cspark .vbars{position:absolute;inset:0 14% 4px 2%;display:flex;align-items:flex-end;justify-content:space-between;gap:2px}
 .cspark .vbars i{flex:1;min-width:2px;max-width:9px;height:var(--h);border-radius:2px 2px 0 0;opacity:.9;
-  background:linear-gradient(to top, color-mix(in srgb,var(--c) 18%,rgba(10,22,38,.9)), color-mix(in srgb,var(--c) 75%,transparent) 70%, #cfeeff);
+  background:linear-gradient(to top, color-mix(in srgb,var(--c) 30%,rgba(8,18,32,.95)) 8%, color-mix(in srgb,var(--c) 78%,transparent) 72%, #d6f2ff);
   box-shadow:0 0 5px color-mix(in srgb,var(--c) 45%,transparent), 0 0 14px color-mix(in srgb,var(--c) 28%,transparent), inset 0 1px 0 rgba(215,245,255,.55);
   transform:scaleY(0);transform-origin:bottom;transition:transform .7s cubic-bezier(.2,.9,.25,1)}
 .cspark .vbars i.up{transform:scaleY(1)}

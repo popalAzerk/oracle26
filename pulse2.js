@@ -95,7 +95,7 @@ function buildCards(){
     const narrow = W<760;
     const offset = narrow? Math.min(W*.5-90, 120) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
-    const colY = (narrow? H*.30 : H*.155) + row*((narrow? H*.60 : H*.60)/3);
+    const colY = (narrow? H*.30 : H*.19) + row*((narrow? H*.58 : H*.555)/3);
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
@@ -130,8 +130,13 @@ function sparkBars(k){
   const mx=list[list.length-1][1];
   const bars=list.map(([m,c],i)=>`<i style="--h:${Math.max(12,Math.round(c/mx*100))}%;--i:${i}" title="${m} · ${c}"></i>`).join('');
   // flèche épousant la tendance
-  const pts=list.map(([m,c],i)=>[4+i*(92/(list.length-1)), 36- Math.max(3,Math.round(c/mx*26))]);
+  const pts=list.map(([m,c],i)=>[4+i*(92/(list.length-1)), 36- Math.max(2.5,Math.round(c/mx*26))]);
+  // garantir une SILHOUETTE ascendante (tendance, pas valeur absolue)
+  let run=pts[0][1];
+  for(let j=1;j<pts.length;j++){ pts[j][1]=Math.min(pts[j][1], run-1); run=pts[j][1]; }
   const last=pts[pts.length-1];
+  // tête de flèche pousse BEYOND la dernière barre (ne la masque pas)
+  const tip=[last[0]+3.5, last[1]-2.5];
   let d='M'+pts[0][0]+' '+pts[0][1];
   for(let j=1;j<pts.length;j++){ const p=pts[j-1],q=pts[j]; d+=` Q${((p[0]+q[0])/2).toFixed(1)} ${((p[1]+q[1])/2-1).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }
   const arrow=`<svg class="sarrow" viewBox="0 0 100 40" preserveAspectRatio="none">
@@ -139,8 +144,8 @@ function sparkBars(k){
       <stop offset="0" stop-color="var(--c)" stop-opacity="0"/><stop offset=".55" stop-color="var(--c)" stop-opacity=".75"/>
       <stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
     <path class="strail" d="${d}" pathLength="1" fill="none" stroke="url(#ag-${k})" stroke-width="2.2" stroke-linecap="round"/>
-    <g class="shead"><circle class="shalo" cx="${last[0]}" cy="${last[1]}" r="7" fill="var(--c)" opacity=".55"/>
-      <polygon points="${(last[0]+3).toFixed(1)},${(last[1]-3.4).toFixed(1)} ${(last[0]-3.6).toFixed(1)},${(last[1]-0.4).toFixed(1)} ${(last[0]-0.6).toFixed(1)},${(last[1]+3.2).toFixed(1)}" fill="#fff"/></g>
+    <g class="shead"><circle class="shalo" cx="${tip[0]+1.6}" cy="${tip[1]-1.6}" r="8" fill="var(--c)" opacity=".5"/>
+      <polygon points="${tip[0]},${tip[1]} ${(tip[0]-4.2).toFixed(1)},${(tip[1]+3).toFixed(1)} ${(tip[0]+2.6).toFixed(1)},${(tip[1]+3.4).toFixed(1)}" fill="#fff"/></g>
   </svg>`;
   return `<div class="vbwrap"><div class="vbars">${bars}</div><div class="vbase"></div>${arrow}</div>`;
 }
