@@ -245,7 +245,7 @@ function buildHist(){
     const x=8+i*(bw+14), hh=Math.max(6,(r[1]/mx)*(H-56)), y=H-30-hh;
     bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh.toFixed(0)}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
     labels+=`<text class="hlab" x="${x+bw/2}" y="${H-10}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
-    vals+=`<text class="hval" x="${x+bw/2}" y="${y-5}" text-anchor="middle">${r[1]}</text>`;
+    vals+=hh>26? `<text class="hval" x="${x+bw/2}" y="${(y+15).toFixed(0)}" text-anchor="middle">${r[1]}</text>` : `<text class="hval" x="${x+bw/2}" y="${(y-5).toFixed(0)}" text-anchor="middle">${r[1]}</text>`;
   });
   h.classList.add('on');
   h.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${bars}${labels}${vals}</svg>`;
