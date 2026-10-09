@@ -162,3 +162,13 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   #hudb{background:rgba(6,11,17,.86);border:1px solid var(--bord);border-radius:8px;
     padding:8px 12px;bottom:14px;right:14px;backdrop-filter:blur(4px)}
 }
+
+/* ═══ histogramme animé ═══ */
+#hist{position:fixed;left:50%;bottom:46px;transform:translateX(-50%);
+  width:min(940px,92vw);z-index:6;pointer-events:none;opacity:0;
+  transition:opacity .8s .5s}
+#hist.on{opacity:1}
+#hist .hbar{filter:drop-shadow(0 0 6px rgba(110,225,255,.25))}
+#hist .hlab{font:600 9px 'SF Mono',Menlo,monospace;fill:#7d8ea0;letter-spacing:.12em}
+#hist .hval{font:700 12px 'SF Mono',Menlo,monospace;fill:#e8f6ff}
+@media (max-width:760px){ #hist{bottom:60px} #hist .hlab{font-size:7px} }

@@ -110,6 +110,7 @@ function buildCards(){
     CARDS.push({el,k});
   });
   // défensif : les liens exigent un layout complètement posé
+  try{ buildHist(); }catch(e){}
   try{ drawLinks(); }
   catch(e){ console.warn('drawLinks reporté:', e.message); }
   setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
@@ -230,6 +231,35 @@ function closeZoom(){
 $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom()});
 
 /* ---------- HUD ---------- */
+
+/* ═══════════ HISTOGRAMME ANIMÉ ═══════════ */
+function buildHist(){
+  const h=$('#hist'); if(!h) return;
+  const W=940,H=210, bw=Math.floor(W/rows.length)-14;
+  let bars='', labels='', vals='';
+  const mx=Math.max(...rows.map(r=>r[1]));
+  rows.forEach((r,i)=>{
+    const x=8+i*(bw+14), hh=(r[1]/mx)*(H-64), y=H-34-hh;
+    bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
+    labels+=`<text class="hlab" x="${x+bw/2}" y="${H-14}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
+    vals+=`<text class="hval" x="${x+bw/2}" y="${y-7}" text-anchor="middle">${r[1]}</text>`;
+  });
+  h.classList.add('on');
+  h.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${bars}${labels}${vals}</svg>`;
+  // animation : les barres partent de 0 et montent avec stagger
+  [...h.querySelectorAll('.hbar')].forEach((b,i)=>{
+    const hh=+b.getAttribute('height'), y=+b.getAttribute('y');
+    b.style.transformOrigin=`center ${y+hh}px`;
+    b.style.transform='scaleY(0)';
+    setTimeout(()=>{ b.style.transition='transform 1s cubic-bezier(.2,.8,.25,1)';
+      b.style.transform='scaleY(1)'; }, 200+i*110);
+  });
+  [...h.querySelectorAll('.hval')].forEach((v,i)=>{
+    v.style.opacity='0';
+    setTimeout(()=>{ v.style.transition='opacity .5s'; v.style.opacity='1'; }, 700+i*110);
+  });
+}
+
 (function(){
   const srcCount=Object.values(SRC).reduce((a,v)=>a+v.length,0)||8;
   $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
