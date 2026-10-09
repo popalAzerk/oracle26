@@ -22,6 +22,14 @@ const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
       x.beginPath();x.arc(s.x,s.y,s.z*1.2+.3,0,6.29);
       x.fillStyle=s.m?'#ff356e':'#35f0ff';x.globalAlpha=a*.7;x.fill();
     }
+    // maille constellation : les étoiles proches se relient
+    x.lineWidth=1;
+    for(let i=0;i<stars.length;i++)for(let j=i+1;j<stars.length;j++){
+      const A=stars[i],B=stars[j],dx2=A.x-B.x,dy2=A.y-B.y;
+      if(Math.abs(dx2)>130) break;
+      const d=Math.hypot(dx2,dy2);
+      if(d<130){x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.globalAlpha=(1-d/130)*.13;x.stroke();}
+    }
     x.globalAlpha=1;requestAnimationFrame(d);
   })(0);
 })();
@@ -29,61 +37,107 @@ const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
 /* ---------- mur : placement sémantique, PAS une grille ---------- */
 /* Chaque composant occupe une zone angulaire autour du centre ; les gros
    au centre, les petits en périphérie (loi : plus signalé = plus proche). */
+let NODES=[];
 function placeMur(){
   const mur=$('#mur'); if(!mur) return;
   mur.innerHTML='';
   const W=innerWidth,H=innerHeight,cx=W/2,cy=H*.44;
-  const RMAX = Math.min(W,H)*.40;
-  // --- placement équilibré : angle de tranche fixe (~90° entre gros) ---
-  // Ordre par importance : 0 au centre, puis alternance haut/droite/bas/gauche
-  const ANG = [-90, 45, 175, 285, -35, 95, 215, 335].map(a=>a*Math.PI/180);
-  // rayon croissant par rang (0 centre, périphériques) — mais rayon MIN pour
-  // que les 4 premières sphères forment une vraie couronne, pas un grumeau :
-  const pos = [];
+  const RMAX=Math.min(W,H)*.38;
+  // — MAILLAGE RÉSEAU : hub central + composants sur 2 couronnes —
+  NODES=[];
+  const hub=document.createElement('div');
+  hub.className='hub';
+  hub.style.setProperty('--hx',cx+'px');hub.style.setProperty('--hy',cy+'px');
+  hub.innerHTML=`<div class="hubcore"><b>${TOT}</b><span>SIGNAL</span></div>`;
+  mur.appendChild(hub);
+  NODES.push({el:hub,k:'__hub',base:{x:cx,y:cy},drift:{px:Math.random()*6.28,amp:5,sp:.0009}});
+  const A1=[-90,40,150,255].map(a=>a*Math.PI/180),
+        A2=[-35,80,190,300].map(a=>a*Math.PI/180);
   rows.forEach((r,i)=>{
-    const rad = (i===0?0: RMAX*(0.42+0.58*(i-1)/(rows.length-1)));
-    const ang = ANG[i] + (Math.random()-.5)*0.14;
-    pos.push({i, k:r[0], n:r[1], x:cx+Math.cos(ang)*rad+(Math.random()-.5)*20,
-                   y:cy+Math.sin(ang)*rad+(Math.random()-.5)*20});
-  });
-  // décollisions : 2 passes — si 2 blocs trop proches, éloigner le 2e radialement
-  for (let pass=0; pass<2; pass++){
-    for (let a=0;a<pos.length;a++){
-      for (let b=a+1;b<pos.length;b++){
-        const A=pos[a], B=pos[b], MARGIN=110;
-        const d=Math.hypot(A.x-B.x, A.y-B.y);
-        if (d < MARGIN && d > 0.01){
-          const push=(MARGIN-d)/2, ux=(B.x-A.x)/d, uy=(B.y-A.y)/d;
-          A.x-=ux*push; A.y-=uy*push; B.x+=ux*push; B.y+=uy*push;
-        }
-      }
-    }
-  }
-  // clamp aux marges sûres (pas sous le HUD haut / pas dans la légende bas) :
-  const MINX=170, MAXX=W-170, MINY=140, MAXY=H-150;
-  pos.forEach(p=>{p.x=Math.max(MINX,Math.min(MAXX,p.x));p.y=Math.max(MINY,Math.min(MAXY,p.y));});
-  rows.forEach((r,i)=>{
-    const p=pos[i], [k,n]=r, nMax=rows[0][1];
+    const big=i<4, slot=i%4;
+    const rad=big?RMAX*.62:RMAX*.95;
+    const ang=(big?A1:A2)[slot]+(Math.random()-.5)*.12;
+    const [k,n]=r, nMax=rows[0][1];
     const el=document.createElement('div');
     el.className='bsq';el.dataset.k=k;
-    el.style.setProperty('--dx',p.x+'px');
-    el.style.setProperty('--dy',p.y+'px');
-    // dérive organique propre à chaque sphère :
-    el.style.setProperty('--dmx',(Math.random()<.5?-1:1)*(8+Math.random()*14)+'px');
-    el.style.setProperty('--dmy',(Math.random()<.5?-1:1)*(8+Math.random()*14)+'px');
-    el.style.setProperty('--od',(Math.random()*6)+'s');
-    const d=Math.min(86, 30+n/nMax*58);
+    el.style.setProperty('--dx',(cx+Math.cos(ang)*rad)+'px');
+    el.style.setProperty('--dy',(cy+Math.sin(ang)*rad)+'px');
+    const d=Math.min(84, 32+n/nMax*52);
     el.innerHTML=`<div class="blk" style="--c:${COL[k]||'#8f8f9f'}">
-      <div class="dot" style="--d:${d}px;--pt:${3+n/12}s;--pd:${i*.4}s"></div>
+      <div class="dot" style="--d:${d}px;--pt:${(3+n/12).toFixed(1)}s;--pd:${(slot*.35).toFixed(2)}s"></div>
       <div class="bignum">${String(n).padStart(2,'0')}</div>
       <div class="lbl">${FR[k]||k}</div>
       <div class="pc">${Math.round(n/TOT*100)}%</div>
     </div>`;
     mur.appendChild(el);
+    NODES.push({el,k,base:{x:cx+Math.cos(ang)*rad,y:cy+Math.sin(ang)*rad},
+      drift:{px:Math.random()*6.28,amp:10+Math.random()*8,sp:.0006+Math.random()*.0004}});
   });
-  // apparition en cascade, du centre vers la périphérie :
-  [...mur.children].forEach((el,i)=>setTimeout(()=>el.classList.add('in'), 260+i*110));
+  [...mur.children].forEach((el,i)=>setTimeout(()=>el.classList.add('in'),260+i*90));
 }
+
+/* ---------- maillage vivant : arêtes + paquets de données ---------- */
+(function(){
+  const cn=$('#net'); if(!cn) return;
+  const x=cn.getContext('2d');
+  let W,H;
+  function sz(){W=cn.width=innerWidth;H=cn.height=innerHeight;}
+  sz();addEventListener('resize',sz);
+  function edges(){
+    const out=[];
+    if(NODES.length<2) return out;
+    const hub=NODES[0];
+    for(let i=1;i<NODES.length;i++) out.push([hub,NODES[i]]);
+    for(const [a,b] of [['battery','charging'],['battery','cosmetic'],['screen','cosmetic'],['audio','buttons']]){
+      const A=NODES.find(n=>n.k===a), B=NODES.find(n=>n.k===b);
+      if(A&&B) out.push([A,B]);
+    }
+    return out;
+  }
+  const pulses=[];
+  function tick(t){
+    x.clearRect(0,0,W,H);
+    for(const n of NODES){
+      n.cur={x:n.base.x+Math.sin(t*n.drift.sp+n.drift.px)*n.drift.amp+PLX,
+             y:n.base.y+Math.cos(t*n.drift.sp*1.13+n.drift.px*1.7)*n.drift.amp+PLY};
+      if(n.k!=='__hub'){
+        n.el.style.setProperty('--dx',n.cur.x.toFixed(1)+'px');
+        n.el.style.setProperty('--dy',n.cur.y.toFixed(1)+'px');
+      } else {
+        n.el.style.setProperty('--hx',n.cur.x.toFixed(1)+'px');
+        n.el.style.setProperty('--hy',n.cur.y.toFixed(1)+'px');
+      }
+    }
+    const es=edges();
+    es.forEach(([A,B])=>{
+      x.beginPath();x.moveTo(A.cur.x,A.cur.y);x.lineTo(B.cur.x,B.cur.y);
+      x.strokeStyle='rgba(74,227,255,.16)';x.lineWidth=1;x.stroke();
+    });
+    if(pulses.length<6 && Math.random()<.06){
+      const e=Math.floor(Math.random()*es.length);
+      pulses.push({e,t:0,sp:.004+Math.random()*.006,col:e>=es.length-4?'#ff2ea6':'#35f0ff'});
+    }
+    for(let j=pulses.length-1;j>=0;j--){
+      const p=pulses[j], L=es[p.e];
+      if(!L||!L[0].cur){pulses.splice(j,1);continue;}
+      p.t+=p.sp;
+      if(p.t>=1){pulses.splice(j,1);continue;}
+      const [A,B]=L, px=A.cur.x+(B.cur.x-A.cur.x)*p.t, py=A.cur.y+(B.cur.y-A.cur.y)*p.t;
+      x.beginPath();x.arc(px,py,2.4,0,6.29);
+      x.fillStyle=p.col;x.shadowColor=p.col;x.shadowBlur=9;x.globalAlpha=.9;x.fill();
+      x.globalAlpha=1;x.shadowBlur=0;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* parallax : offsets partagés (souris → tout le maillage suit) */
+let PLX=0, PLY=0;
+addEventListener('mousemove',e=>{
+  PLX=(e.clientX/innerWidth-.5)*-18;
+  PLY=(e.clientY/innerHeight-.5)*-14;
+},{passive:true});
 
 /* ---------- HUD ---------- */
 (function(){

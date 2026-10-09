@@ -12,6 +12,7 @@
 html,body{height:100%;overflow:hidden;background:var(--noir);color:#e8f2ff;cursor:crosshair}
 body{font-family:var(--mono)}
 canvas#fx{position:fixed;inset:0;z-index:0}
+#net{position:fixed;inset:0;z-index:1;pointer-events:none}
 /* vignette + courbure : le mur est vu à travers un objectif */
 #vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%, transparent 55%, rgba(0,0,0,.75) 100%);z-index:5}
 
@@ -203,3 +204,16 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 
 /* — retour mur : fondu du zoom avec scale-out — */
 #zoom:not(.on){backdrop-filter:blur(0)}
+
+/* ===== hub central (réseau) ===== */
+.hub{position:fixed;left:0;top:0;transform:translate(-50%,-50%) translate(var(--hx),var(--hy));
+  z-index:15;pointer-events:none;transition:.2s}
+.hubcore{width:96px;height:96px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:radial-gradient(circle at 38% 32%, rgba(120,230,255,.25), rgba(6,12,20,.9) 75%);
+  border:1px solid rgba(74,227,255,.5);
+  box-shadow:0 0 34px rgba(74,227,255,.32), inset 0 0 18px rgba(74,227,255,.22);
+  animation:hubpulse 4.5s ease-in-out infinite}
+.hubcore b{font-size:20px;font-weight:700;color:#fff;letter-spacing:.04em;text-shadow:0 0 12px rgba(74,227,255,.8)}
+.hubcore span{font-size:7.5px;letter-spacing:.34em;color:var(--t2)}
+@keyframes hubpulse{0%,100%{box-shadow:0 0 26px rgba(74,227,255,.26), inset 0 0 14px rgba(74,227,255,.14)}
+50%{box-shadow:0 0 48px rgba(74,227,255,.5), inset 0 0 24px rgba(74,227,255,.3)}}
