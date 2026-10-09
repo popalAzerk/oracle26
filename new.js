@@ -1,7 +1,7 @@
 /* ===== PULSE 3 — le signal comme matière ===== */
 'use strict';
 const D = window.PULSE_DATA || {}, MC = window.PULSE_MODEL_COUNTS || {}, SRC = (window.PULSE_SOURCES||{}).sources || {};
-const COL = {battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff356e',audio:'#bf5af2',buttons:'#8e8e93',network:'#30b0c7',camera:'#ff453a'};
+const COL = {battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff356e',audio:'#bf5af2',buttons:'#8e8e93',network:'#30b0c7',camera:'#ff9f0a'};
 const FR  = {battery:'Batterie',screen:'Écran',charging:'Charge',cosmetic:'Esthétique',audio:'Audio',buttons:'Boutons',network:'Réseau',camera:'Caméra'};
 const $ = s => document.querySelector(s);
 const rows = Object.entries(D.counts||{}).sort((a,b)=>b[1]-a[1]);
@@ -106,15 +106,25 @@ function placeMur(){
       }
       return out;
     }
+    let baseAn=-1.9;
     const arcs1=arcs(R,4), arcs2=arcs(R2,3);
+    // arc ACCENT blanc = tranche de la cat n°1 (angle miroir du peigne)
+    {
+      const a0b=baseAn-.07, a1b=baseAn+.14*1;
+      const x0=100+Math.cos(a0b)*R2, y0=100+Math.sin(a0b)*R2,
+            x1=100+Math.cos(a1b)*R2, y1=100+Math.sin(a1b)*R2;
+      arcs2+=`<path d="M ${x0} ${y0} A ${R2} ${R2} 0 0 1 ${x1} ${y1}" stroke="rgba(255,255,255,.92)" stroke-width="3.4" fill="none"/>`;
+    }
     // peigne radial sur un secteur (top-droit) : 9 blocs pleins/contours
+    // peigne = HISTOGRAMME radial réel : hauteur ∝ mentions de chaque cat
+    const ns=rows.map(r=>r[1]);
     let pei='';
-    for(let i=0;i<9;i++){
-      const an=(-1.9+ i*.13), rad=R2-6, hh=6+ rnd()*10;
-      const cx2=100+Math.cos(an)*rad, cy2=100+Math.sin(an)*rad;
-      const w=2+rnd()*2.2;
-      const solid=i%2===0;
-      pei+=`<rect x="${cx2-w/2}" y="${cy2-hh}" width="${w}" height="${hh}" ${solid?'fill="rgba(230,250,255,.85)"':'fill="none" stroke="rgba(140,240,255,.6)" stroke-width="1"'} transform="rotate(${an*57.3+90} ${cx2} ${cy2})"/>`;
+    for(let i=0;i<ns.length;i++){
+      const an=baseAn + i*.14, rad=R2-6,
+            hh=Math.max(3, (ns[i]/Math.max(...ns))*22),
+            cx2=100+Math.cos(an)*rad, cy2=100+Math.sin(an)*rad,
+            w=2+(ns[i]/Math.max(...ns))*1.6;
+      pei+=`<rect x="${cx2-w/2}" y="${cy2-hh}" width="${w}" height="${hh}" fill="rgba(230,250,255,.82)" transform="rotate(${an*57.3+90} ${cx2} ${cy2})"/>`;
     }
     const svg1=`<svg class="hubarc" viewBox="0 0 200 200">${arcs1}</svg>`;
     const svg2=`<svg class="hubarc rev" viewBox="0 0 200 200">${arcs2}${pei}</svg>`;

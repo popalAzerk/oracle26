@@ -222,7 +222,7 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 /* ===== PULSE 3.6 : finitions réseau informatique ===== */
 /* labels type port/patch : numérotation de nœud sur chaque sphère */
 .bsq .lbl::before{content:'NODE-';color:var(--t3);letter-spacing:.1em}
-.bsq .pc::after{content:' ·OK'}
+ /* OK retiré : bruit sans information */
 /* hub = cœur de backbone */
 .hubcore span{content:''}
 .hubcore span{font-size:7px;letter-spacing:.4em;color:#9defff;text-shadow:0 0 8px rgba(92,242,255,.9)}
