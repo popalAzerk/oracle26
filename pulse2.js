@@ -103,17 +103,17 @@ function buildCards(){
     el.innerHTML=`
       <div class="chead"><span class="chk"></span><span class="ct">${FR[k]||k}</span><span class="ck">${String(i+1).padStart(2,'0')}</span></div>
       <div class="cbody"><span class="cbig">${String(n).padStart(2,'0')}</span><span class="cpc">${pct}%</span></div>
-      <div class="cspark">${sparkBars(k)}</div>
+      <div class="cspark">${sparkBars(k, Object.keys(MC_BY_CAT[k]||{}).length)}</div>
       <div class="cprog"><i></i></div>
       <div class="cfoot"><span><span class="clive"></span>ACTIF</span><b>&#9656; ${Object.keys(MC_BY_CAT[k]||{}).length} MODÈLES</b></div>`;
     wrap.appendChild(el);
     const bar=el.querySelector('.cprog i');
     setTimeout(()=>{bar.style.width=pct+'%';}, 400+i*120);
-    // mini-graphe vertical : barres montent en cascade puis flèche se dessine
-    el.querySelectorAll('.vbars i').forEach((bi,j)=>{
-      setTimeout(()=>{ bi.classList.add('up'); }, 500+i*120+j*55);
-    });
-    setTimeout(()=>{ el.querySelectorAll('.sarrow').forEach(sa=>sa.classList.add('go')); }, 500+i*120+ el.querySelectorAll('.vbars i').length*55 +300);
+    // mini-graphe : aire fond d'abord, puis la ligne se dessine, point final s'allume
+    setTimeout(()=>{ el.querySelectorAll('.zline').forEach(z=>{ z.classList.add('drawn');
+      const tr=z.querySelector('.ztrail'); if(tr){ tr.style.strokeDashoffset='0'; }
+      const hd=z.querySelector('.zhead'); if(hd){ setTimeout(()=>hd.classList.add('on'), 950); }
+    }); }, 600+i*120);
     el.addEventListener('click',()=>openZoom(k));
     CARDS.push({el,k});
   });
@@ -122,32 +122,39 @@ function buildCards(){
   catch(e){ console.warn('drawLinks reporté:', e.message); }
   setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
 }
-/* ═══ mini-graphe vertical animé par carte (barres + flèche ascendante) ═══ */
-const NMOD = Object.keys(MC).length;
-function sparkBars(k){
-  const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>a[1]-b[1]).slice(-14); // ascendant gauche→droite
+/* ═══ mini-graphe LIGNE+ZONE animé par carte (zigzag blanc + aire dégradée) ═══ */
+function sparkBars(k, n){
+  // série = répartition des mentions par modèle, ordonnée du plus ancien
+  // modèle (plus bas) au plus signalé (plus haut) — trend montante lisible
+  const list=Object.entries(MC_BY_CAT[k]||{}).sort((a,b)=>a[1]-b[1]).slice(-14);
   if(!list.length) return '';
-  const mx=list[list.length-1][1];
-  const bars=list.map(([m,c],i)=>`<i style="--h:${Math.max(12,Math.round(c/mx*100))}%;--i:${i}" title="${m} · ${c}"></i>`).join('');
-  // flèche épousant la tendance
-  const pts=list.map(([m,c],i)=>[4+i*(92/(list.length-1)), 36- Math.max(2.5,Math.round(c/mx*26))]);
-  // garantir une SILHOUETTE ascendante (tendance, pas valeur absolue)
-  let run=pts[0][1];
-  for(let j=1;j<pts.length;j++){ pts[j][1]=Math.min(pts[j][1], run-1); run=pts[j][1]; }
+  const mx=Math.max(...list.map(x=>x[1]));
+  const Wv=100, Hv=40, lo=Hv-4, hi=5;
+  const pts=list.map(([m,c],i)=>{
+    const x=3+i*((Wv-8)/Math.max(1,list.length-1));
+    const y=lo-((c/mx)*(lo-hi));
+    return [x,y,m,c];
+  });
+  // ligne : zigzag (L) — plus fidèle aux réfs (courbe + dips) :
+  let dl='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L');
+  // aire : même tracé fermé vers la base
+  let da=dl+` L${pts[pts.length-1][0].toFixed(1)} ${lo} L${pts[0][0].toFixed(1)} ${lo} Z`;
   const last=pts[pts.length-1];
-  // tête de flèche pousse BEYOND la dernière barre (ne la masque pas)
-  const tip=[last[0]+3.5, last[1]-2.5];
-  let d='M'+pts[0][0]+' '+pts[0][1];
-  for(let j=1;j<pts.length;j++){ const p=pts[j-1],q=pts[j]; d+=` Q${((p[0]+q[0])/2).toFixed(1)} ${((p[1]+q[1])/2-1).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }
-  const arrow=`<svg class="sarrow" viewBox="0 0 100 40" preserveAspectRatio="none">
-    <defs><linearGradient id="ag-${k}" gradientUnits="userSpaceOnUse" x1="4" y1="36" x2="${last[0]}" y2="${last[1]}">
-      <stop offset="0" stop-color="var(--c)" stop-opacity="0"/><stop offset=".55" stop-color="var(--c)" stop-opacity=".75"/>
-      <stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
-    <path class="strail" d="${d}" pathLength="1" fill="none" stroke="url(#ag-${k})" stroke-width="2.2" stroke-linecap="round"/>
-    <g class="shead"><circle class="shalo" cx="${tip[0]+1.6}" cy="${tip[1]-1.6}" r="8" fill="var(--c)" opacity=".5"/>
-      <polygon points="${tip[0]},${tip[1]} ${(tip[0]-4.2).toFixed(1)},${(tip[1]+3).toFixed(1)} ${(tip[0]+2.6).toFixed(1)},${(tip[1]+3.4).toFixed(1)}" fill="#fff"/></g>
+  const grad=`lgz-${k}`;
+  const svg=`<svg class="zline" viewBox="0 0 ${Wv} ${Hv}" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="${grad}" gradientUnits="userSpaceOnUse" x1="0" y1="${Hv}" x2="0" y2="0">
+        <stop offset="0" stop-color="var(--c)" stop-opacity="0"/>
+        <stop offset=".65" stop-color="var(--c)" stop-opacity=".38"/>
+        <stop offset="1" stop-color="var(--c)" stop-opacity=".1"/>
+      </linearGradient>
+    </defs>
+    <path class="zarea" d="${da}" fill="url(#${grad})"/>
+    <path class="ztrail" d="${dl}" pathLength="1" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <g class="zhead"><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.6" fill="var(--c)" opacity=".28"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="1.7" fill="#fff"/></g>
   </svg>`;
-  return `<div class="vbwrap"><div class="vbars">${bars}</div><div class="vbase"></div>${arrow}</div>`;
+  return `<div class="zcwrap"><span class="zlinfo">${list[0][0].replace('iPhone ','')} · ${last[0].replace('iPhone ','')} — ${n} MODÈLES</span>${svg}</div>`;
 }
 function cardPt(el){
   const s=$('#stage').getBoundingClientRect(), r=el.getBoundingClientRect();
