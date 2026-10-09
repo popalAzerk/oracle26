@@ -249,6 +249,7 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 
 /* ---------- HUD ---------- */
 (function(){
+  const srcCount=Object.values(SRC).reduce((a,v)=>a+v.length,0)||8;
 $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
   $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div><div id="linkstat"><b id="srclink">${srcCount}</b> SOURCES EN LIGNE</div>`;
   setInterval(()=>{const e=$('#hudr .clock');if(e)e.textContent=new Date().toTimeString().slice(0,8);},1000);
