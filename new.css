@@ -123,7 +123,7 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 .zmod b{display:block;width:var(--d);height:var(--d);border-radius:50%;
   background:radial-gradient(circle at 34% 30%,#fff 0 6%,var(--col) 16%,rgba(0,0,0,.45) 85%);
   box-shadow:0 0 calc(var(--d)*.5) var(--col)}
-.zmod .zp{font-size:9px;color:#fff;font-variant-numeric:tabular-nums;background:rgba(1,4,9,.65);padding:1px 5px;border-radius:2px}
+.zmod .zp{font-size:11px;font-weight:700;color:#fff;font-style:normal;font-variant-numeric:tabular-nums;background:rgba(1,4,9,.75);padding:2px 6px;border-radius:2px;box-shadow:0 0 8px rgba(53,240,255,.15)}
 
 /* ================= ANIMATIONS PULSE 3 ================= */
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
