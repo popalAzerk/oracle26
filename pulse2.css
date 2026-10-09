@@ -150,3 +150,10 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   .card{opacity:1}
   .cprog i,.zk .zbar i{transition:none;width:var(--pw)!important}
 }
+
+/* sous-titre sans collision : largeur contrainte */
+.hs{max-width:230px;white-space:nowrap;overflow:text-overflow:clip}
+
+/* flux continu le long des liens */
+#links path.lk{animation:lkflow 1.6s linear infinite}
+@keyframes lkflow{to{stroke-dashoffset:-14}}

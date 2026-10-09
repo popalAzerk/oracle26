@@ -66,13 +66,13 @@ const TOUCH = 'ontouchstart' in window;
   // peigne = histogramme radial : 1 barre par cat, hauteur ∝ mentions
   const nMax=Math.max(...rows.map(r2=>r2[1]));
   rows.forEach(([k,n],i)=>{
-    const an=-2.2+i*.19, hh=Math.max(4,(n/nMax)*26),
+    const an=-2.2+i*.19, hh=Math.max(5,(n/nMax)*30),
           w1=3, bx=100+Math.cos(an)*56, by=100+Math.sin(an)*56,
           dx=Math.cos(an), dy=Math.sin(an),
           px=bx-dy*(w1/2), py=by+dx*(w1/2);
     const cc=(COL[k]||'#8f8f9f').match(/^#(..)(..)(..)$/);
     const cr=parseInt(cc[1],16),cg=parseInt(cc[2],16),cb=parseInt(cc[3],16);
-    arcs+=`<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="3" height="${hh.toFixed(1)}" fill="rgba(${cr},${cg},${cb},.85)" transform="rotate(${(an*57.3).toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)})"/>`;
+    arcs+=`<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="4.5" height="${hh.toFixed(1)}" fill="rgba(${cr},${cg},${cb},.85)" transform="rotate(${(an*57.3).toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)})"/>`;
   });
   svg.innerHTML=arcs;
 })();
@@ -122,11 +122,27 @@ function drawLinks(){
     const p=cardPt(el);
     // contrôle : courbe douce vers le noyau
     const mx=(C.x+p.x)/2+(p.y-C.y)*.08, my=(C.y+p.y)/2-(p.x-C.x)*.08;
-    out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${p.x.toFixed(0)} ${p.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".26" stroke-width="1" fill="none"/>`;
+    out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${p.x.toFixed(0)} ${p.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".42" stroke-width="1.3" fill="none" stroke-dasharray="3 4" class="lk"/>`;
     // noeud d'ancrage côté carte
-    out+=`<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="2.2" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".55"/>`;
+    out+=`<circle cx="${p.x.toFixed(0)}" cy="${p.y.toFixed(0)}" r="3" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".8"/>`;
   });
-  svg.innerHTML=out;
+  // paquets lumineux en circulation sur les liens (animateMotion natif)
+  svg.querySelectorAll('path.lk').forEach((path,i)=>{
+    const pk=CARDS[i]&&CARDS[i].k; if(!pk) return;
+    const col=COL[pk]||'#8f8f9f';
+    for(let j2=0;j2<2;j2++){
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('r','2.4');dot.setAttribute('fill',col);
+      dot.style.filter='drop-shadow(0 0 4px '+col+')';
+      const am=document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
+      am.setAttribute('dur',(5+Math.random()*4+j2*2.2).toFixed(2)+'s');
+      am.setAttribute('repeatCount','indefinite');
+      am.setAttribute('begin',(-Math.random()*5).toFixed(2)+'s');
+      am.setAttribute('path',path.getAttribute('d'));
+      dot.appendChild(am);
+      svg.appendChild(dot);
+    }
+  });
 }
 addEventListener('resize',()=>{buildCards()});
 
@@ -193,7 +209,7 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 /* ---------- HUD ---------- */
 (function(){
   $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
-  $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div><div id="linkstat"><b>0</b> SOURCE EN LIGNE</div>`;
+  $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div><div id="linkstat"><b id="srclink">'+Object.values(SRC).reduce((s2,v)=>s2+v.length,0)+'</b> SOURCES EN LIGNE</div>`;
   setInterval(()=>{const e=$('#hudr .clock');if(e)e.textContent=new Date().toTimeString().slice(0,8);},1000);
 })();
 
