@@ -260,7 +260,7 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 /* centrer les enfants absolus du hub sur le point 0,0 */
 .hub .hubcore{position:relative;transform:translate(-50%,-50%)}
 .hub .hubmesh{position:absolute;left:-78px;top:-78px;width:156px;height:156px}
-.hub .hubarc,.hub .hubarc.rev,.hub .peigne{left:0;top:0;inset:auto;width:156px;height:156px;
-  transform-origin:center}
+.hub .hubarc,.hub .hubarc.rev,.hub .peigne{left:-78px;top:-78px;inset:auto;width:156px;height:156px;
+  transform-origin:center center}
 .hub .hubarc{transform:translate(0,0)}
 .hub .fris.top{bottom:96px} .hub .fris.bot{top:96px}
