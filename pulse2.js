@@ -105,7 +105,10 @@ function buildCards(){
     el.addEventListener('click',()=>openZoom(k));
     CARDS.push({el,k});
   });
-  drawLinks();
+  // défensif : les liens exigent un layout complètement posé
+  try{ drawLinks(); }
+  catch(e){ console.warn('drawLinks reporté:', e.message); }
+  setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
 }
 function cardPt(el){
   const s=$('#stage').getBoundingClientRect(), r=el.getBoundingClientRect();
