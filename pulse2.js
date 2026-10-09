@@ -238,14 +238,14 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 /* ═══════════ HISTOGRAMME ANIMÉ ═══════════ */
 function buildHist(){
   const h=$('#hist'); if(!h) return;
-  const W=860,H=150, bw=Math.floor(W/rows.length)-14;
+  const W=860,H=144, bw=Math.floor(W/rows.length)-14;
   let bars='', labels='', vals='';
   const mx=Math.max(...rows.map(r=>r[1]));
   rows.forEach((r,i)=>{
-    const x=8+i*(bw+14), hh=Math.max(6,(r[1]/mx)*(H-52)), y=H-30-hh;
+    const x=8+i*(bw+14), hh=Math.max(6,(r[1]/mx)*(H-56)), y=H-30-hh;
     bars+=`<rect class="hbar" x="${x}" y="${y}" width="${bw}" height="${hh.toFixed(0)}" rx="2" fill="${COL[r[0]]}" opacity=".85"/>`;
     labels+=`<text class="hlab" x="${x+bw/2}" y="${H-10}" text-anchor="middle">${(FR[r[0]]||r[0]).slice(0,10).toUpperCase()}</text>`;
-    vals+=`<text class="hval" x="${x+bw/2}" y="${y-7}" text-anchor="middle">${r[1]}</text>`;
+    vals+=`<text class="hval" x="${x+bw/2}" y="${y-5}" text-anchor="middle">${r[1]}</text>`;
   });
   h.classList.add('on');
   h.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${bars}${labels}${vals}</svg>`;
