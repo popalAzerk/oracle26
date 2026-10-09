@@ -124,3 +124,82 @@ canvas#fx{position:fixed;inset:0;z-index:0}
   background:radial-gradient(circle at 34% 30%,#fff 0 6%,var(--col) 16%,rgba(0,0,0,.45) 85%);
   box-shadow:0 0 calc(var(--d)*.5) var(--col)}
 .zmod .zp{font-size:9px;color:#fff;font-variant-numeric:tabular-nums;background:rgba(1,4,9,.65);padding:1px 5px;border-radius:2px}
+
+/* ================= ANIMATIONS PULSE 3 ================= */
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+
+/* — orbite perpétuelle du mur : chaque sphère dérive doucement — */
+.bsq{
+  animation:derive 8s ease-in-out infinite alternate;
+  animation-delay:var(--od,0s);
+  /* transition de zoom supprimée au profit du scale d'interaction */
+}
+/* @keyframes derive appliquée sur un WRAPPER car transform de .bsq est déjà
+   utilisée pour le placement — on anime un pseudo-offset via CSS var : */
+@keyframes derive{
+  from{margin-left:0;margin-top:0}
+  to{margin-left:var(--dmx,14px);margin-top:var(--dmy,-12px)}
+}
+
+/* — halo de respiration sur les sphères — */
+.blk .dot{animation:pulse var(--pt,3.6s) ease-in-out infinite,respire 5s ease-in-out infinite alternate}
+@keyframes respire{
+  from{box-shadow:0 0 calc(var(--d)*.45) var(--c), inset 0 0 calc(var(--d)*.3) rgba(255,255,255,.4)}
+  to{box-shadow:0 0 calc(var(--d)*.75) var(--c), inset 0 0 calc(var(--d)*.4) rgba(255,255,255,.65)}
+}
+
+/* — hover magnétique : la sphère grossit et lève son halo — */
+.bsq:hover .blk{transform:scale(1.12)}
+.bsq .blk{transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+
+/* — balayage radar : une ligne de sweep passe en boucle sur le fond — */
+#sweep{
+  position:fixed;inset:0;z-index:4;pointer-events:none;opacity:.5;
+  background:conic-gradient(from 0deg at 50% 42%,
+    transparent 0deg, rgba(53,240,255,.05) 8deg, transparent 18deg,
+    transparent 360deg);
+  animation:sweep 9s linear infinite;
+}
+@keyframes sweep{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* — scanline CRT globale (texture vivante) — */
+#scan{
+  position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;
+  background:repeating-linear-gradient(0deg, transparent 0 3px, rgba(160,220,255,.5) 3px 4px);
+  animation:scanmove 8s linear infinite;
+}
+@keyframes scanmove{from{background-position-y:0}to{background-position-y:120px}}
+
+/* — zoom : entrée cinématique des éléments — */
+#zoom{transition:opacity .55s, visibility .55s}
+#zoom.on .zhead h2{letter-spacing:.34em}
+#zoom .zhead h2{transition:opacity .6s .25s, transform .6s .25s, letter-spacing 1.6s .25s;letter-spacing:.6em}
+/* anneaux qui se tracent (rotation d'apparition) */
+#zoom .zring{transform:translate(-50%,-50%) scale(.7);opacity:0;transition:transform .8s .3s cubic-bezier(.2,.8,.2,1), opacity .8s .3s}
+#zoom.on .zring{transform:translate(-50%,-50%) scale(1);opacity:1}
+/* boules : pop en cascade */
+#zoom .zmod{opacity:0;transform:translate(-50%,-50%) scale(.2);transition:opacity .5s, transform .6s cubic-bezier(.34,1.56,.64,1)}
+#zoom.on .zmod{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#zoom.on .zmod:nth-of-type(1){transition-delay:.45s}
+#zoom.on .zmod:nth-of-type(2){transition-delay:.55s}
+#zoom.on .zmod:nth-of-type(3){transition-delay:.62s}
+#zoom.on .zmod:nth-of-type(4){transition-delay:.69s}
+#zoom.on .zmod:nth-of-type(5){transition-delay:.76s}
+#zoom.on .zmod:nth-of-type(6){transition-delay:.83s}
+#zoom.on .zmod:nth-of-type(7){transition-delay:.90s}
+#zoom.on .zmod:nth-of-type(8){transition-delay:.97s}
+/* boules en orbite perpétuelle (rotation du wrap ? non — dérive individuelle) */
+.zringwrap{animation:turn 120s linear infinite}
+@keyframes turn{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+/* verbatims : entrée glissée */
+#zoom .zflux>*{opacity:0;transform:translateX(22px);transition:opacity .5s,transform .5s}
+#zoom.on .zflux>*{opacity:1;transform:none}
+#zoom.on .zflux>*:nth-child(1){transition-delay:.9s}
+#zoom.on .zflux>*:nth-child(2){transition-delay:1.0s}
+#zoom.on .zflux>*:nth-child(3){transition-delay:1.1s}
+#zoom.on .zflux>*:nth-child(4){transition-delay:1.2s}
+#zoom.on .zflux>*:nth-child(5){transition-delay:1.3s}
+#zoom.on .zflux>*:nth-child(6){transition-delay:1.4s}
+
+/* — retour mur : fondu du zoom avec scale-out — */
+#zoom:not(.on){backdrop-filter:blur(0)}

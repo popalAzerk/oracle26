@@ -68,6 +68,10 @@ function placeMur(){
     el.className='bsq';el.dataset.k=k;
     el.style.setProperty('--dx',p.x+'px');
     el.style.setProperty('--dy',p.y+'px');
+    // dérive organique propre à chaque sphère :
+    el.style.setProperty('--dmx',(Math.random()<.5?-1:1)*(8+Math.random()*14)+'px');
+    el.style.setProperty('--dmy',(Math.random()<.5?-1:1)*(8+Math.random()*14)+'px');
+    el.style.setProperty('--od',(Math.random()*6)+'s');
     const d=Math.min(86, 30+n/nMax*58);
     el.innerHTML=`<div class="blk" style="--c:${COL[k]||'#8f8f9f'}">
       <div class="dot" style="--d:${d}px;--pt:${3+n/12}s;--pd:${i*.4}s"></div>
@@ -138,6 +142,15 @@ function closeZoom(){
   $('#zoom').classList.remove('on');
   curCat=null;
 }
+
+/* parallax souris : le mur flotte en contrecoup (profondeur) */
+(function(){
+  const mur=$('#mur');
+  addEventListener('mousemove',e=>{
+    const nx=(e.clientX/innerWidth-.5), ny=(e.clientY/innerHeight-.5);
+    mur.style.transform=`translate(${(-nx*18).toFixed(1)}px, ${(-ny*14).toFixed(1)}px)`;
+  }, {passive:true});
+})();
 
 /* clic sur un bloc du mur : */
 document.addEventListener('click',e=>{
