@@ -119,11 +119,13 @@ function cardPt(el){
   return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height/2};
 }
 function drawLinks(){
+  window.__DL_CALLS=(window.__DL_CALLS||0)+1;
   const svg=$('#links'), s=$('#stage'), W=innerWidth,H=innerHeight;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.style.width=W+'px';svg.style.height=H+'px';
   const cc=$('#core').getBoundingClientRect();
   const C={x:cc.left-s.left+cc.width/2, y:cc.top-s.top+cc.height/2};
+  window.__DL_C={x:C.x, y:C.y, finis:isFinite(C.x)&&isFinite(C.y)};
   if(!isFinite(C.x)||!isFinite(C.y)){ requestAnimationFrame(drawLinks); return; }
   let out='';
   window.__DL_DBG={cards:CARDS.length, finis:isFinite(C.x), core:Math.round(C.x)+','+Math.round(C.y)};
