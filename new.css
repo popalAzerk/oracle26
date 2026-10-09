@@ -18,7 +18,7 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 /* ===== mur de signal : blocs dispersés, PAS une grille ===== */
 #mur{position:fixed;inset:0;z-index:10}
 .bsq{
-  position:absolute;transform:translate(-50%,-50%) translate(var(--dx),var(--dy));
+  position:absolute;left:0;top:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy));
   opacity:0;scale:.6;cursor:pointer;user-select:none;pointer-events:auto;
   transition:opacity .55s ease, scale .55s cubic-bezier(.2,.8,.2,1);
 }
