@@ -123,10 +123,13 @@ function drawLinks(){
   const svg=$('#links'), s=$('#stage'), W=innerWidth,H=innerHeight;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.style.width=W+'px';svg.style.height=H+'px';
-  const cc=$('#core').getBoundingClientRect();
-  const C={x:cc.left-s.left+cc.width/2, y:cc.top-s.top+cc.height/2};
-  window.__DL_C={x:C.x, y:C.y, finis:isFinite(C.x)&&isFinite(C.y)};
+  // géométrie déterministe : identique au CSS (left 50% / top 44% ou 14%)
+  const narrow=W<760;
+  const cR=narrow? Math.min(120,W*.3) : Math.min(180,W*.18);
+  const cT=narrow? .14 : .44;
+  const C={x:W*.5, y:H*cT};
   if(!isFinite(C.x)||!isFinite(C.y)){ requestAnimationFrame(drawLinks); return; }
+  window.__DL_C={x:C.x, y:C.y, r:cR};
   let out='';
   window.__DL_DBG={cards:CARDS.length, finis:isFinite(C.x), core:Math.round(C.x)+','+Math.round(C.y)};
   CARDS.forEach(({el,k},i)=>{
