@@ -7,36 +7,59 @@ const $ = s => document.querySelector(s);
 const rows = Object.entries(D.counts||{}).sort((a,b)=>b[1]-a[1]);
 const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
 
-/* ---------- scène 3D (canvas) : étoiles + courbure ---------- */
+/* ---------- fond : routes de fibre (topologie réseau, pas espace) ---------- */
 (function(){
   const c=$('#fx'), x=c.getContext('2d');
-  let W,H,stars=[];
-  function sz(){W=c.width=innerWidth;H=c.height=innerHeight;
-    stars=Array.from({length:Math.min(W*H/9000,160)},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random(),m:Math.random()<.1}));
+  let W,H,lines=[],junctions=[];
+  function sz(){
+    W=c.width=innerWidth;H=c.height=innerHeight;
+    // routes orthogonales-diagonales : un tracé type carte circuit / fibre
+    lines=[];junctions=[];
+    const n=Math.round(Math.min(W*H/150000, 26));
+    for(let i=0;i<n;i++){
+      const horiz=Math.random()<.6;
+      let px=Math.random()*W, py=Math.random()*H;
+      const pts=[[px,py]];
+      const seg=2+(Math.random()*3|0);
+      for(let s2=0;s2<seg;s2++){
+        const d=(Math.random()*140+60)*(Math.random()<.5?-1:1);
+        if(horiz){px+=d; py+=(Math.random()-.5)*30; }
+        else {py+=d; px+=(Math.random()-.5)*30; }
+        pts.push([px,py]);
+        horiz=!horiz;
+      }
+      lines.push({pts,ph:Math.random()*6.28,sp:.0004+Math.random()*.0005});
+      // nœuds aux jonctions (croisements = topologie)
+      if(Math.random()<.7) junctions.push({x:pts[1][0],y:pts[1][1],ph:Math.random()*6.28});
+    }
   }
   sz();addEventListener('resize',sz);
   (function d(t){
     x.clearRect(0,0,W,H);
-    for(const s of stars){
-      const a=.25+.55*Math.abs(Math.sin(t/1800*s.z*4+s.x));
-      x.beginPath();x.arc(s.x,s.y,s.z*1.2+.3,0,6.29);
-      x.fillStyle=s.m?'#ff356e':'#35f0ff';x.globalAlpha=a*.7;x.fill();
-    }
-    // maille constellation : les étoiles proches se relient
+    // routes :
     x.lineWidth=1;
-    for(let i=0;i<stars.length;i++)for(let j=i+1;j<stars.length;j++){
-      const A=stars[i],B=stars[j],dx2=A.x-B.x,dy2=A.y-B.y;
-      if(Math.abs(dx2)>130) break;
-      const d=Math.hypot(dx2,dy2);
-      if(d<130){x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.globalAlpha=(1-d/130)*.13;x.stroke();}
+    for(const L of lines){
+      x.beginPath();
+      x.moveTo(L.pts[0][0],L.pts[0][1]);
+      for(let i=1;i<L.pts.length;i++)x.lineTo(L.pts[i][0],L.pts[i][1]);
+      const pulse=.5+.5*Math.sin(t*L.sp+L.ph);
+      x.strokeStyle='rgba(80,225,255,'+(0.05+0.07*pulse).toFixed(3)+')';
+      x.stroke();
     }
-    x.globalAlpha=1;requestAnimationFrame(d);
+    // jonctions lumineuses clignotantes (activité réseau) :
+    for(const j of junctions){
+      const p=.5+.5*Math.sin(t*.001+j.ph);
+      x.beginPath();x.arc(j.x,j.y,1.6+p*1.2,0,6.29);
+      x.fillStyle='rgba(92,242,255,'+(.18+.4*p).toFixed(3)+')';
+      x.fill();
+      x.beginPath();x.rect(j.x-1.5,j.y-1.5,3,3);
+      x.fillStyle='rgba(92,242,255,'+(.1+.25*p).toFixed(3)+')';
+      x.fill();
+    }
+    requestAnimationFrame(d);
   })(0);
 })();
 
-/* ---------- mur : placement sémantique, PAS une grille ---------- */
-/* Chaque composant occupe une zone angulaire autour du centre ; les gros
-   au centre, les petits en périphérie (loi : plus signalé = plus proche). */
 let NODES=[];
 function placeMur(){
   const mur=$('#mur'); if(!mur) return;
@@ -111,6 +134,7 @@ function placeMur(){
     return out;
   }
   const pulses=[];
+  window.__pulsesN=()=>pulses.length;
   function tick(t){
     x.clearRect(0,0,W,H);
     for(const n of NODES){
@@ -167,6 +191,12 @@ addEventListener('mousemove',e=>{
   const up=D.updated||'--';
   $('#hudr').innerHTML=`<div class="clock">${'--:--:--'}</div><div class="maj">MAJ ${up}</div>`;
   $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div>`;
+  // compteur de paquets en transit, mis à jour live :
+  setInterval(()=>{
+    let el=document.getElementById('linkstat');
+    if(!el){el=document.createElement('div');el.id='linkstat';$('#hudb').appendChild(el);}
+    if(el) el.innerHTML=`<b>${(window.__pulsesN?window.__pulsesN():0)}</b> PAQUETS EN TRANSIT`;
+  }, 500);
   $('#legende').innerHTML=rows.map(r=>`<span class="lg" style="--c:${COL[r[0]]}" data-jump="${r[0]}"><i></i>${FR[r[0]]}</span>`).join('');
   setInterval(()=>{const e=$('#hudr .clock');if(e)e.textContent=new Date().toTimeString().slice(0,8);},1000);
   $('#legende').addEventListener('click',e=>{

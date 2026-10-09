@@ -218,3 +218,17 @@ canvas#fx{position:fixed;inset:0;z-index:0}
 .hubcore span{font-size:7.5px;letter-spacing:.34em;color:var(--t2)}
 @keyframes hubpulse{0%,100%{box-shadow:0 0 26px rgba(74,227,255,.26), inset 0 0 14px rgba(74,227,255,.14)}
 50%{box-shadow:0 0 48px rgba(74,227,255,.5), inset 0 0 24px rgba(74,227,255,.3)}}
+
+/* ===== PULSE 3.6 : finitions réseau informatique ===== */
+/* labels type port/patch : numérotation de nœud sur chaque sphère */
+.bsq .lbl::before{content:'NODE-';color:var(--t3);letter-spacing:.1em}
+.bsq .pc::after{content:' ·OK'}
+/* hub = cœur de backbone */
+.hubcore span{content:''}
+.hubcore span{font-size:7px;letter-spacing:.4em;color:#9defff;text-shadow:0 0 8px rgba(92,242,255,.9)}
+/* coins de scan type HUD réseau : crochets plus techniques */
+.corner::before,.corner::after{border-color:rgba(92,242,255,.55)!important}
+/* statut link en vivo dans le HUD (haut droite, sous l'horloge) */
+#linkstat{font-size:8px;letter-spacing:.28em;color:var(--t3);margin-top:2px}
+#linkstat b{color:#5cf2ff;font-weight:400}
+/* paquets : légère traînée gérée en canvas (déjà) */
