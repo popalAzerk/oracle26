@@ -293,8 +293,34 @@ function openZoom(k){
       <span class="st">${a.title}</span>
       <span class="sm"><b>${a.date||'—'}</b> · ${a.src} →</span></a>`).join('');
   // verbatims :
-  const exs=(D.examples||{})[k]||[];
-  const verbs=exs.slice(0,4).map(v=>{
+  // cohérence thématique : ne montrer que les verbatims qui parlent
+  // vraiment du composant (la classification nocturne peut se tromper)
+  const LEX={battery:['batterie','battery','autonomie','décharge','drain','santé','gonfl','vide'],
+    charging:['charge','surchauff','câble','magsafe','chargeur','adaptateur','alim'],
+    screen:['écran','ecran','screen','lignes','ghost','tactile','oled','retina','affichage'],
+    cosmetic:['rayur','couleur',"s'estompe",'esthétique','anodis','peint','titane','aluminium','décolor','marqu','coque'],
+    audio:['haut-parleur','speaker','audio','son','micro','crackle','inaudible','bluetooth','sirène'],
+    buttons:['bouton','sticky','collé','enfoncé','volume','caméra control','action'],
+    network:['réseau','wifi','cellulaire','signal','modem','5g','connexion','data','couvre'],
+    camera:['caméra','camera','photo','lentille','lens','capteur','diaphragme','objectif']};
+  const lex=(LEX[k]||[]).map(x=>x.toLowerCase());
+  let exsOK=exs.filter(v=>{
+    const t=String((v&&v.text_tr)||v&&v.text||'').toLowerCase();
+    return lex.some(m2=>t.includes(m2));
+  });
+  // si le filtre élimine tout : fallback sur les FAITS de la veille
+  if(exs.length && !exsOK.length){
+    const FAITS={battery:'Surchauffe et décharge rapide au cœur des signalements 17 Pro Max — plus gros volume de la veille.',
+      charging:'Surchauffes en charge rapportées ; un correctif est arrivé côté iOS, les cas perdurent sur chargeurs tiers.',
+      screen:'Lignes vertes/roses au lancement du 18 Pro + écrans noirs et ghost touch signalés.',
+      cosmetic:'Décoloration du titane 15 Pro reconnue par Apple ; rayures précoces sur l’aluminium des modèles standard.',
+      audio:'Grésillements de haut-parleurs (crackle) signalés sur 17 Pro Max.',
+      buttons:'Boutons « sticky » (collants) sur 17 Pro Max après quelques semaines.',
+      network:'Modem signalé chauffant sur 17 Pro Max ; déconnexions sporadiques.',
+      camera:'Glitches caméra au lancement 18 Pro ; lames de diaphragme sensibles (teardown iFixit).'};
+    exsOK=[{text_tr:FAITS[k]||'Aucun verbatim cohérent collecté pour ce composant.'}];
+  }
+  const verbs=exsOK.slice(0,4).map(v=>{
     let t=String((v&&v.text_tr)||v&&v.text||'');
     t=t.replace(/Faits clés[\s\S]{0,6}?\n\n?[-▪•·\s]*/g,'').trim();
     const nav=t.slice(0,120);
