@@ -119,6 +119,15 @@ function toggleSpread(){
     setTimeout(()=>{ try{ drawLinks(); }catch(e){} }, 700); // retrace APRÈS repli (→ vide)
   }
 }
+// FILET : si spread est posé, AUCUNE carte ne doit rester folded
+setInterval(()=>{
+  if(!SPREAD) return;
+  const w=$('#cards'); if(!w.classList.contains('spread')) return;
+  document.querySelectorAll('.card.folded').forEach(el=>{
+    el.classList.remove('folded');
+    el.querySelectorAll('.zline').forEach(z=>z.classList.add('drawn'));
+  });
+}, 900);
 
 /* ---------- cartes autour du noyau ---------- */
 const CARDS=[];
@@ -272,7 +281,18 @@ function drawLinks(){
     }
   });
 }
-addEventListener('resize',()=>{buildCards()});
+// resize : reconstruit au BON ÉTAT (déployé → positions neuves dépliées)
+addEventListener('resize',()=>{
+  buildCards();
+  if(typeof SPREAD!=='undefined' && SPREAD){
+    const wrap=$('#cards'); wrap.classList.add('spread');
+    document.querySelectorAll('.card').forEach(el=>{
+      el.classList.remove('folded');
+      el.querySelectorAll('.zline').forEach(z=>z.classList.add('drawn'));
+    });
+    try{ drawLinks(); }catch(e){}
+  }
+});
 // taille du noyau selon l'écran (évite d'engloutir les colonnes mobiles)
 addEventListener('resize',()=>{
   const cw=document.getElementById('corewrap');
