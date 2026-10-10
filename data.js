@@ -1,193 +1,159 @@
 window.PULSE_DATA = {
- "updated": "2026-10-08",
- "period": "cumul matériel — veille web (iPhone 17 PM → 18) + Harken, depuis 09/25",
- "total": 178,
+ "updated": "2026-10-10",
+ "period": "échantillon du 10/10/2026 — collecte nocturne Harken, classification Laya",
+ "total": 80,
  "counts": {
-  "battery": 57,
-  "charging": 33,
-  "screen": 26,
-  "audio": 6,
-  "buttons": 5,
-  "network": 5,
-  "camera": 4,
-  "cosmetic": 42
+  "battery": 33,
+  "system_bug": 32,
+  "process": 7,
+  "emerging": 4,
+  "pricing": 3,
+  "screen": 1
  },
  "sentiment": {
-  "neutral": 32,
-  "negative": 84,
-  "positive": 20
+  "neutral": 14,
+  "negative": 50,
+  "positive": 16
  },
- "avgConf": 0.752,
+ "avgConf": 0.755,
  "examples": {
-  "battery": [
-   {
-    "text": "Working on what I thought was a code issue, I had forgotten ESP32 basic units only support 2.4GHz!\n\nWhy can’t I connect to my other hotspot? Because it’s 5GHz, …",
-    "text_tr": "En travaillant sur ce que je pensais être un problème de code, j'avais oublié que les unités de base ESP32 ne prennent en charge que 2,4 GHz !\n\nPourquoi ne puis-je pas me connecter à mon autre point d'accès ? Parce que c'est 5 GHz, …"
-   },
-   {
-    "text": "Yeah me too. I get frustrated easily with it as well. As much as I love having an iPad, I wish there wasn’t such an emphasis on having an iPhone here (and mine …",
-    "text_tr": "Ouais, moi aussi, ça me frustre facilement. Même si j'adore avoir un iPad, j'aimerais qu'on ne mette pas autant l'accent sur le fait d'avoir un iPhone ici (et le mien …"
-   }
+  "pricing": [
+   "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
+   "Belkin accessories to protect your new iPhone 18 Pro\n\nThe iPhone 18 Pro isn't exactly a cheap phone to repair, so putting a decent screen protector and case on …"
   ],
-  "charging": [
-   {
-    "text": "Tested the VamosPRO phone holder on the court today, conclusions\n\n- iPhone is overheating\n- Suction cups weaken in the sun\n- Needs a downward camera angle\n- Hol…",
-    "text_tr": "Testé le support de téléphone VamosPRO sur le terrain aujourd'hui, conclusions\n\n- L'iPhone surchauffe\n- Les ventouses s'affaiblissent au soleil\n- Nécessite un angle de caméra vers le bas\n- Hol..."
-   },
-   {
-    "text": "Just FYI, this is the person who drowned their iPhone when it indicated it was overheating. You know, because it's supposed to be waterproof, so why not dunk it…",
-    "text_tr": "Juste pour info, c'est la personne qui a noyé son iPhone quand il a indiqué qu'il surchauffait. Tu sais, parce qu'il est censé être étanche, alors pourquoi ne pas le tremper…"
-   }
+  "battery": [
+   "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…",
+   "iPhone 18 Pro Max mail-ins and trade-ins: run Prepare to Ship first. The battery is over 20Wh and the drain can take up to 2 hours. Start it at intake.\n\nhttps:/…"
   ],
   "screen": [
-   {
-    "text": "Some users mentioned that even after replacement of the full device or replacement of the speakers, the issue still remained.",
-    "text_tr": "Certains utilisateurs ont mentionné que même après le remplacement de l'appareil complet ou le remplacement des haut-parleurs, le problème persistait."
-   },
-   {
-    "text": "earlier today i had a weird issue where my phone refused to load any websites / apps from wifi or cellular. \n\ni did almost everything but erase it, and decided …",
-    "text_tr": "plus tôt aujourd'hui, j'ai eu un problème étrange où mon téléphone a refusé de charger des sites Web / applications à partir du wifi ou du cellulaire. \n\nj'ai presque tout fait sauf l'effacer, et j'ai décidé ..."
-   }
+   "thanks i had an iphone 14 pro but it got water damage while i was drinking a beer in the shower after a breakup and the phone repair guy installed the wrong typ…"
   ],
-  "audio": [
-   {
-    "text": "I have used it for 15 days (no issue) but now occasionally it overheats when connected to car speakers via Bluetooth or when I use my AirPods .",
-    "text_tr": "Je l'utilise depuis 15 jours (aucun problème), mais maintenant, il surchauffe parfois lorsque je suis connecté à des haut-parleurs de voiture via Bluetooth ou lorsque j'utilise mes AirPods ."
-   },
-   {
-    "text": "## If it persists: likely causes and what they imply\n### Cause B: Hardware issue with the speaker, amplifier, or moisture damage\nIf the hiss remains across multiple known-good chargers and outlets, hardware becomes more likely—especially if the speaker itself sounds worse (or dis…",
-    "text_tr": "## Si cela persiste : les causes probables et ce qu'elles impliquent\n### Cause B : Problème matériel avec le haut-parleur, l'amplificateur ou dommages causés par l'humidité\nSi le sifflement reste sur plusieurs chargeurs et prises connus, le matériel devient plus probable, surtout si le haut-parleur lui-même sonne moins bien (ou dis..."
-   }
+  "process": [
+   "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
+   "iPad or iPhone Hot / Overheating How To Fix #ipad #hot #overheating #fix #howto #tricks #help #solve #iphone #apple\nyoutu.be/ThCb_GTwg6Y"
   ],
-  "buttons": [
-   {
-    "text": "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
-    "text_tr": "Problème survenu lors de la résolution d'une erreur de connexion iCloud inconnue\n\nOk, donc si vous me suivez, vous saurez probablement que je change d'avis et que je traite beaucoup et lorsque j'essaie de…"
-   },
-   {
-    "text": "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
-    "text_tr": "Moi : Je devrais regarder le nouvel iPhone. Mon 15 a ce problème de surchauffe parce que le titane était un métal stupide. Je me demande s'il y a de bonnes affaires.\n\nVerizon : Commerce…"
-   }
+  "system_bug": [
+   "If you want to absolutely destroy you iPhone battery, you can read about OpenAI’s new model and watch your battery drain 1% per min. Great AI coded website! ope…",
+   "so I built that device and discovered an 802.1x bug in apple IOS and reported it to Apple having them dead to rights. Took about 4 hours of escalations until I …"
   ],
-  "network": [
-   {
-    "text": "My iPhone 11 can’t handle the enshitification of mobile wiki pages anymore, it starts overheating under the stress",
-    "text_tr": "Mon iPhone 11 ne peut plus gérer l'intégration des pages wiki mobiles, il commence à surchauffer sous le stress"
-   },
-   {
-    "text": "I had something similar happen with my OM-D Mark IV, seemed to be a security issue.  Any chance that one of the tricks in this forum worked, mainly forgetting t…",
-    "text_tr": "J'ai eu quelque chose de similaire avec mon OM-D Mark IV, cela semblait être un problème de sécurité.  Toute chance que l'une des astuces de ce forum ait fonctionné, en oubliant principalement t…"
-   }
-  ],
-  "camera": [
-   "I finally went to Las Vegas’s Neon Museum. It was so hot it wasn’t going to open until 9pm, which then got delayed to 9:30. Even at that hour, my iPhone kept te…",
-   {
-    "text": "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
-    "text_tr": "De Google Pixel 10 Pro (utilise des Pixels depuis le Pixel 2) à iPhone 17 Pro Max. Les pixels ont empiré avec chaque modèle, et il y a des émissions persistantes…"
-   }
-  ],
-  "cosmetic": [
-   {
-    "text": "Key facts\n\n- ▪ Home > Tech > Mobile Some iPhone 18 Pro and Max users say the devices' color is already fading Last year, it was Scratchgate.",
-    "text_tr": "Faits clés\n\n- ▪ Accueil > Technologie > Mobile Certains utilisateurs d'iPhone 18 Pro et Max disent que la couleur des appareils s'estompe déjà L'année dernière, c'était Scratchgate."
-   },
-   {
-    "text": "Now, aluminum used on iPhone’s vanilla models is also prone to scratches on darker shades, but we never saw such serious reports for them.",
-    "text_tr": "Maintenant, l'aluminium utilisé sur les modèles de vanille de l'iPhone est également sujet aux rayures sur les nuances plus foncées, mais nous n'avons jamais vu de rapports aussi sérieux pour eux."
-   }
+  "emerging": [
+   "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
+   "Apple touts iphone thermal design: Apple highlights advancements in iphone thermal management, claiming improved performance and reduced overheating. many users…"
   ]
- },
- "model_counts": {
-  "iPhone 14 Pro": {
-   "screen": 1,
-   "battery": 1,
-   "cosmetic": 1
-  },
-  "iPhone 18 Pro Max": {
-   "battery": 6
-  },
-  "iPhone 11": {
-   "screen": 1,
-   "network": 1
-  },
-  "iPhone 18 Pro": {
-   "battery": 2,
-   "camera": 2,
-   "charging": 1,
-   "cosmetic": 11
-  },
-  "iPhone 17 Pro Max": {
-   "camera": 1,
-   "charging": 14,
-   "audio": 5,
-   "battery": 2,
-   "screen": 3,
-   "network": 1
-  },
-  "iPhone 16 Pro": {
-   "charging": 1,
-   "battery": 1
-  },
-  "iPhone 13": {
-   "battery": 1,
-   "buttons": 1
-  },
-  "iPhone 17 Pro": {
-   "charging": 2,
-   "audio": 1,
-   "screen": 1,
-   "cosmetic": 3
-  },
-  "iPhone 16": {
-   "screen": 1,
-   "charging": 1
-  },
-  "iPhone 17": {
-   "charging": 6,
-   "battery": 3,
-   "screen": 1,
-   "cosmetic": 3
-  },
-  "iPhone 15 Pro": {
-   "battery": 1,
-   "cosmetic": 6
-  },
-  "iPhone 14 Pro Max": {
-   "screen": 1,
-   "buttons": 1
-  },
-  "iPhone 16 Pro Max": {
-   "screen": 1
-  },
-  "iPhone 15": {
-   "cosmetic": 1
-  },
-  "iPhone 18": {
-   "cosmetic": 2
-  },
-  "iPhone 14": {
-   "cosmetic": 1
-  }
  },
  "history": [
   {
-   "date": "2026-10-08",
-   "total": 136,
+   "date": "2026-09-21",
+   "total": 64,
    "counts": {
-    "battery": 57,
-    "charging": 33,
-    "screen": 26,
-    "audio": 6,
-    "buttons": 5,
-    "network": 5,
-    "camera": 4
+    "screen": 3,
+    "battery": 6,
+    "pricing": 5,
+    "process": 35,
+    "service": 3,
+    "system_bug": 6,
+    "emerging": 4,
+    "warranty": 2
+   }
+  },
+  {
+   "date": "2026-09-28",
+   "total": 26,
+   "counts": {
+    "battery": 5,
+    "process": 11,
+    "warranty": 2,
+    "system_bug": 2,
+    "pricing": 1,
+    "service": 2,
+    "screen": 2,
+    "sensory": 1
+   }
+  },
+  {
+   "date": "2026-10-05",
+   "total": 50,
+   "counts": {
+    "process": 24,
+    "warranty": 2,
+    "system_bug": 3,
+    "pricing": 3,
+    "screen": 6,
+    "service": 4,
+    "sensory": 1,
+    "battery": 7
+   }
+  },
+  {
+   "date": "2026-10-10",
+   "total": 80,
+   "counts": {
+    "pricing": 3,
+    "battery": 33,
+    "screen": 1,
+    "process": 7,
+    "system_bug": 32,
+    "emerging": 4
    }
   }
  ]
 };
 
-window.PULSE_HISTORY = [{"date": "2026-10-08", "total": 136, "counts": {"battery": 57, "charging": 33, "screen": 26, "audio": 6, "buttons": 5, "network": 5, "camera": 4}}];
+window.PULSE_HISTORY = [
+ {
+  "date": "2026-09-21",
+  "total": 64,
+  "counts": {
+   "screen": 3,
+   "battery": 6,
+   "pricing": 5,
+   "process": 35,
+   "service": 3,
+   "system_bug": 6,
+   "emerging": 4,
+   "warranty": 2
+  }
+ },
+ {
+  "date": "2026-09-28",
+  "total": 26,
+  "counts": {
+   "battery": 5,
+   "process": 11,
+   "warranty": 2,
+   "system_bug": 2,
+   "pricing": 1,
+   "service": 2,
+   "screen": 2,
+   "sensory": 1
+  }
+ },
+ {
+  "date": "2026-10-05",
+  "total": 50,
+  "counts": {
+   "process": 24,
+   "warranty": 2,
+   "system_bug": 3,
+   "pricing": 3,
+   "screen": 6,
+   "service": 4,
+   "sensory": 1,
+   "battery": 7
+  }
+ },
+ {
+  "date": "2026-10-10",
+  "total": 80,
+  "counts": {
+   "pricing": 3,
+   "battery": 33,
+   "screen": 1,
+   "process": 7,
+   "system_bug": 32,
+   "emerging": 4
+  }
+ }
+];
 
-window.PULSE_MODEL_COUNTS = {"iPhone 14 Pro": {"screen": 1, "battery": 1, "cosmetic": 1}, "iPhone 18 Pro Max": {"battery": 6}, "iPhone 11": {"screen": 1, "network": 1}, "iPhone 18 Pro": {"battery": 2, "camera": 2, "charging": 1, "cosmetic": 11}, "iPhone 17 Pro Max": {"camera": 1, "charging": 14, "audio": 5, "battery": 2, "screen": 3, "network": 1}, "iPhone 16 Pro": {"charging": 1, "battery": 1}, "iPhone 13": {"battery": 1, "buttons": 1}, "iPhone 17 Pro": {"charging": 2, "audio": 1, "screen": 1, "cosmetic": 3}, "iPhone 16": {"screen": 1, "charging": 1}, "iPhone 17": {"charging": 6, "battery": 3, "screen": 1, "cosmetic": 3}, "iPhone 15 Pro": {"battery": 1, "cosmetic": 6}, "iPhone 14 Pro Max": {"screen": 1, "buttons": 1}, "iPhone 16 Pro Max": {"screen": 1}, "iPhone 15": {"cosmetic": 1}, "iPhone 18": {"cosmetic": 2}, "iPhone 14": {"cosmetic": 1}};
-
-window.PULSE_MODELS = [];
+window.PULSE_MODELS = [{"name": "iPhone 18 Pro", "bodyColor": "#3a3d44", "backColor": "#1c1e24"}, {"name": "iPhone 18", "bodyColor": "#2b4a6f", "backColor": "#16324e"}, {"name": "iPhone 16e", "bodyColor": "#e8e8ed", "backColor": "#d5d5dc"}];
