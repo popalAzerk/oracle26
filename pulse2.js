@@ -262,7 +262,7 @@ function drawLinks(){
     // départ = SUR le cercle du noyau (angle du point d'arrivée)
     const ang=Math.atan2(dst.y-C.y, dst.x-C.x);
     const sx=C.x+Math.cos(ang)*(cR+6), sy=C.y+Math.sin(ang)*(cR+6);
-    out+=`<path d="M ${sx.toFixed(0)} ${sy.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
+    out+=`<path d="M ${sx.toFixed(0)} ${sy.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".75" stroke-width="2.2" fill="none" class="lk"/>`;
     // noeud de connexion (côté carte) + point de départ sur le bord sphère
     out+=`<circle cx="${dst.x.toFixed(0)}" cy="${dst.y.toFixed(0)}" r="3.4" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".9"/>`;
     out+=`<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="2.6" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".55"/>`;
