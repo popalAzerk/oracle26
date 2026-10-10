@@ -38,7 +38,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 .cnum span{font-size:7px;letter-spacing:.4em;color:#9defff}
 
 /* ---------- cartes ---------- */
-#cards{position:absolute;inset:0;z-index:7}
+#cards{position:absolute;inset:0;z-index:7;pointer-events:none}
+#cards.spread .card{pointer-events:auto}  /* le calque mangeait le tap sur la sphère : transparent au doigt tant que rien n'est déployé */
 .card{position:absolute;width:198px;background:var(--panel);border:1px solid var(--bord);
   border-radius:10px;padding:14px 16px 13px;cursor:pointer;backdrop-filter:blur(6px);
   transform:translate(-50%,-50%);
