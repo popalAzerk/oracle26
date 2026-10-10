@@ -252,14 +252,13 @@ function drawLinks(){
     // (mobile : au-dessus de la 1re rangée, en-dessous des suivantes)
     const left = p.x < C.x;
     let dst;
-    if(narrow){
-      // mobile : colonnes collées au centre → accroche par le bord
-      // vertical intérieur, à 1/3 du haut de la carte
-      dst={x: p.x + (left? 74 : -74), y: p.y - 30};
-    }else{
-      dst={x:p.x, y:p.y-46};
-    }
-    const mx=(C.x+dst.x)/2+(dst.y-C.y)*.14, my=(C.y+dst.y)/2-(dst.x-C.x)*.14;
+    // raccord RÉEL à la carte : coin intérieur-haut (le bord visible
+    // face au noyau) — le lien touche visuellement la carte.
+    const r=el.getBoundingClientRect(), st=$('#stage').getBoundingClientRect();
+    const rw=r.width/st.width, rh=r.height/st.height;
+    const ix=p.x+(left? -rw/2 : rw/2), iy=p.y-rh/2;
+    dst = narrow ? {x:ix, y:iy+10} : {x:p.x, y:p.y-rh/2-8};
+    const mx=(C.x+dst.x)/2+(dst.y-C.y)*.18, my=(C.y+dst.y)/2-(dst.x-C.x)*.18;
     // départ = SUR le cercle du noyau (angle du point d'arrivée)
     const ang=Math.atan2(dst.y-C.y, dst.x-C.x);
     const sx=C.x+Math.cos(ang)*(cR+6), sy=C.y+Math.sin(ang)*(cR+6);
