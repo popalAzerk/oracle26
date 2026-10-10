@@ -69,7 +69,7 @@ const TOUCH = 'ontouchstart' in window;
   // peigne = histogramme radial : 1 barre par cat, hauteur ∝ mentions
   const nMax=Math.max(...rows.map(r2=>r2[1]));
   rows.forEach(([k,n],i)=>{
-    const an=-2.2+i*.19, hh=Math.max(5,(n/nMax)*30),
+    const an=-Math.PI/2 + i*(Math.PI*2/rows.length), hh=Math.max(5,(n/nMax)*30),
           w1=3, bx=100+Math.cos(an)*56, by=100+Math.sin(an)*56,
           dx=Math.cos(an), dy=Math.sin(an),
           px=bx-dy*(w1/2), py=by+dx*(w1/2);
@@ -144,7 +144,10 @@ function buildCards(){
     const narrow = W<760;
     const offset = narrow? Math.min(W*.5-78, 128) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
-    const colY = (narrow? H*.155 : H*.19) + row*((narrow? H*.60 : H*.555)/3);
+    let y0, stepTotal;
+    if(narrow){ y0=(H-(H*.60+137))/2; stepTotal=H*.60/3; }
+    else{ y0=H*.19; stepTotal=H*.555/3; }
+    const colY = y0 + row*stepTotal;
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
@@ -257,9 +260,13 @@ function drawLinks(){
       dst={x:p.x, y:p.y-46};
     }
     const mx=(C.x+dst.x)/2+(dst.y-C.y)*.14, my=(C.y+dst.y)/2-(dst.x-C.x)*.14;
-    out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
-    // noeud d'ancrage côté carte
+    // départ = SUR le cercle du noyau (angle du point d'arrivée)
+    const ang=Math.atan2(dst.y-C.y, dst.x-C.x);
+    const sx=C.x+Math.cos(ang)*(cR+6), sy=C.y+Math.sin(ang)*(cR+6);
+    out+=`<path d="M ${sx.toFixed(0)} ${sy.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
+    // noeud de connexion (côté carte) + point de départ sur le bord sphère
     out+=`<circle cx="${dst.x.toFixed(0)}" cy="${dst.y.toFixed(0)}" r="3.4" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".9"/>`;
+    out+=`<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="2.6" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".55"/>`;
   });
   svg.innerHTML=out;
   window.__LINK_DBG={out_len:out.length, cards:CARDS.length, children:svg.childElementCount};
