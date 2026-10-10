@@ -183,3 +183,14 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 #corewrap:not(.pulse) .cnum b{font-size:22px}
 @keyframes cwav{0%{box-shadow:0 0 0 0 rgba(92,242,255,.5)}100%{box-shadow:0 0 0 46px rgba(92,242,255,0)}}
 #corewrap.pulse .cnum::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(92,242,255,.55);animation:cwav 1.4s ease-out infinite}
+
+/* ═══ affordance noyau : libellé + pulsation renfermé ═══ */
+.corehint{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);
+  font-size:9px;letter-spacing:.3em;color:var(--cyan);white-space:nowrap;
+  text-shadow:0 0 12px rgba(74,227,255,.7);pointer-events:none;
+  animation:hintb 2.2s ease-in-out infinite;transition:opacity .3s}
+@keyframes hintb{0%,100%{opacity:.55}50%{opacity:1}}
+#corewrap:not(.pulse) .cnum{animation:coresp 2.4s ease-in-out infinite}
+@keyframes coresp{0%,100%{box-shadow:0 0 16px rgba(74,227,255,.25)}50%{box-shadow:0 0 44px rgba(74,227,255,.75), inset 0 0 30px rgba(74,227,255,.3)}}
+#corewrap:hover{filter:drop-shadow(0 0 18px rgba(92,242,255,.5))}
+@media (prefers-reduced-motion:reduce){ .corehint{animation:none;opacity:1} #corewrap:not(.pulse) .cnum{animation:none} }

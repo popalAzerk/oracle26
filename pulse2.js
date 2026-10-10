@@ -85,10 +85,12 @@ let SPREAD=false;
 function toggleSpread(){
   SPREAD=!SPREAD;
   const wrap=$('#cards'), cw=document.getElementById('corewrap');
+  const hint=$('#corehint');
   if(SPREAD){
     if(!document.querySelectorAll('.card').length) buildCards();
     wrap.classList.add('spread');
     cw.classList.add('pulse');
+    if(hint) hint.textContent='▸ REFERMER';
     // déploiement en cascade : chaque carte quitte le noyau avec son délai
     document.querySelectorAll('.card').forEach((el,i)=>{
       el.style.transitionDelay=(i*70)+'ms';
@@ -103,6 +105,7 @@ function toggleSpread(){
   }else{
     wrap.classList.remove('spread');
     cw.classList.remove('pulse');
+    if(hint) hint.textContent='▸ DÉPLOYER LE SIGNAL';
     // referme : les cartes rentrent DANS le noyau (cascade inversée)
     const els=[...document.querySelectorAll('.card')];
     els.forEach((el,i)=>{
@@ -170,6 +173,11 @@ function buildCards(){
 (function(){
   const cw=document.getElementById('corewrap');
   if(cw && !cw.__wired){ cw.__wired=1; cw.style.cursor='pointer';
+    // libellé d'action sous la sphère (affordance explicite)
+    const hint=document.createElement('div');
+    hint.className='corehint'; hint.id='corehint';
+    hint.textContent='▸ DÉPLOYER LE SIGNAL';
+    cw.appendChild(hint);
     cw.addEventListener('click', toggleSpread); }
 })();
 /* ═══ mini-graphe LIGNE+ZONE animé par carte (zigzag blanc + aire dégradée) ═══ */
