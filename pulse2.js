@@ -145,7 +145,7 @@ function buildCards(){
     const offset = narrow? Math.min(W*.5-78, 128) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
     let y0, stepTotal;
-    if(narrow){ y0=(H-(H*.60+137))/2; stepTotal=H*.60/3; }
+    if(narrow){ y0=H*.2; stepTotal=H*.60/3; }  // centre du bloc = H/2 exact
     else{ y0=H*.19; stepTotal=H*.555/3; }
     const colY = y0 + row*stepTotal;
     el.style.left=colX+'px';el.style.top=colY+'px';
