@@ -44,6 +44,65 @@ const TOUCH = 'ontouchstart' in window;
   })(0);
 })();
 
+/* ---------- AMBIANCE DATACENTER : couche vidéo-générative de fond ----------
+   racks : colonnes de "serveurs" (LED qui clignotent en séquence),
+   paquets : impulsions qui descendent le long des rails verticaux,
+   scanlines : balayages horizontaux lents (camera de surveillance). */
+(function(){
+  const c2=$('#fx2'), x2=c2.getContext('2d');
+  if(!c2) return;
+  let W2,H2,racks=[],packets=[],scans=[];
+  function sz2(){
+    W2=c2.width=innerWidth;H2=c2.height=innerHeight;
+    const colW=Math.max(46,W2/14);
+    racks=[];for(let cx2=colW/2;cx2<W2;cx2+=colW)
+      racks.push({x:cx2,leds:Array.from({length:Math.round(H2/26)},(_,i)=>({on:Math.random()<.4,t:Math.random()*4}))});
+    packets=Array.from({length:Math.round(W2/60)},()=>({rx:Math.floor(Math.random()*racks.length),y:Math.random()*H2,v:.25+Math.random()*.85,c:Math.random()}));
+    scans=Array.from({length:3},()=>({y:Math.random()*H2,v:.12+Math.random()*.22}));
+  }
+  sz2();addEventListener('resize',sz2);
+  (function d2(t){
+    x2.clearRect(0,0,W2,H2);
+    // rails verticaux discrets
+    x2.strokeStyle='rgba(60,180,220,.055)';x2.lineWidth=1;
+    for(const rk of racks){ x2.beginPath();x2.moveTo(rk.x,0);x2.lineTo(rk.x,H2);x2.stroke(); }
+    // serveurs : LED qui clignotent (séquence type machine active)
+    const TW= performance.now()/1000;
+    for(const rk of racks){
+      rk.leds.forEach((L,i)=>{
+        const bl=Math.sin(TW*2.4+L.t+i*.6)> .55;
+        const bl2=Math.sin(TW*7+L.t*3)> .93;   // rares glitches rapides
+        if(bl||bl2){
+          x2.fillStyle=bl2?'rgba(255,159,10,.5)':'rgba(48,209,88,.16)';
+          x2.fillRect(rk.x-3.4,i*26+8,6.8,2.2);
+        }else{
+          x2.fillStyle='rgba(48,209,88,.045)';
+          x2.fillRect(rk.x-2.6,i*26+8,5.2,1.6);
+        }
+      });
+    }
+    // paquets : descentes lumineuses le long des rails
+    for(const p of packets){
+      p.y+=p.v; if(p.y>H2){p.y=-10;p.rx=Math.floor(Math.random()*racks.length);}
+      const rk=racks[p.rx]; if(!rk) continue;
+      const g=x2.createLinearGradient(0,p.y-34,0,p.y);
+      const col=p.c<.5?'48,209,88':(p.c<.8?'110,225,255':'255,214,10');
+      g.addColorStop(0,'rgba('+col+',0)');g.addColorStop(1,'rgba('+col+',.5)');
+      x2.fillStyle=g;x2.fillRect(rk.x-1,p.y-34,2,34);
+      x2.fillStyle='rgba('+col+',.85)';x2.fillRect(rk.x-1.2,p.y-2,2.4,2.4);
+    }
+    // scans : rideaux horizontaux lents (style CCTV)
+    for(const sc of scans){
+      sc.y+=sc.v; if(sc.y>H2+80){sc.y=-80;}
+      x2.fillStyle='rgba(110,225,255,.028)';
+      x2.fillRect(0,sc.y-70,W2,70);
+      x2.fillStyle='rgba(110,225,255,.07)';
+      x2.fillRect(0,sc.y-1.2,W2,1.2);
+    }
+    requestAnimationFrame(d2);
+  })(0);
+})();
+
 /* ---------- jauge du noyau (arcs brisés, style instrument) ---------- */
 (function(){
   const svg=$('.cjarcs'), r=Math.random;
