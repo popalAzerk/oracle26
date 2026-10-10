@@ -133,9 +133,9 @@ function buildCards(){
     // large : gouttière 380px · étroit (mobile) : 2 colonnes collées au bord
     const col=i%2, row=Math.floor(i/2);
     const narrow = W<760;
-    const offset = narrow? Math.min(W*.5-90, 120) : 380;
+    const offset = narrow? Math.min(W*.5-78, 128) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
-    const colY = (narrow? H*.16 : H*.19) + row*((narrow? H*.545 : H*.555)/3);
+    const colY = (narrow? H*.13 : H*.19) + row*((narrow? H*.60 : H*.555)/3);
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
@@ -236,8 +236,17 @@ function drawLinks(){
   if(!deployed){ svg.innerHTML=''; window.__LINK_DBG={cards:CARDS.length,children:0,deployed:0}; return; }
   CARDS.forEach(({el,k},i)=>{
     const p=cardPt(el);
-    // courbe douce : du noyau vers le bord supérieur de la carte
-    const dst={x:p.x, y:p.y-46};
+    // ancrage : le lien accroche la TRANCHE de la carte face au noyau
+    // (mobile : au-dessus de la 1re rangée, en-dessous des suivantes)
+    const left = p.x < C.x;
+    let dst;
+    if(narrow){
+      // mobile : colonnes collées au centre → accroche par le bord
+      // vertical intérieur, à 1/3 du haut de la carte
+      dst={x: p.x + (left? 74 : -74), y: p.y - 30};
+    }else{
+      dst={x:p.x, y:p.y-46};
+    }
     const mx=(C.x+dst.x)/2+(dst.y-C.y)*.14, my=(C.y+dst.y)/2-(dst.x-C.x)*.14;
     out+=`<path d="M ${C.x.toFixed(0)} ${C.y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".6" stroke-width="2" fill="none" class="lk"/>`;
     // noeud d'ancrage côté carte

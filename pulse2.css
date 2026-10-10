@@ -134,8 +134,10 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 
 /* ---------- responsive ---------- */
 @media (max-width:760px){
-  .card{width:158px;padding:11px 12px 10px}
-  .cbig{font-size:22px}
+  .card{width:156px;padding:10px 11px 9px}
+  .cbig{font-size:21px}
+  .cbody{gap:2px}
+  .cprog{margin-top:5px}
   #zin{padding:22px 18px 18px}
   #zin h2{font-size:20px;letter-spacing:.2em}
   .card{position:absolute}
