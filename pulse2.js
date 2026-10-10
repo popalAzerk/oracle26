@@ -293,6 +293,7 @@ function openZoom(k){
       <span class="st">${a.title}</span>
       <span class="sm"><b>${a.date||'—'}</b> · ${a.src} →</span></a>`).join('');
   // verbatims :
+  const exs=(D.examples||{})[k]||[];
   // cohérence thématique : ne montrer que les verbatims qui parlent
   // vraiment du composant (la classification nocturne peut se tromper)
   const LEX={battery:['batterie','battery','autonomie','décharge','drain','santé','gonfl','vide'],
