@@ -21,12 +21,6 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 #hudr{position:fixed;top:24px;right:26px;z-index:20;text-align:right;pointer-events:none}
 #hudr .clock{font-size:12px;letter-spacing:.14em;color:var(--t1);font-variant-numeric:tabular-nums}
 #hudr .maj{font-size:8px;letter-spacing:.28em;color:var(--t3);margin-top:4px}
-#hudb{position:fixed;bottom:20px;right:26px;z-index:20;text-align:right;pointer-events:none}
-#hudb .tot-lbl{font-size:8px;letter-spacing:.28em;color:var(--t3)}
-#hudb .tot{font-size:20px;font-weight:700;color:var(--t1);letter-spacing:.06em}
-#hudb .tot small{font-size:9px;font-weight:400;color:var(--t2);letter-spacing:.2em}
-#linkstat{font-size:8px;letter-spacing:.24em;color:var(--t3);margin-top:3px}
-#linkstat b{color:var(--cyan);font-weight:400}
 
 /* ---------- scène ---------- */
 #stage{position:fixed;inset:0;z-index:5}
@@ -158,10 +152,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 #links path.lk{animation:lkflow 1.6s linear infinite}
 @keyframes lkflow{to{stroke-dashoffset:-14}}
 
-@media (max-width:760px){
-  #hudb{background:rgba(6,11,17,.86);border:1px solid var(--bord);border-radius:8px;
-    padding:8px 12px;bottom:14px;right:14px;backdrop-filter:blur(4px)}
-}
+
 
 
 /* ═══ mini-graphe ligne+zone par carte (zigzag blanc + aire dégradée) ═══ */
@@ -180,3 +171,15 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 .cspark .zhead.on{opacity:1;transform:scale(1)}
 .cspark .zhead circle:last-child{filter:drop-shadow(0 0 4px #fff)}
 @media (max-width:760px){ .cspark .zcwrap{height:40px;padding-top:3px} }
+
+/* ═══ noyau toggle : cartes renfermées/déployées ═══ */
+.card{will-change:transform,opacity}
+.card.folded{transform:translate(var(--fx,0),var(--fy,0)) scale(.04)!important;opacity:0;pointer-events:none}
+#zoom{transition:opacity .34s ease}
+#zoom.on #zin{transform:scale(1) translateY(0)}
+#zin{transform:scale(.82) translateY(22px)}
+#corewrap{cursor:pointer;transition:top .6s cubic-bezier(.3,.8,.3,1), filter .4s}
+#corewrap.pulse .cnum{border-color:rgba(92,242,255,.85);box-shadow:0 0 34px rgba(74,227,255,.55), inset 0 0 24px rgba(74,227,255,.25)}
+#corewrap:not(.pulse) .cnum b{font-size:22px}
+@keyframes cwav{0%{box-shadow:0 0 0 0 rgba(92,242,255,.5)}100%{box-shadow:0 0 0 46px rgba(92,242,255,0)}}
+#corewrap.pulse .cnum::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid rgba(92,242,255,.55);animation:cwav 1.4s ease-out infinite}

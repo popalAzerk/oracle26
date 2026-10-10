@@ -80,6 +80,43 @@ const TOUCH = 'ontouchstart' in window;
   svg.innerHTML=arcs;
 })();
 
+/* ---------- noyau toggle : déplie / referme les cartes ---------- */
+let SPREAD=false;
+function toggleSpread(){
+  SPREAD=!SPREAD;
+  const wrap=$('#cards'), cw=document.getElementById('corewrap');
+  if(SPREAD){
+    if(!document.querySelectorAll('.card').length) buildCards();
+    wrap.classList.add('spread');
+    cw.classList.add('pulse');
+    // déploiement en cascade : chaque carte quitte le noyau avec son délai
+    document.querySelectorAll('.card').forEach((el,i)=>{
+      el.style.transitionDelay=(i*70)+'ms';
+      el.classList.remove('folded');
+      // le mini-graphe se dessine APRÈS l'arrivée de la carte
+      setTimeout(()=>{ el.querySelectorAll('.zline').forEach(z=>{ z.classList.add('drawn');
+        const tr=z.querySelector('.ztrail'); if(tr){ tr.style.strokeDashoffset='0'; }
+        const hd=z.querySelector('.zhead'); if(hd){ setTimeout(()=>hd.classList.add('on'), 900); }
+      }); }, 600+i*70);
+    });
+    try{ drawLinks(); }catch(e){}
+  }else{
+    wrap.classList.remove('spread');
+    cw.classList.remove('pulse');
+    // referme : les cartes rentrent DANS le noyau (cascade inversée)
+    const els=[...document.querySelectorAll('.card')];
+    els.forEach((el,i)=>{
+      el.style.transitionDelay=((els.length-1-i)*45)+'ms';
+      el.classList.add('folded');
+      el.querySelectorAll('.zline').forEach(z=>{ z.classList.remove('drawn');
+        const tr=z.querySelector('.ztrail'); if(tr){ tr.style.strokeDashoffset='1.02'; }
+        const hd=z.querySelector('.zhead'); if(hd) hd.classList.remove('on');
+      });
+    });
+    setTimeout(()=>{ try{ drawLinks(); }catch(e){} }, 700); // retrace APRÈS repli (→ vide)
+  }
+}
+
 /* ---------- cartes autour du noyau ---------- */
 const CARDS=[];
 function buildCards(){
@@ -88,7 +125,7 @@ function buildCards(){
   wrap.innerHTML='';CARDS.length=0;
   rows.forEach(([k,n],i)=>{
     const el=document.createElement('div');
-    el.className='card';el.dataset.k=k;
+    el.className='card folded';el.dataset.k=k;
     // colonnes gauche/droite, 4 lignes : le noyau reste libre au centre
     // large : gouttière 380px · étroit (mobile) : 2 colonnes collées au bord
     const col=i%2, row=Math.floor(i/2);
@@ -99,6 +136,13 @@ function buildCards(){
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
+    // point de renfermement : le noyau (l'émetteur)
+    const narrow0=W<760;
+    const coreY=H*(narrow0? .14 : .44)+ (narrow0?0:0); // top CSS = 44% desktop
+    // le CSS place #corewrap top:44% (desktop) / 14% (mobile) :
+    el.style.setProperty('--fx',(W*.5-colX)+'px');
+    el.style.setProperty('--fy',(H*(narrow0?.14:.44)-colY)+'px');
+    el.style.setProperty('--rd', (i*70)+'ms');
     const pct=Math.round(n/TOT*100);
     el.innerHTML=`
       <div class="chead"><span class="chk"></span><span class="ct">${FR[k]||k}</span><span class="ck">${String(i+1).padStart(2,'0')}</span></div>
@@ -122,6 +166,12 @@ function buildCards(){
   catch(e){ console.warn('drawLinks reporté:', e.message); }
   setTimeout(drawLinks, 350); // filet : retrace une fois le layout stabilisé
 }
+// clic sur le noyau : déplie/referme (une seule branchement)
+(function(){
+  const cw=document.getElementById('corewrap');
+  if(cw && !cw.__wired){ cw.__wired=1; cw.style.cursor='pointer';
+    cw.addEventListener('click', toggleSpread); }
+})();
 /* ═══ mini-graphe LIGNE+ZONE animé par carte (zigzag blanc + aire dégradée) ═══ */
 function sparkBars(k, n){
   // série = répartition des mentions par modèle, ordonnée du plus ancien
@@ -174,6 +224,8 @@ function drawLinks(){
   window.__DL_C={x:C.x, y:C.y, r:cR};
   let out='';
   window.__DL_DBG={cards:CARDS.length, finis:isFinite(C.x), core:Math.round(C.x)+','+Math.round(C.y)};
+  const deployed=$('#cards').classList.contains('spread');
+  if(!deployed){ svg.innerHTML=''; window.__LINK_DBG={cards:CARDS.length,children:0,deployed:0}; return; }
   CARDS.forEach(({el,k},i)=>{
     const p=cardPt(el);
     // courbe douce : du noyau vers le bord supérieur de la carte
@@ -278,7 +330,6 @@ $('#zoom').addEventListener('click',e=>{if(e.target===e.currentTarget)closeZoom(
 (function(){
   const srcCount=Object.values(SRC).reduce((a,v)=>a+v.length,0)||8;
 $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.updated||'--'}</div>`;
-  $('#hudb').innerHTML=`<div class="tot-lbl">SIGNAL TOTAL</div><div class="tot">${TOT}<small> MENTIONS</small></div><div id="linkstat"><b id="srclink">${srcCount}</b> SOURCES EN LIGNE</div>`;
   setInterval(()=>{const e=$('#hudr .clock');if(e)e.textContent=new Date().toTimeString().slice(0,8);},1000);
 })();
 
@@ -301,7 +352,8 @@ $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.
   const bar=$('#intro .ibar i');let p=0;
   const iv=setInterval(()=>{p=Math.min(1,p+.08+Math.random()*.08);bar.style.width=p*100+'%';
     if(p>=1){clearInterval(iv);setTimeout(()=>{$('#intro').classList.add('off');
-      buildCards();
+      // état initial : cartes renfermées → l'utilisateur les déploie au clic noyau
+      toggleSpread();
       // compte animé du noyau
       const n=$('#coren');let v=0;const iv2=setInterval(()=>{v=Math.min(TOT,v+Math.ceil(TOT/26));n.textContent=v;if(v>=TOT)clearInterval(iv2);},42);
     },320);}},64);
