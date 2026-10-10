@@ -141,10 +141,10 @@ function buildCards(){
     el.style.setProperty('--pd',(i*.09+0.15)+'s');
     // point de renfermement : le noyau (l'émetteur)
     const narrow0=W<760;
-    const coreY=H*(narrow0? .14 : .44)+ (narrow0?0:0); // top CSS = 44% desktop
-    // le CSS place #corewrap top:44% (desktop) / 14% (mobile) :
+    const coreY=H*.5; // top CSS = 50%
+    // le CSS place #corewrap top:50% (centre de l écran) :
     el.style.setProperty('--fx',(W*.5-colX)+'px');
-    el.style.setProperty('--fy',(H*(narrow0?.14:.44)-colY)+'px');
+    el.style.setProperty('--fy',(H*.5-colY)+'px');
     el.style.setProperty('--rd', (i*70)+'ms');
     const pct=Math.round(n/TOT*100);
     el.innerHTML=`
@@ -223,10 +223,10 @@ function drawLinks(){
   const svg=$('#links'), s=$('#stage'), W=innerWidth,H=innerHeight;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.style.width=W+'px';svg.style.height=H+'px';
-  // géométrie déterministe : identique au CSS (left 50% / top 44% ou 14%)
+  // géométrie déterministe : identique au CSS (left 50% / top 50%)
   const narrow=W<760;
   const cR=narrow? Math.min(120,W*.3) : Math.min(180,W*.18);
-  const cT=narrow? .14 : .44;
+  const cT=.5; // sphère au CENTRE de l'écran
   const C={x:W*.5, y:H*cT};
   if(!isFinite(C.x)||!isFinite(C.y)){ requestAnimationFrame(drawLinks); return; }
   window.__DL_C={x:C.x, y:C.y, r:cR};
@@ -268,7 +268,7 @@ addEventListener('resize',()=>{buildCards()});
 addEventListener('resize',()=>{
   const cw=document.getElementById('corewrap');
   cw.style.width=cw.style.height=(innerWidth<760?Math.min(120,innerWidth*.3):Math.min(180,innerWidth*.18))+'px';
-  document.getElementById('corewrap').style.top=(innerWidth<760?'14%':'44%');
+  document.getElementById('corewrap').style.top='50%';
 });
 
 /* ---------- tri des dates FR "jj/mm" ou "jj/aa" ---------- */
@@ -380,7 +380,7 @@ $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.
   const cw=document.getElementById('corewrap');
   const fit=()=>{ if(!cw) return;
     cw.style.width=cw.style.height=(innerWidth<760?Math.min(120,innerWidth*.3):Math.min(180,innerWidth*.18))+'px';
-    cw.style.top=(innerWidth<760?'14%':'44%');
+    cw.style.top='50%';
   };
   fit();addEventListener('resize',fit);
   }catch(e){ console.warn('fit:', e.message); }
