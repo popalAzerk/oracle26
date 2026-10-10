@@ -139,6 +139,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   #zin h2{font-size:20px;letter-spacing:.2em}
   .card{position:absolute}
 }
+#cards.spread .card{animation:cardin .55s cubic-bezier(.2,.9,.3,1.15) forwards;
+  animation-delay:var(--pd,0s)}
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .card{opacity:1}
@@ -174,7 +176,9 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 
 /* ═══ noyau toggle : cartes renfermées/déployées ═══ */
 .card{will-change:transform,opacity}
-.card.folded{transform:translate(var(--fx,0),var(--fy,0)) scale(.04)!important;opacity:0;pointer-events:none}
+.card.folded{transform:translate(var(--fx,0),var(--fy,0)) scale(.03)!important;
+  opacity:0 !important;visibility:hidden;pointer-events:none;
+  animation:none !important}
 #zoom{transition:opacity .34s ease}
 #zoom.on #zin{transform:scale(1) translateY(0)}
 #zin{transform:scale(.82) translateY(22px)}
