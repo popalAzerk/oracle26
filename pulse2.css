@@ -8,6 +8,7 @@ html,body{height:100%}
 body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Cascadia Mono',monospace;
   overflow:hidden;-webkit-font-smoothing:antialiased}
 #fx{position:fixed;inset:0;z-index:0}
+#fx2{position:fixed;inset:0;z-index:0;opacity:.85}
 #vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(ellipse at 50% 42%, transparent 45%, rgba(2,4,7,.75) 100%)}
 #scan{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
@@ -44,9 +45,9 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   border-radius:10px;padding:14px 16px 13px;cursor:pointer;backdrop-filter:blur(6px);
   transform:translate(-50%,-50%);
   transition:transform .28s cubic-bezier(.2,.9,.3,1.2), border-color .2s, box-shadow .25s;
-  opacity:0;animation:cardin .55s cubic-bezier(.2,.9,.3,1.15) forwards;
+  opacity:0;animation:cardin .72s cubic-bezier(.2,.9,.3,1.12) forwards;
   animation-delay:var(--pd,0s)}
-@keyframes cardin{from{opacity:0;transform:translate(-50%,-50%) translateY(14px) scale(.92)}
+@keyframes cardin{from{opacity:0;transform:translate(-50%,-50%) translateY(26px) rotate(1.6deg) scale(.86)}
   to{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}}
 .card:hover{border-color:rgba(74,227,255,.55);box-shadow:0 8px 34px rgba(0,0,0,.5),
   0 0 0 1px rgba(92,242,255,.18), 0 0 24px -6px var(--c)}
@@ -142,7 +143,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   #zin h2{font-size:20px;letter-spacing:.2em}
   .card{position:absolute}
 }
-#cards.spread .card{animation:cardin .55s cubic-bezier(.2,.9,.3,1.15) forwards;
+#cards.spread .card{animation:cardin .72s cubic-bezier(.2,.9,.3,1.12) forwards;
   animation-delay:var(--pd,0s)}
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
@@ -154,7 +155,8 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 .hs{max-width:230px;white-space:nowrap;overflow:text-overflow:clip}
 
 /* flux continu le long des liens */
-#links path.lk{animation:lkflow 1.6s linear infinite}
+#links path.lk{animation:lkflow 1.6s linear infinite, lkfade .6s ease both}
+@keyframes lkfade{from{opacity:0}to{opacity:1}}
 @keyframes lkflow{to{stroke-dashoffset:-14}}
 
 
