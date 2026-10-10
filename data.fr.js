@@ -17,18 +17,21 @@ window.PULSE_FR = {
    "system_bug": [
     {
      "text": "A technical question for you if you:• Use an iPhone 8• Run iOS 16.7.8• Use Apple Earbuds• Listen to the New York Times Audio appUnlike other audio apps, I cannot pause or play NYT Audio programs by pi",
+     "text_tr": "Une question technique pour vous si vous :• Utilisez un iPhone 8• Exécutez iOS 16.7.8 • Utilisez des écouteurs Apple • Écoutez l'application New York Times Audio Contrairement à d'autres applications audio, je ne peux pas mettre en pause ou lire les programmes NYT Audio par pi",
      "url": "https://mastodon.online/@patrickgillam/112786706758495664",
      "date": "2024-07-14",
      "src": "Mastodon"
     },
     {
      "text": "Un iPhone qui ne s'allume plus n'est pas un iPhone mort. La panne est très souvent sur la carte mère : ligne d'alimentation, Tristar, Tigris, PMIC. Je diagnostique sous binoculaire avant toute interve",
+     "text_tr": "",
      "url": "https://mastodon.social/@SOSiPhoneParis/116959422859788537",
      "date": "2026-07-21",
      "src": "Mastodon"
     },
     {
      "text": "iPhone touch screen not responding after the latest iOS update? It's a common glitch. The fix is often simple: perform a force restart. You might need to do it 2-3 times to get it working again. #iOS ",
+     "text_tr": "l'écran tactile de l'iPhone ne répond pas après la dernière mise à jour iOS ? C'est un problème courant. Le correctif est souvent simple : effectuez un redémarrage forcé. Vous devrez peut-être le faire 2 à 3 fois pour le faire fonctionner à nouveau. #iOS",
      "url": "https://mastodon.social/@pupuweb/115251167663144677",
      "date": "2025-09-23",
      "src": "Mastodon"
@@ -38,6 +41,7 @@ window.PULSE_FR = {
   "items": [
    {
     "text": "Un iPhone qui ne s'allume plus n'est pas un iPhone mort. La panne est très souvent sur la carte mère : ligne d'alimentation, Tristar, Tigris, PMIC. Je diagnostique sous binoculaire avant toute interve",
+    "text_tr": "",
     "cat": "system_bug",
     "sent": "negative",
     "date": "2026-07-21",
@@ -46,6 +50,7 @@ window.PULSE_FR = {
    },
    {
     "text": "iPhone touch screen not responding after the latest iOS update? It's a common glitch. The fix is often simple: perform a force restart. You might need to do it 2-3 times to get it working again. #iOS ",
+    "text_tr": "l'écran tactile de l'iPhone ne répond pas après la dernière mise à jour iOS ? C'est un problème courant. Le correctif est souvent simple : effectuez un redémarrage forcé. Vous devrez peut-être le faire 2 à 3 fois pour le faire fonctionner à nouveau. #iOS",
     "cat": "system_bug",
     "sent": "negative",
     "date": "2025-09-23",
@@ -54,6 +59,7 @@ window.PULSE_FR = {
    },
    {
     "text": "A technical question for you if you:• Use an iPhone 8• Run iOS 16.7.8• Use Apple Earbuds• Listen to the New York Times Audio appUnlike other audio apps, I cannot pause or play NYT Audio programs by pi",
+    "text_tr": "Une question technique pour vous si vous :• Utilisez un iPhone 8• Exécutez iOS 16.7.8 • Utilisez des écouteurs Apple • Écoutez l'application New York Times Audio Contrairement à d'autres applications audio, je ne peux pas mettre en pause ou lire les programmes NYT Audio par pi",
     "cat": "system_bug",
     "sent": "negative",
     "date": "2024-07-14",
@@ -78,6 +84,7 @@ window.PULSE_FR = {
    "system_bug": [
     {
      "text": "iPhone touch screen not responding after the latest iOS update? It's a common glitch. The fix is often simple: perform a force restart. You might need to do it 2-3 times to get it working again. #iOS ",
+     "text_tr": "l'écran tactile de l'iPhone ne répond pas après la dernière mise à jour iOS ? C'est un problème courant. Le correctif est souvent simple : effectuez un redémarrage forcé. Vous devrez peut-être le faire 2 à 3 fois pour le faire fonctionner à nouveau. #iOS",
      "url": "https://mastodon.social/@pupuweb/115251167663144677",
      "date": "2025-09-23",
      "src": "Mastodon"
@@ -87,6 +94,7 @@ window.PULSE_FR = {
   "items": [
    {
     "text": "iPhone touch screen not responding after the latest iOS update? It's a common glitch. The fix is often simple: perform a force restart. You might need to do it 2-3 times to get it working again. #iOS ",
+    "text_tr": "l'écran tactile de l'iPhone ne répond pas après la dernière mise à jour iOS ? C'est un problème courant. Le correctif est souvent simple : effectuez un redémarrage forcé. Vous devrez peut-être le faire 2 à 3 fois pour le faire fonctionner à nouveau. #iOS",
     "cat": "system_bug",
     "sent": "negative",
     "date": "2025-09-23",
