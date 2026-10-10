@@ -352,8 +352,9 @@ $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.
   const bar=$('#intro .ibar i');let p=0;
   const iv=setInterval(()=>{p=Math.min(1,p+.08+Math.random()*.08);bar.style.width=p*100+'%';
     if(p>=1){clearInterval(iv);setTimeout(()=>{$('#intro').classList.add('off');
-      // état initial : cartes renfermées → l'utilisateur les déploie au clic noyau
-      toggleSpread();
+      // état initial : cartes RENFERMÉES (folded) — se déploient au clic noyau
+      buildCards();
+      $('#links').innerHTML='';
       // compte animé du noyau
       const n=$('#coren');let v=0;const iv2=setInterval(()=>{v=Math.min(TOT,v+Math.ceil(TOT/26));n.textContent=v;if(v>=TOT)clearInterval(iv2);},42);
     },320);}},64);
