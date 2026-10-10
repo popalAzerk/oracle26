@@ -170,7 +170,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   transition:opacity .4s, transform .55s cubic-bezier(.2,1.5,.4,1)}
 .cspark .zhead.on{opacity:1;transform:scale(1)}
 .cspark .zhead circle:last-child{filter:drop-shadow(0 0 4px #fff)}
-@media (max-width:760px){ .cspark .zcwrap{height:40px;padding-top:3px} }
+@media (max-width:760px){ .cspark .zcwrap{height:32px;padding-top:2px} }
 
 /* ═══ noyau toggle : cartes renfermées/déployées ═══ */
 .card{will-change:transform,opacity}
