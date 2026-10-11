@@ -424,7 +424,6 @@ function detailPanel(){
     if(id==='eq'){ return openTabEq(); }
     if(id==='map'){ return openTabMap(); }
     if(id==='modList'){ return openTabMods(); }
-    if(id==='donuts'||id==='pipe'||id==='rings'){ return openTabPipe(); }
     if(mod.contains(mod.querySelector('.kpi'))&&window.getComputedStyle(mod).borderTopWidth!=='0px'){ /* rien */ }
     // défaut : lister les catégories :
     const total=rowsD.map(([k,v])=>`<div class="dcpRow cat" data-k="${k}"><span style="color:${COLD[k]}">●</span><span>${FRD[k]}</span><b>${v}</b><small>${Math.round(v/TOTD*100)}</small></div>`).join('');
