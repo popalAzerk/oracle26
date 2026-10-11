@@ -79,29 +79,11 @@
         x.beginPath(); x.arc(cx+Math.cos(ha)*r,cy+Math.sin(ha)*r,lw*.28,0,7); x.fill();
         x.shadowBlur=0;
       }
-      // étiquette + valeur :
-      x.textAlign='center';
-      x.fillStyle=col; x.font='600 '+Math.max(9,W*.011)+'px ui-monospace';
-      x.fillText(lab, cx, cy-r-lw*1.55+2);
-      if(f>0.12){
-        x.fillStyle='#eaf1f9'; x.font='800 '+Math.max(13,W*.021)+'px ui-monospace';
-        x.fillText(Math.round(val*(f<1?f:1))+unit, cx, cy-r+lhOff(r)+2);
-      }
     }
-    const lhOff=(r)=>r*0+5; // petit offset sous l'archive
     x.globalAlpha=1-fade;
     ring(R1,f1,'#30d158','SIGNALS TOTAUX',TOT,' · '+Math.round(100*Math.min(1,f1))+' %');
     ring(R2,f2,'#ff356e','NÉGATIVITÉ',NEG,' · '+Math.round(100*Math.min(1,f2)*(NEG/TOT))+' %');
     ring(R3,f3,'#00e0ff','CONFIANCE',CONF,' %');
-    /* — nombre central : le grand total — */
-    if(f1>0.9){
-      const pop=ease((c-2.9)/.9);
-      x.globalAlpha=(1-fade)*pop;
-      x.fillStyle='#fff'; x.font='800 '+Math.max(26,W*.055)+'px ui-monospace';
-      x.fillText(TOT, cx, cy+lhOff(R3)+4);
-      x.fillStyle='rgba(138,151,168,.9)'; x.font='600 '+Math.max(8,W*.0095)+'px ui-monospace';
-      x.fillText('SIGNAUX CETTE SEMAINE', cx, cy+lhOff(R3)+W*.033);
-    }
     x.globalAlpha=1;
    }catch(err){ (window.__INTRO_ERR=window.__INTRO_ERR||[]).push(err.message); return; }
     requestAnimationFrame(loop);

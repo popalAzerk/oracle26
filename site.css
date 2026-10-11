@@ -95,3 +95,5 @@ footer{border-top:1px solid var(--line);padding:34px 28px;text-align:center;font
   .heatCard .pc{font-size:20px}
 }
 @media(max-width:480px){ .heat,.trickGrid,.quotes{grid-template-columns:1fr} }
+
+/* révélation : sans GSAP inline, la transition .rv2.on suffit */

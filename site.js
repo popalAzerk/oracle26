@@ -23,12 +23,12 @@
     gsap.registerPlugin(ScrollTrigger);
     // scroll cue : entrée douce + pulse :
     gsap.from('#scrollCue',{opacity:0,y:-14,duration:.8,ease:'expo.out',delay:.4});
-    // reveals des sections :
-    document.querySelectorAll('.rv2').forEach(el=>{
-      gsap.fromTo(el,{opacity:0,y:34},{opacity:1,y:0,duration:.85,ease:'expo.out',
-        scrollTrigger:{trigger:el,start:'top 88%'}});
-      el.classList.add('on');
-    });
+    // reveals des sections : IntersectionObserver natif (pas de
+    // style inline GSAP qui risque de cacher définitivement) :
+    const io=new IntersectionObserver(es=>es.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); }
+    }),{threshold:.12});
+    document.querySelectorAll('.rv2').forEach(el=>io.observe(el));
   } else {
     document.querySelectorAll('.rv2').forEach(el=>el.classList.add('on'));
   }
