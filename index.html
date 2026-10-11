@@ -2,30 +2,18 @@
 <html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PULSE — la voix des clients Apple, en temps réel</title>
-<link rel="stylesheet" href="site.css?v=ek1">
+<link rel="stylesheet" href="site.css?v=el1">
 </head><body>
 
-<!-- ═══ S0 · HERO SPECTACULAIRE (WebGL 140k particules morphing iPhone) ═══ -->
+<!-- ═══ S0 · HERO : vidéo 16/9 (anneaux Apple-Watch + particules) ═══ -->
 <section id="hero">
-  <canvas id="glHero"></canvas>
-  <div class="heroContent">
-    <div class="heroTag">Veille client · Apple Genius Bar · en temps réel</div>
-    <h1 class="heroTitle"><span class="hword">LA</span> <span class="hword">VOIX</span> <span class="hword">DES</span> <span class="hword">CLIENTS</span> <span class="hword"><em>APPLE</em></span></h1>
-    <p class="heroSub">Chaque nuit, la veille analyse <b id="heroN">…</b> posts publics — forums, blogs tech, réseaux — pour faire émerger ce qui casse, ce qui énerve et ce qu'on en dit au Genius Bar.</p>
-    <nav class="heroNav">
-      <a href="#secSignal"><b>01</b> CE QUI CASSE</a>
-      <a href="#secTricks"><b>02</b> LES ASTUCES DU BAR</a>
-      <a href="#secReviews"><b>03</b> LA SATISFACTION</a>
-    </nav>
-    <div class="heroMeta">
-      <span>SIGNALS <b id="heroT">—</b></span>
-      <span>COMPOSANTS <b id="heroC">—</b></span>
-      <span>SOURCES <b id="heroS">—</b></span>
-      <span>MODÈLES <b id="heroM">—</b></span>
-      <span>MAJ <b>2026.10.08</b></span>
-    </div>
+  <div class="introWrap">
+    <canvas id="introCv"></canvas>
   </div>
-  <div id="heroScroll">SCROLL ↓</div>
+  <a class="scrollCue" id="scrollCue" href="#secSignal" aria-label="Glisser vers le contenu">
+    <span class="scTxt">GLISSER</span>
+    <span class="scArrow">↓</span>
+  </a>
 </section>
 
 <!-- ═══ S1 · CE QUI CASSE : chaque composant, son % des posts du jour ═══ -->
@@ -77,8 +65,8 @@
 <script src="issues.js?v=4"></script>
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
-<script src="hero.js?v=ej1"></script>
-<script src="site.js?v=ed1"></script>
+<script src="intro.js?v=fa1"></script>
+<script src="site.js?v=eb2"></script>
 <script src="worldmap.js?v=dj1"></script>
 <script src="dashboard.js?v=do2"></script>
 </body></html>

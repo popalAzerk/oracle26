@@ -3,6 +3,8 @@
 (function(){
   const D=window.PULSE_DATA||{}, SRC=(window.PULSE_SOURCES||{}).sources||{};
   const $=s=>document.querySelector(s);
+  const $e=(sel)=>document.querySelector(sel);
+  const setTxt=(sel,v)=>{ const el=$e(sel); if(el) el.textContent=v; };
   const FRD={battery:'BATTERIE',charging:'CHARGE',screen:'ÉCRAN',audio:'AUDIO',
              buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA',cosmetic:'ESTHÉTIQUE',
              system_bug:'BUG SYSTÈME',pricing:'TARIFS',process:'PROCÉDURE',emerging:'ÉMERGENT'};
@@ -13,20 +15,14 @@
 
   /* ── S0 hero : chiffres réels + hypermotion GSAP ── */
   const srcs=new Set(); Object.values(SRC).forEach(a=>a.forEach(x=>srcs.add(x.src)));
-  $('#heroN').textContent=D.total||0;
-  $('#heroT').textContent=D.total||0;
-  $('#heroC').textContent=Object.keys(D.counts||{}).length;
-  $('#heroS').textContent=srcs.size;
-  $('#heroM').textContent=Object.keys(D.model_counts||{}).length;
-  $('#sigN').textContent=D.total||0;
+  setTxt('#heroN',D.total||0); setTxt('#heroT',D.total||0);
+  setTxt('#heroC',Object.keys(D.counts||{}).length);
+  setTxt('#heroS',srcs.size); setTxt('#heroM',Object.keys(D.model_counts||{}).length);
+  setTxt('#sigN',D.total||0);
   if(window.gsap&&window.ScrollTrigger){
     gsap.registerPlugin(ScrollTrigger);
-    // hero : mots en hypermotion (stagger expo) :
-    gsap.from('.hword',{opacity:0,y:52,rotateX:38,stagger:.09,duration:1.05,ease:'expo.out',delay:.25});
-    gsap.from('.heroTag,.heroSub,.heroNav,.heroMeta',{opacity:0,y:26,stagger:.12,duration:.9,ease:'expo.out',delay:1.15});
-    // parallax du contenu au scroll :
-    gsap.to('.heroContent',{y:-70,opacity:.25,ease:'none',
-      scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:.6}});
+    // scroll cue : entrée douce + pulse :
+    gsap.from('#scrollCue',{opacity:0,y:-14,duration:.8,ease:'expo.out',delay:.4});
     // reveals des sections :
     document.querySelectorAll('.rv2').forEach(el=>{
       gsap.fromTo(el,{opacity:0,y:34},{opacity:1,y:0,duration:.85,ease:'expo.out',
@@ -149,7 +145,6 @@
   Object.entries(SRC).forEach(([cat,list])=>list.forEach(a=>allArts.push({a,cat})));
   const items=allArts.map(o=>`<span class="tk-item"><b>${FRD[o.cat]||o.cat}</b> · ${o.a.src} : ${o.a.title.replace(/</g,'&lt;')}</span>`).join('<span style="opacity:.3">/</span>');
   $('#ticker').innerHTML=items+items; // dupliqué pour la boucle
-  $('.heroSub b')&&(window.dashZoneInject);
 })();
 /* injecter l'ancien dashboard dans #dashZone : le markup dashboard.html est
    fêtché par dashboard.js lui-même qui pointe... on garde son fetch
