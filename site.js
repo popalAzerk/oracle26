@@ -49,14 +49,6 @@
         CHALEUR DES DISCUSSIONS <b style="color:${col}">${hpct}</b></div>
     </article>`;
   }).join('');
-  // barres se remplissent quand visibles :
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.querySelectorAll('#heatGrid .bar i').forEach(i=>{
-      const st=window.ScrollTrigger?{start:'top 92%'}:{};
-      const set=()=>i.style.width=i.dataset.w+'%';
-      if(window.ScrollTrigger){ ScrollTrigger.create({trigger:i, start:'top 95%', onEnter:set}); } else set();
-    });
-  }));
   // clic carte → panneau détail de catégorie (réutilise detailPanel) :
   $('#heatGrid').addEventListener('click',e=>{
     const card=e.target.closest('.heatCard'); if(!card) return;
@@ -140,15 +132,27 @@
   const items=allArts.map(o=>`<span class="tk-item"><b>${FRD[o.cat]||o.cat}</b> · ${o.a.src} : ${o.a.title.replace(/</g,'&lt;')}</span>`).join('<span style="opacity:.3">/</span>');
   $('#ticker').innerHTML=items+items; // dupliqué pour la boucle
 })();
-/* reveals : IO APRES toutes les injections :
+/* reveals : défaut visible ; .pre posée avant la 1re frame puis
+   retirée à l'entry (l'élément n'est JAMAIS définitivement caché) :
 (function(){
   const run=()=>{
-    var cue=document.querySelector('#scrollCue');
-    if(cue&&window.gsap){ gsap.from(cue,{opacity:0,y:-14,duration:.8,ease:'expo.out',delay:.4}); }
-    const io=new IntersectionObserver(es=>es.forEach(e=>{
-      if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); }
-    }),{threshold:.12});
-    document.querySelectorAll('.rv2').forEach(el=>io.observe(el));
+    const els=[...document.querySelectorAll('.rv2')].filter(el=>{
+      const r=el.getBoundingClientRect(); return r.top>innerHeight; });
+    els.forEach(el=>el.classList.add('pre'));
+    if(els.length){
+      const io=new IntersectionObserver(es=>es.forEach(e=>{
+        if(e.isIntersecting){ e.target.classList.remove('pre'); io.unobserve(e.target); }
+      }),{threshold:.05,rootMargin:'60px 0px'});
+      els.forEach(el=>io.observe(el));
+    }
+    document.querySelectorAll('#heatGrid .bar i').forEach(i=>{
+      const st=()=>i.style.width=i.dataset.w+'%';
+      if('IntersectionObserver' in window){
+        const io2=new IntersectionObserver(es=>es.forEach(e=>{
+          if(e.isIntersecting){ st(); io2.unobserve(e.target); }
+        }),{threshold:.05}); io2.observe(i);
+      } else st();
+    });
   };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run);
   else run();

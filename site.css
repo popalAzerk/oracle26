@@ -85,9 +85,11 @@ body{background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regul
 /* footer */
 footer{border-top:1px solid var(--line);padding:34px 28px;text-align:center;font-size:9px;letter-spacing:.22ex;color:var(--t3)}
 
-/* reveal on scroll */
-.rv2{opacity:0;transform:translateY(30px)}
-.nojs .rv2,.rv2.on{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+/* reveal on scroll : défaut VISIBLE ; .pre n'est posée QUE par JS
+   sur les éléments hors écran → jamais de contenu perdu */
+.rv2{opacity:1;transform:none}
+.rv2.pre{opacity:0;transform:translateY(30px)}
+.rv2{transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
 
 @media(max-width:720px){
   .sec{padding:64px 18px}
