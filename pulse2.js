@@ -37,169 +37,101 @@ function countUpGSAP(el, from, to, dur){
 }
 const TOUCH = 'ontouchstart' in window;
 
-/* ---------- fond : maillage discret (canvas, sobre) ---------- */
+/* ---------- FOND : RÉSEAU DE NEURONES vivant (canvas 2d, seule couche) ----------
+   nœuds = neurones (pulsations individuelles), synapses = liens qui
+   « tirent » des impulsions lumineuses de proche en proche. Un tap sur
+   la sphère déclenche un train d'influx qui se propage dans le réseau. */
 (function(){
-  const c=$('#fx'), x=c.getContext('2d');
-  let W,H,dots=[];
+  const c=document.createElement('canvas');
+  c.id='fxn';
+  c.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9';
+  document.body.insertBefore(c, document.body.firstChild);
+  const x=c.getContext('2d');
+  let W,H,nodes=[],edges=[],trains=[];
   function sz(){
-    W=c.width=innerWidth;H=c.height=innerHeight;
-    dots=Array.from({length:Math.round(W*H/38000)},()=>({
+    W=c.width=innerWidth; H=c.height=innerHeight;
+    const n=Math.min(56, Math.round(W*H/16000));
+    nodes=Array.from({length:n},()=>({
       x:Math.random()*W, y:Math.random()*H,
-      ph:Math.random()*6.28, sp:.0004+Math.random()*.0006}));
-  }
-  sz();addEventListener('resize',sz);
-  (function d(t){
-    x.clearRect(0,0,W,H);
-    // maillage : points proches reliés (finesse maximale)
-    x.lineWidth=1;
-    for(let i=0;i<dots.length;i++)for(let j=i+1;j<dots.length;j++){
-      const A=dots[i],B=dots[j],dx=A.x-B.x,dy=A.y-B.y,dd=dx*dx+dy*dy;
-      if(dd<22500){
-        const pA=.5+.5*Math.sin(t*A.sp+A.ph), pB=.5+.5*Math.sin(t*B.sp+B.ph);
-        x.strokeStyle='rgba(80,210,240,'+(0.028+.05*Math.min(pA,pB)).toFixed(3)+')';
-        x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke();
+      ph:Math.random()*6.28, sp:.0004+Math.random()*.0007,
+      r:1.6+Math.random()*1.4 }));
+    // synapses : chaque nœud relié à ses 2 voisins les plus proches
+    edges=[];
+    for(let i=0;i<nodes.length;i++){
+      const d=nodes.map((o,j)=>({j, dd:(nodes[i].x-o.x)**2+(nodes[i].y-o.y)**2})).sort((a,b)=>a.dd-b.dd);
+      for(const {j,dd} of d.slice(1,3)){
+        if(!edges.some(e=>(e.a===j&&e.b===i))) edges.push({a:i,b:j,dd:Math.sqrt(dd)});
       }
     }
-    for(const p of dots){
-      const pu=.5+.5*Math.sin(t*p.sp+p.ph);
-      x.beginPath();x.arc(p.x,p.y,1.1,0,6.29);
-      x.fillStyle='rgba(110,225,255,'+(.1+.28*pu).toFixed(3)+')';x.fill();
+  }
+  sz();addEventListener('resize',sz);
+  // train d'influx : une impulsion voyage d'un bord d'un synapse à l'autre
+  function fire(start){
+    // BFS de 6 sauts à partir d'un nœud (sphère = déclencheur)
+    const adj={}; for(const e of edges){ (adj[e.a]=adj[e.a]||[]).push(e); (adj[e.b]=adj[e.b]||[]).push(e); }
+    let lvl=[start]; const seen=new Set(lvl);
+    for(let hop=0;hop<6;hop++){
+      const nxt=[];
+      for(const a of lvl) for(const e of (adj[a]||[])){
+        const b=e.a===a? e.b : e.a;
+        if(seen.has(b)) continue;
+        seen.add(b); nxt.push(b);
+        trains.push({a,b, t:hop*.24+Math.random()*.08, v:.0022+Math.random()*.0012});
+      }
+      lvl=nxt;
+    }
+  }
+  // auto-rando + déclenchement externe (tap sphère)
+  window.__neuroFire=function(){
+    // partir du nœud le plus proche du centre
+    let best=0, bd=1e9;
+    const cx=W/2, cy=H/2;
+    nodes.forEach((n,i)=>{ const dd=(n.x-cx)**2+(n.y-cy)**2; if(dd<bd){bd=dd;best=i;} });
+    fire(best);
+  };
+  setInterval(()=>{ if(!document.hidden && Math.random()<.4) fire(Math.floor(Math.random()*nodes.length)); }, 1900);
+  (function d(t){
+    x.clearRect(0,0,W,H);
+    // synapses : tronc discret + impulsion lumineuse voyageant
+    x.lineWidth=1;
+    for(const e of edges){
+      const A=nodes[e.a], B=nodes[e.b];
+      x.strokeStyle='rgba(80,200,235,.09)';
+      x.beginPath(); x.moveTo(A.x,A.y); x.lineTo(B.x,B.y); x.stroke();
+    }
+    // impulsions :
+    for(let i=trains.length-1;i>=0;i--){
+      const tr=trains[i];
+      if(t*0+ (tr._t=tr._t===undefined? t : tr._t), t < tr._t){ continue; } // attend son tour (hop)
+      const A=nodes[tr.a], B=nodes[tr.b]; if(!A||!B){ trains.splice(i,1); continue; }
+      tr.p=(tr.p===undefined? 0 : tr.p)+(tr.v*16);
+      if(tr.p>=1){ trains.splice(i,1); continue; }
+      const px=A.x+(B.x-A.x)*tr.p, py=A.y+(B.y-A.y)*tr.p;
+      const g=x.createRadialGradient(px,py,0,px,py,14);
+      g.addColorStop(0,'rgba(120,235,255,.85)');
+      g.addColorStop(1,'rgba(120,235,255,0)');
+      x.fillStyle=g; x.beginPath(); x.arc(px,py,14,0,6.29); x.fill();
+      // allumer le tronc au passage :
+      x.strokeStyle='rgba(120,235,255,'+(.5*(1-tr.p)).toFixed(2)+')';
+      x.beginPath(); x.moveTo(A.x,A.y); x.lineTo(px,py); x.stroke();
+    }
+    // neurones : corps + pulsation
+    for(const nd of nodes){
+      const pu=.5+.5*Math.sin(t*nd.sp+nd.ph);
+      // halo :
+      const g=x.createRadialGradient(nd.x,nd.y,0,nd.x,nd.y,nd.r*4.5);
+      g.addColorStop(0,'rgba(90,215,250,'+(.10+.20*pu).toFixed(3)+')');
+      g.addColorStop(1,'rgba(90,215,250,0)');
+      x.fillStyle=g; x.beginPath(); x.arc(nd.x,nd.y,nd.r*4.5,0,6.29); x.fill();
+      // corps :
+      x.beginPath(); x.arc(nd.x,nd.y,nd.r*(0.85+.3*pu),0,6.29);
+      x.fillStyle='rgba(150,235,255,'+(.22+.4*pu).toFixed(3)+')'; x.fill();
     }
     requestAnimationFrame(d);
   })(0);
 })();
 
-/* ---------- AMBIANCE DATACENTER : couche vidéo-générative de fond ----------
-   racks : colonnes de "serveurs" (LED qui clignotent en séquence),
-   paquets : impulsions qui descendent le long des rails verticaux,
-   scanlines : balayages horizontaux lents (camera de surveillance). */
-(function(){
-  const c2=$('#fx2'), x2=c2.getContext('2d');
-  if(!c2) return;
-  let W2,H2,racks=[],packets=[],scans=[];
-  function sz2(){
-    W2=c2.width=innerWidth;H2=c2.height=innerHeight;
-    const colW=Math.max(46,W2/14);
-    racks=[];for(let cx2=colW/2;cx2<W2;cx2+=colW)
-      racks.push({x:cx2,leds:Array.from({length:Math.round(H2/26)},(_,i)=>({on:Math.random()<.4,t:Math.random()*4}))});
-    packets=Array.from({length:Math.round(W2/34)},()=>({rx:Math.floor(Math.random()*racks.length),y:Math.random()*H2,v:.25+Math.random()*.85,c:Math.random()}));
-    scans=Array.from({length:4},()=>({y:Math.random()*H2,v:.12+Math.random()*.22}));
-  }
-  sz2();addEventListener('resize',sz2);
-  (function d2(t){
-    x2.clearRect(0,0,W2,H2);
-    // rails verticaux discrets
-    x2.strokeStyle='rgba(60,180,220,.12)';x2.lineWidth=1;
-    for(const rk of racks){ x2.beginPath();x2.moveTo(rk.x,0);x2.lineTo(rk.x,H2);x2.stroke(); }
-    // serveurs : LED qui clignotent (séquence type machine active)
-    const TW= performance.now()/1000;
-    for(const rk of racks){
-      rk.leds.forEach((L,i)=>{
-        const bl=Math.sin(TW*2.4+L.t+i*.6)> .55;
-        const bl2=Math.sin(TW*7+L.t*3)> .93;   // rares glitches rapides
-        if(bl||bl2){
-          x2.fillStyle=bl2?'rgba(255,159,10,.75)':'rgba(48,209,88,.42)';
-          x2.fillRect(rk.x-3.4,i*26+8,6.8,2.2);
-        }else{
-          x2.fillStyle='rgba(48,209,88,.14)';
-          x2.fillRect(rk.x-2.6,i*26+8,5.2,1.6);
-        }
-      });
-    }
-    // paquets : descentes lumineuses le long des rails
-    for(const p of packets){
-      p.y+=p.v; if(p.y>H2){p.y=-10;p.rx=Math.floor(Math.random()*racks.length);}
-      const rk=racks[p.rx]; if(!rk) continue;
-      const g=x2.createLinearGradient(0,p.y-34,0,p.y);
-      const col=p.c<.5?'48,209,88':(p.c<.8?'110,225,255':'255,214,10');
-      g.addColorStop(0,'rgba('+col+',0)');g.addColorStop(1,'rgba('+col+',.85)');
-      x2.fillStyle=g;x2.fillRect(rk.x-1,p.y-34,2,34);
-      x2.fillStyle='rgba('+col+',.95)';x2.fillRect(rk.x-2,p.y-3,4,4);
-    }
-    // scans : rideaux horizontaux lents (style CCTV)
-    for(const sc of scans){
-      sc.y+=sc.v; if(sc.y>H2+80){sc.y=-80;}
-      x2.fillStyle='rgba(110,225,255,.06)';
-      x2.fillRect(0,sc.y-70,W2,70);
-      x2.fillStyle='rgba(110,225,255,.14)';
-      x2.fillRect(0,sc.y-1.2,W2,1.2);
-    }
-    requestAnimationFrame(d2);
-  })(0);
-})();
-
-/* ---------- WEBGL : champ de particules 3D (vanilla, zéro lib) ----------
-   900 particules en volume, drift organique + réaction au doigt : le
-   pointeur repousse le nuage (répulsion), tap sphère = onde de choc. */
-(function(){
-  const cv=document.createElement('canvas');
-  cv.id='fx3'; cv.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none';
-  document.body.insertBefore(cv, document.getElementById('fx2')?document.getElementById('fx2').nextSibling:document.body.firstChild);
-  const gl=cv.getContext('webgl',{alpha:true,antialias:true,premultipliedAlpha:false});
-  if(!gl){ cv.remove(); return; } // fallback gracieux : les couches 2D couvrent
-  let W3,H3,DPR3=Math.min(devicePixelRatio||1,2);
-  function sz3(){ W3=cv.width=innerWidth*DPR3; H3=cv.height=innerHeight*DPR3; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; gl.viewport(0,0,W3,H3); }
-  const VS=`attribute vec3 aP; attribute float aS; uniform mat4 uM; uniform float uT; varying float vS;
-    void main(){ vec3 p=aP; p.x+=sin(uT*.35+p.y*2.1)*.35; p.y+=cos(uT*.28+p.z*1.7)*.3; p.z+=sin(uT*.22+p.x*1.9)*.35;
-    gl_Position=uM*vec4(p,1.); gl_PointSize=max(2.0,aS*3.2); vS=aS; }`;
-  const FS=`precision mediump float; varying float vS; void main(){
-    vec2 d=gl_PointCoord-vec2(.5); float r=length(d);
-    if(r>.5) discard;
-    float a=(1.-r*2.)*.85; // halo doux
-    vec3 c=mix(vec3(.42,.86,1.), vec3(.19,.82,.35), step(.78,vS));
-    c=mix(c, vec3(1.,.62,.04), step(.93,vS));
-    gl_FragColor=vec4(c,a); }`;
-  function sh(t,src){ const o=gl.createShader(t); gl.shaderSource(o,src); gl.compileShader(o); return o; }
-  const pr=gl.createProgram();
-  gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));
-  gl.linkProgram(pr); gl.useProgram(pr);
-  const N3=900, pos=new Float32Array(N3*3), sz=new Float32Array(N3);
-  for(let i=0;i<N3;i++){ // volume : sphère creuse légèrement aplatie
-    const th=Math.random()*6.283, ph=Math.acos(2*Math.random()-1), rr=1.6+Math.random()*2.6;
-    pos[i*3]=rr*Math.sin(ph)*Math.cos(th)*1.7; pos[i*3+1]=rr*Math.cos(ph)*.85; pos[i*3+2]=rr*Math.sin(ph)*Math.sin(th);
-    sz[i]=Math.random();
-  }
-  const pb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,pb); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.STATIC_DRAW);
-  const sb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,sb); gl.bufferData(gl.ARRAY_BUFFER,sz,gl.STATIC_DRAW);
-  const aP=gl.getAttribLocation(pr,'aP'), aS=gl.getAttribLocation(pr,'aS');
-  const uM=gl.getUniformLocation(pr,'uM'), uT=gl.getUniformLocation(pr,'uT');
-  function mat(rX,rY){ const cX=Math.cos(rX),sX=Math.sin(rX),cY=Math.cos(rY),sY=Math.sin(rY);
-    const cam=5.4, f=1.35;
-    const rx=new Float32Array([1,0,0,0, 0,cX,sX,0, 0,-sX,cX,0, 0,0,0,1]);
-    const ry=new Float32Array([cY,0,-sY,0, 0,1,0,0, sY,0,cY,0, 0,0,0,1]);
-    const mv=new Float32Array(16);
-    for(let co=0;co<4;co++)for(let li=0;li<4;li++){ let v=0; for(let kk=0;kk<4;kk++) v+=rx[kk*4+li]*ry[co*4+kk]; mv[co*4+li]=v; }
-    mv[14]-=cam;
-    const asp=innerWidth/innerHeight, fn=1/Math.tan(f*.5), zn=1.0, zf=30;
-    const prj=new Float32Array([fn/asp,0,0,0, 0,fn,0,0, 0,0,(zf+zn)/(zn-zf),-1, 0,0,2*zf*zn/(zn-zf),0]);
-    const out=new Float32Array(16);
-    for(let co=0;co<4;co++)for(let li=0;li<4;li++){ let v=0; for(let kk=0;kk<4;kk++) v+=prj[kk*4+li]*mv[co*4+kk]; out[co*4+li]=v; }
-    return out;
-  }
-  let rX=-.32, rY=0, tRX=-.32, tRY=0, drag=null, px=0, py=0;
-  // interaction : pointerdown/drag = orbite, pointermove = répulsion douce
-  addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; }, {passive:true});
-  addEventListener('pointermove',e=>{ if(drag){ tRY+=(e.clientX-drag.x)*.0032; tRX=Math.max(-1.1,Math.min(1.1,tRX+(e.clientY-drag.y)*.0032)); drag={x:e.clientX,y:e.clientY}; } }, {passive:true});
-  addEventListener('pointerup',()=>{ drag=null; });
-  // onde de choc au déploiement (hook global)
-  window.__pulseBurst=function(){
-    tRY+=2.4; // tourbillon : le nuage tourne d'un coup
-  };
-  sz3(); addEventListener('resize',sz3);
-  (function loop(t){
-    rY+=(tRY-rY)*.045; rX+=(tRX-rX)*.045;
-    const M=mat(rX,rY);
-    gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additif (lueur)
-    gl.uniformMatrix4fv(uM,false,M); gl.uniform1f(uT,t/1000);
-    gl.bindBuffer(gl.ARRAY_BUFFER,pb); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP,3,gl.FLOAT,false,0,0);
-    gl.bindBuffer(gl.ARRAY_BUFFER,sb); gl.enableVertexAttribArray(aS); gl.vertexAttribPointer(aS,1,gl.FLOAT,false,0,0);
-    gl.drawArrays(gl.POINTS,0,N3);
-    requestAnimationFrame(loop);
-  })(0);
-})();
-
-/* jauge du noyau (arcs brisés, style instrument) */
+/* jauge du noyau/* jauge du noyau (arcs brisés, style instrument) */
 (function(){
   const svg=$('.cjarcs'), r=Math.random;
   function ring(cx,cy,rad,n,rev){
@@ -246,7 +178,7 @@ function toggleSpread(){
     wrap.classList.add('spread');
     cw.classList.add('pulse');
     if(hint) hint.textContent='▸ REFERMER';
-    if(window.__pulseBurst) window.__pulseBurst();
+    if(window.__neuroFire) window.__neuroFire();  // influx dans le fond neuronal
     // ── GSAP : TIMELINE IMBRIQUÉE (onde ⊂ cartes ⊂ liens) ──
     if(window.__deployTL) window.__deployTL.kill();
     const cards=[...document.querySelectorAll('.card')];
@@ -357,8 +289,8 @@ function buildCards(){
     const offset = narrow? Math.min(W*.5-78, 128) : 380;
     const colX = col===0? W*.5-offset : W*.5+offset;
     let y0, stepTotal;
-    if(narrow){ y0=H*.19; stepTotal=H*.54/3; }  // marge basse accrue (~20% de l'écran au lieu de ~12%)
-    else{ y0=H*.19; stepTotal=H*.555/3; }
+    if(narrow){ y0=H*.175; stepTotal=Math.min(H*.225,H*.56/3); }  // step > cardH: gouttière ~28px restaurée
+    else{ y0=H*.17; stepTotal=H*.56/3; }
     const colY = y0 + row*stepTotal;
     el.style.left=colX+'px';el.style.top=colY+'px';
     el.style.setProperty('--c',COL[k]||'#8f8f9f');
@@ -471,9 +403,8 @@ function drawLinks(){
     const ix=p.x+(left? -rw/2 : rw/2), iy=p.y-rh/2;
     dst = narrow ? {x:ix, y:iy+10} : {x:p.x, y:p.y-rh/2-8};
     const mx=(C.x+dst.x)/2+(dst.y-C.y)*.18, my=(C.y+dst.y)/2-(dst.x-C.x)*.18;
-    // départ = SUR le cercle du noyau (angle du point d'arrivée)
-    const ang=Math.atan2(dst.y-C.y, dst.x-C.x);
-    const sx=C.x+Math.cos(ang)*(cR+6), sy=C.y+Math.sin(ang)*(cR+6);
+    // départ = CENTRE du noyau (le fil part du cœur, derrière la sphère)
+    const sx=C.x, sy=C.y;
     out+=`<path d="M ${sx.toFixed(0)} ${sy.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${dst.x.toFixed(0)} ${dst.y.toFixed(0)}" stroke="${COL[k]||'#8f8f9f'}" stroke-opacity=".75" stroke-width="2.2" fill="none" class="lk"/>`;
     // noeud de connexion (côté carte) + point de départ sur le bord sphère
     out+=`<circle cx="${dst.x.toFixed(0)}" cy="${dst.y.toFixed(0)}" r="3.4" fill="${COL[k]||'#8f8f9f'}" fill-opacity=".9"/>`;

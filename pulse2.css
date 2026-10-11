@@ -136,7 +136,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 
 /* ---------- responsive ---------- */
 @media (max-width:760px){
-  .card{width:156px;padding:10px 11px 9px}
+  .card{width:min(46vw,168px);padding:9px 10px 8px}
   .cbig{font-size:21px}
   .cbody{gap:2px}
   .cprog{margin-top:5px}
