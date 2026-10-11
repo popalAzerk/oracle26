@@ -1,50 +1,12 @@
 <!doctype html>
 <html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PULSE — signal client Apple</title>
-<link rel="stylesheet" href="pulse2.css?v=aw2">
+<title>PULSE — dashboard signal client Apple</title>
+<link rel="stylesheet" href="dashboard.css?v=bv2">
 </head><body>
-<div id="vignette"></div>
-<div id="scan"></div>
-
-<div id="hud"><div class="hb">PULSE<i>·</i>SIGNAL</div><div class="hs">VEILLE CLIENT · APPLE GENIUS BAR</div></div>
-<div id="hudr"></div>
-
-<main id="stage">
-  <svg id="links" width="100%" height="100%"></svg>
-  <div id="corewrap">
-    <div id="core">
-      <svg class="cjarcs" viewBox="0 0 200 200" aria-hidden="true"></svg>
-      <svg id="coremorph" viewBox="0 0 200 200" aria-hidden="true">
-        <path id="cmPath" d="M100,14 C144,14 186,56 186,100 C186,144 144,186 100,186 C56,186 14,144 14,100 C14,56 56,14 100,14 Z"
-              fill="none" stroke="rgba(110,230,255,.5)" stroke-width="1.4"/>
-        <path id="cmGrid" d="M100,14 L100,186 M14,100 L186,100 M40,40 L160,160 M160,40 L40,160"
-              fill="none" stroke="rgba(110,230,255,.28)" stroke-width=".8" opacity="0"/>
-      </svg>
-      <div class="cnum"><b id="coren">0</b><span>SIGNAL</span></div>
-    </div>
-  </div>
-  <div id="cards"></div>
-</main>
-  <section id="dcs" aria-label="Salles datacenter">
-    <h2>SALLES · DATACENTER</h2>
-    <div class="dcsgrid">
-      <div class="dcnode"><i></i><b>RACK A ·</b><span>ingest Harken/Laya</span></div>
-      <div class="dcnode"><i></i><b>RACK B ·</b><span>classification nocturne</span></div>
-      <div class="dcnode"><i></i><b>RACK C ·</b><span>merge tarifs</span></div>
-      <div class="dcnode"><i></i><b>CACHE ·</b><span>traductions pulse</span></div>
-    </div>
-    <p class="dcfoot">Le signal se collecte la nuit, se trie au lever, s'affiche ici.</p>
-  </section>
-
-<div id="zoom"><div id="zin"></div></div>
-<div id="intro"><div class="ilogo">PULSE<i>·</i>SIGNAL</div><div class="ibar"><i></i></div></div>
-
 <script src="data.js?v=202610101"></script>
 <script src="issues.js?v=4"></script>
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
-<script src="vendor/DrawSVGPlugin.min.js"></script>
-<script src="vendor/ScrambleTextPlugin.min.js"></script>
-<script src="pulse2.js?v=au2"></script>
+<script src="dashboard.js?v=bv2"></script>
 </body></html>
