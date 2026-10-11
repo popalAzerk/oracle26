@@ -132,6 +132,18 @@
   const items=allArts.map(o=>`<span class="tk-item"><b>${FRD[o.cat]||o.cat}</b> · ${o.a.src} : ${o.a.title.replace(/</g,'&lt;')}</span>`).join('<span style="opacity:.3">/</span>');
   $('#ticker').innerHTML=items+items; // dupliqué pour la boucle
 })();
+/* ── S5 : ANALYSE IA (patrons/fraude/satisfaction) ── */
+  (function(){
+    const g=document.getElementById('aiGrid'); if(!g) return;
+    const P=D.ai_patterns||[], F=D.ai_fraud||[], C=D.ai_csat||[];
+    const block=(k,t,items,cls)=>`<div class="aiCard rv2 ${cls}">\n      <div class="aiK">${k}</div><h3>${t}</h3>\n      ${items.map(x=>`<div class="aiRow"><b>${(x.t||'').replace(/</g,'&lt;')}</b><p>${(x.p||'').replace(/</g,'&lt;')}</p>${x.src?`<div class="aiSrc">SOURCE · ${x.src}</div>`:''}</div>`).join('')}\n    </div>`;
+    let html='';
+    html+=block('01','Patrons récurrents', P.length?P:[{t:'Collecte de cette nuit en cours', p:'La veille rassemble les posts du jour ; les patrons se dégagent au fil des nuits.'}],'aiBlue');
+    html+=block('02','Signaux d’alerte (fraude au Bar)', F.length?F:[{t:'Aucune astuce de fraude détectée cette nuit', p:'Le détecteur ne remonte rien pour l’instant — la veille continue chaque nuit.'}],'aiRed');
+    html+=block('03','Leviers de satisfaction', C.length?C:[{t:'Analyse des avis en cours', p:'Les irritants de la veille sont extraits chaque nuit ; les leviers suivent.'}],'aiGreen');
+    g.innerHTML=html;
+  })();
+
 /* reveals : défaut visible ; .pre posée avant la 1re frame puis
    retirée à l'entry (l'élément n'est JAMAIS définitivement caché) :
 (function(){

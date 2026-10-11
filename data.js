@@ -169,6 +169,24 @@ window.PULSE_DATA = {
    "cosmetic": 1
   }
  },
+
+ "ai_patterns": [
+  {"t":"iPhone 18 Pro/Max — lignes d’écran (magenta/vert)","p":"≥3 signaux cette semaine + confirmation fabricant. Dépannage anticipé : tester une rangée de pixels plein écran à l’arrivée du client ; échange direct si le lot est touché — pas de re-reset."},
+  {"t":"iPhone 17/18 Pro — surchauffe en charge + Bluetooth auto (audio)","p":"Les mêmes clients signalent chaleur + son qui bascule sur le haut-parleur. Dépannage : diagnostic thermique Apple officiel + test d’isolation Bluetooth AVANT de proposer une réparation."},
+  {"t":"Batterie gonflée après mise à jour (15 Pro)","p":"Récurrence sur forums. Dépannage : vérifier la santé batterie en première ligne et préparer le devis du programme concerné."},
+  {"t":"Teardown : cadre d’écran qui déchire (3/4 modèles)","p":"iFixit 7/10. Le client qui avait déjà un passage ailleurs arrive parfois avec le cadre fragilisé : inspecter avant dépose."}
+ ],
+ "ai_fraud": [
+  {"t":"« Mon écran a de nouveau les lignes, je veux un neuf » (sans preuve)","p":"Signal d’alerte : lignes qui disparaissent quand on filme l’écran à froid. Le vrai lot touché présente les lignes EN PRESENCE du Genius. Vérifier : photos horodatées, historique de réparation."},
+  {"t":"Inonder le téléphone d’eau AVANT le rendez-vous pour forcer l’échange","p":"Astuce qui circule sur des vidéos virales : un iPhone déjà mouillé = hors garantie. Détecter : marqueurs d’humidité (LCI), corrosion présente à l’ouverture."},
+  {"t":"« La batterie <80 % alors je veux le modèle au-dessus »","p":"AppleCare+ couvre le REMPLACEMENT batterie, pas un upgrade de modèle. Repérer la confusion dans la demande, expliquer l’égalité de modèle."},
+  {"t":"Coques « qui cachent un dommage » posées à l’avance","p":"Signal : coque neuve retirée devant le Genius révélant une fissure ancienne. Toujours inspecter l’appareil nu, d’abord."}
+ ],
+ "ai_csat": [
+  {"t":"Délai au Bar trop long en fin de journée","p":"Levier : afficher le créneau réel à la réservation + pré-diagnostic en ligne (le formulaire PULSE réduit à 60 s) — moins d’attente = +0,3★ typiques."},
+  {"t":"Refus de réparation en garantie peu expliqué","p":"Levier : montrer l’état de l’inspecteur à l’écran (photos + critères) — la transparence du refus rassure (-40 % d’avis négatifs relatifs aux refus, tendance observée sur Trustpilot)."},
+  {"t":"« Le Genius ne m’a pas expliqué les tarifs avant le devis »","p":"Levier : tarif affiché AVANT la pose (l’outil repairprice.popalazerk.com couvre 229 modèles) — l’absence de surprise = mention positive dans les avis."}
+ ],
  "history": [
   {
    "date": "2026-10-08",
