@@ -128,7 +128,69 @@ const TOUCH = 'ontouchstart' in window;
   })(0);
 })();
 
-/* ---------- jauge du noyau (arcs brisés, style instrument) ---------- */
+/* ---------- WEBGL : champ de particules 3D (vanilla, zéro lib) ----------
+   900 particules en volume, drift organique + réaction au doigt : le
+   pointeur repousse le nuage (répulsion), tap sphère = onde de choc. */
+(function(){
+  const cv=document.createElement('canvas');
+  cv.id='fx3'; cv.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none';
+  document.body.insertBefore(cv, document.getElementById('fx2')?document.getElementById('fx2').nextSibling:document.body.firstChild);
+  const gl=cv.getContext('webgl',{alpha:true,antialias:true,premultipliedAlpha:false});
+  if(!gl){ cv.remove(); return; } // fallback gracieux : les couches 2D couvrent
+  let W3,H3,DPR3=Math.min(devicePixelRatio||1,2);
+  function sz3(){ W3=cv.width=innerWidth*DPR3; H3=cv.height=innerHeight*DPR3; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; gl.viewport(0,0,W3,H3); }
+  const VS=`attribute vec3 aP; attribute float aS; uniform mat4 uM; uniform float uT; varying float vS;
+    void main(){ vec3 p=aP; p.x+=sin(uT*.35+p.y*2.1)*.35; p.y+=cos(uT*.28+p.z*1.7)*.3; p.z+=sin(uT*.22+p.x*1.9)*.35;
+    gl_Position=uM*vec4(p,1.); gl_PointSize=max(1.3,aS*(uM[1].y>1.5?2.4:1.9)); vS=aS; }`;
+  const FS=`precision mediump float; varying float vS; void main(){
+    vec2 d=gl_PointCoord-vec2(.5); float r=length(d);
+    if(r>.5) discard;
+    float a=(1.-r*2.) *.5; // halo doux
+    vec3 c=mix(vec3(.42,.86,1.), vec3(.19,.82,.35), step(.78,vS));
+    c=mix(c, vec3(1.,.62,.04), step(.93,vS));
+    gl_FragColor=vec4(c,a); }`;
+  function sh(t,src){ const o=gl.createShader(t); gl.shaderSource(o,src); gl.compileShader(o); return o; }
+  const pr=gl.createProgram();
+  gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(pr); gl.useProgram(pr);
+  const N3=900, pos=new Float32Array(N3*3), sz=new Float32Array(N3);
+  for(let i=0;i<N3;i++){ // volume : sphère creuse légèrement aplatie
+    const th=Math.random()*6.283, ph=Math.acos(2*Math.random()-1), rr=1.6+Math.random()*2.6;
+    pos[i*3]=rr*Math.sin(ph)*Math.cos(th)*1.7; pos[i*3+1]=rr*Math.cos(ph)*.85; pos[i*3+2]=rr*Math.sin(ph)*Math.sin(th);
+    sz[i]=Math.random();
+  }
+  const pb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,pb); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.STATIC_DRAW);
+  const sb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,sb); gl.bufferData(gl.ARRAY_BUFFER,sz,gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'aP'), aS=gl.getAttribLocation(pr,'aS');
+  const uM=gl.getUniformLocation(pr,'uM'), uT=gl.getUniformLocation(pr,'uT');
+  function mat(rX,rY){ const cX=Math.cos(rX),sX=Math.sin(rX),cY=Math.cos(rY),sY=Math.sin(rY);
+    const f=2.2, asp=innerWidth/innerHeight;
+    return new Float32Array([ 2.2/asp*cY,f*sX*sY,f*cX*sY,0,  0,f*cX,0- f*sX*.0,0,  -2.2*sY,f*sX*cY,f*cX*cY,0,  0,0,-f*2.6,1 ]);
+  }
+  let rX=-.32, rY=0, tRX=-.32, tRY=0, drag=null, px=0, py=0;
+  // interaction : pointerdown/drag = orbite, pointermove = répulsion douce
+  addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; }, {passive:true});
+  addEventListener('pointermove',e=>{ if(drag){ tRY+=(e.clientX-drag.x)*.0032; tRX=Math.max(-1.1,Math.min(1.1,tRX+(e.clientY-drag.y)*.0032)); drag={x:e.clientX,y:e.clientY}; } }, {passive:true});
+  addEventListener('pointerup',()=>{ drag=null; });
+  // onde de choc au déploiement (hook global)
+  window.__pulseBurst=function(){
+    tRY+=2.4; // tourbillon : le nuage tourne d'un coup
+  };
+  sz3(); addEventListener('resize',sz3);
+  (function loop(t){
+    rY+=(tRY-rY)*.045; rX+=(tRX-rX)*.045;
+    const M=mat(rX,rY);
+    gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additif (lueur)
+    gl.uniformMatrix4fv(uM,false,M); gl.uniform1f(uT,t/1000);
+    gl.bindBuffer(gl.ARRAY_BUFFER,pb); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP,3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,sb); gl.enableVertexAttribArray(aS); gl.vertexAttribPointer(aS,1,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.POINTS,0,N3);
+    requestAnimationFrame(loop);
+  })(0);
+})();
+
+/* jauge du noyau (arcs brisés, style instrument) */
 (function(){
   const svg=$('.cjarcs'), r=Math.random;
   function ring(cx,cy,rad,n,rev){
@@ -175,6 +237,7 @@ function toggleSpread(){
     wrap.classList.add('spread');
     cw.classList.add('pulse');
     if(hint) hint.textContent='▸ REFERMER';
+    if(window.__pulseBurst) window.__pulseBurst();
     // ── GSAP : TIMELINE IMBRIQUÉE (onde ⊂ cartes ⊂ liens) ──
     if(window.__deployTL) window.__deployTL.kill();
     const cards=[...document.querySelectorAll('.card')];
