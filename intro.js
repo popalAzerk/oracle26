@@ -5,6 +5,7 @@
    rien ne bloque la vue. */
 'use strict';
 (function(){
+  window.addEventListener('error',function(e){ (window.__INTRO_ERR=window.__INTRO_ERR||[]).push('G:'+e.message); });
   const cv=document.getElementById('introCv'); if(!cv) return;
   const x=cv.getContext('2d');
   const D=window.PULSE_DATA||{};
@@ -32,7 +33,7 @@
   const ease=(v)=>v<0?0:v>1?1:1-Math.pow(1-v,3);
   let t0=performance.now();
   (function loop(t){
-    const S=(t-t0)/1000;
+   try{ const S=(t-t0)/1000;
     const c=S%CYC;
     x.setTransform(dpr,0,0,dpr,0,0);
     x.clearRect(0,0,W,H);
@@ -101,6 +102,7 @@
       x.fillText('SIGNAUX CETTE SEMAINE', cx, cy+lhOff(R3)+W*.033);
     }
     x.globalAlpha=1;
+   }catch(err){ (window.__INTRO_ERR=window.__INTRO_ERR||[]).push(err.message); return; }
     requestAnimationFrame(loop);
   })(t0);
 })();
