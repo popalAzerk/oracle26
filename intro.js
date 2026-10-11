@@ -30,6 +30,7 @@
       col:PAL[i%PAL.length], w:Math.random()*Math.PI*2});
   }
   const CYC=10; // seconde de cycle
+    const R1=Math.min(W,H)*.19; const R2=R1*.78; const R3=R1*.56;
   const ease=(v)=>v<0?0:v>1?1:1-Math.pow(1-v,3);
   let t0=performance.now();
   (function loop(t){
