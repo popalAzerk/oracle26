@@ -98,7 +98,14 @@ function lineChart(){
     g+=`<circle id="ld${si}" cx="${XX(NP-1).toFixed(1)}" cy="${YY(arr[arr.length-1]).toFixed(1)}" r="3" fill="${col}" opacity="0"/>`;
   });
   if(NP===1){
-    g+=`<g font-size="8" fill="rgba(124,134,152,.7)"><text x="${pad.l+4}" y="${pad.t+10}">1 semaine collectée — les suivantes s'accumulent chaque nuit</text></g>`;
+    // une semaine = un point : pas de courbe sensée. Remplacer le
+    // module par une lecture claire des 3 séries :
+    mod.innerHTML=`<div class="lab"><span>ÉVOLUTION CUMULÉE</span><b>1ʳᵉ SEMAINE</b></div>
+      <div class="sn1"><span style="color:#00e0ff">●</span> TOTAL <b>${t1[0]}</b></div>
+      <div class="sn1"><span style="color:#7ea6ff">●</span> ${FRD[k1]} <b>${t2[0]}</b></div>
+      <div class="sn1"><span style="color:#2e7cf6">●</span> ${FRD[k2]} <b>${t3[0]}</b></div>
+      <div class="snNote">La courbe s'active dès 2 semaines — la veille nocturne s'accumule chaque nuit à 02:39.</div>`;
+    return;
   }
   svg.innerHTML=g;
   // reveal : dash-trick CSS sur polyline (fiable en SVG) :
