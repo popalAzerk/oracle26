@@ -45,7 +45,7 @@ function renderWorldMap(){
   cv.getContext('2d').scale(Math.min(devicePixelRatio||1,2), Math.min(devicePixelRatio||1,2));
   cv.style.width=W+'px'; cv.style.height=H+'px';
   // hub = France (le site FR) :
-  const HUB={lat:48.1, lon:1.8};
+  const HUB={lat:47.2, lon:2.6}; // = le marqueur FR : un seul point
   // agrégeer les articles réels du jour :
   const arts=[];
   Object.entries((window.PULSE_SOURCES||{}).sources||{}).forEach(([cat,list])=>{
@@ -173,7 +173,7 @@ function renderWorldMap(){
     });
     // label hub :
     x.fillStyle='rgba(0,224,255,.9)'; x.font='7px ui-monospace'; x.textAlign='center';
-    x.fillText('HUB · FR', hx, hy-11);
+    x.fillText('HUB', hx, hy-13);
     requestAnimationFrame(loop);
   })(t0);
 }
