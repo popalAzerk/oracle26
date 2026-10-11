@@ -64,15 +64,22 @@ function renderWorldMap(){
   // vols animés : chaque article déclenche un vol à sa date-heure
   // simulée (échelonné) : le vol EST un article réel.
   const flights=[];
-  arts.forEach((a,i)=>{
-    flights.push({a, t0:i*0.9+Math.random()*0.4, dur:1.6+Math.random()*0.6, active:false, done:false});
-  });
+  function seedFlights(base){
+    arts.forEach((a,i)=>{
+      flights.push({a, t0:base+i*0.9+Math.random()*0.4, dur:1.6+Math.random()*0.6, arrived:false});
+    });
+  }
+  seedFlights(0.4);
   // DOM labels :
   host.querySelectorAll('.hot').forEach(x=>x.remove());
+  const seenLat={};
   markers.forEach((mk,i)=>{
+    // dés-agglomérer les 9 US : jitter vertical sur les labels répétés
+    const same=(seenLat[mk.c]||0); seenLat[mk.c]=same+1;
+    const jy = same ? (same*7):0;
     const el=document.createElement('span'); el.className='hot mk';
     el.style.left=(mk.lon+180)/360*100+'%';
-    el.style.top=(90-mk.lat)/180*100+'%';
+    el.style.top=((90-mk.lat)/180*100)+jy/((host.getBoundingClientRect().height||180))+'%';
     el.dataset.c=mk.c;
     el.innerHTML=`<i style="background:${WCOLOR[mk.c]};box-shadow:0 0 9px ${WCOLOR[mk.c]}"></i>
       <b class="mkFlag" style="color:${WCOLOR[mk.c]}">${mk.c} · ${mk.n}</b>`;
@@ -89,21 +96,23 @@ function renderWorldMap(){
 
   const x=cv.getContext('2d');
   const t0=performance.now();
+  let lastBatch=0;
   (function loop(t){
     if(document.hidden){ requestAnimationFrame(loop); return; }
     const S=(t-t0)/1000;
+    if(S-lastBatch>24){ lastBatch=S; seedFlights(S+0.4); }
     x.clearRect(0,0,W,H);
     // continents pointillistes :
-    x.fillStyle='rgba(124,160,190,.30)';
+    x.fillStyle='rgba(124,170,200,.55)';
     for(const key in LANDS){
       const poly=LANDS[key];
       for(let i=0;i<poly.length-1;i++){
         const [x1,y1]=proj(poly[i][0],poly[i][1],W,H);
         const [x2,y2]=proj(poly[i+1][0],poly[i+1][1],W,H);
-        const steps=Math.max(2,Math.round(Math.hypot(x2-x1,y2-y1)/4));
+        const steps=Math.max(2,Math.round(Math.hypot(x2-x1,y2-y1)/2.6));
         for(let k=0;k<=steps;k++){
           const px=x1+(x2-x1)*k/steps, py=y1+(y2-y1)*k/steps;
-          x.fillRect(px-0.7,py-0.7,1.4,1.4);
+          x.fillRect(px-0.8,py-0.8,1.6,1.6);
         }
       }
     }
