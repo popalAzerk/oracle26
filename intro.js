@@ -56,7 +56,6 @@
     });
     x.globalAlpha=1;
     /* — RINGS : remplissage séquentiel (batterie→négatifs→confiance) — */
-    const R1=Math.min(W,H)*.19, R2=R1*.78, R3=R1*.56;
     const lw=Math.max(7,R1*.085);
     const f1=ease((c-1.0)/1.6), f2=ease((c-2.2)/1.6), f3=ease((c-3.4)/1.6);
     const fade=ease((c-(CYC-1.1))/1.1); // sortie douce
