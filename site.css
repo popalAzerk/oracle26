@@ -1,6 +1,6 @@
 /* ═══ PULSE 2.0 — structure claire en 4 sections ═══ */
 :root{
-  --bg:#05080f; --bg2:#0a0f1a; --ink:#eaf1f9; --t2:#8a97a8; --t3:#55606f;
+  --bg:#05080f; --bg2:#0a0f1a; --ink:#eaf1f9; --t2:#8a97a8; --t3:#7a8698;
   --cy:#00e0ff; --gr:#30d158; --pk:#ff356e; --yl:#ffd60a; --or:#ff9f0a; --vi:#bf5af2;
   --line:rgba(255,255,255,.07);
 }
@@ -11,6 +11,8 @@ body{background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regul
 ::selection{background:var(--cy);color:#000}
 
 /* ── S0 HERO ── */
+#dash-topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 26px;font-size:10px;letter-spacing:.18ex;z-index:5;color:var(--t2)}
+#dash-topbar b{color:var(--ink)}
 #hero{position:relative;height:100vh;min-height:640px;overflow:hidden;border-bottom:1px solid var(--line)}
 #glHero{position:absolute;inset:0;width:100%;height:100%;display:block}
 .heroContent{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:center;
