@@ -211,6 +211,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 body{min-height:300vh}
 main#stage{position:fixed;inset:0;pointer-events:none}
 main#stage > *{pointer-events:none !important}
+main#stage > #corewrap{pointer-events:auto !important}  /* la sphère reprend la main */
 #corewrap{pointer-events:auto !important}
 #cards{pointer-events:none !important}
 #cards.spread .card{pointer-events:auto !important}
