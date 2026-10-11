@@ -10,6 +10,27 @@ const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
 // MC[model]={cat:n} → inversé : MC_BY_CAT[cat]={model:n}
 const MC_BY_CAT = (()=>{ const r={}; for(const [m,cats] of Object.entries(MC)) for(const [k2,v] of Object.entries(cats)) (r[k2]=r[k2]||{})[m]=v; return r; })();
 const NAV = typeof navigator!=='undefined'?navigator:{userAgent:''};
+/* ═══ GSAP — timelines imbriquées, DrawSVG, ScrambleText ═══ */
+const HAS_GSAP = typeof gsap!=='undefined';
+if(HAS_GSAP && typeof ScrollTrigger!=='undefined') gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, ScrambleTextPlugin);
+
+// Compteur central en ScrambleText (caractères hex) à chaque mise à jour
+function countUpGSAP(el, from, to, dur){
+  if(HAS_GSAP && typeof ScrambleTextPlugin!=='undefined'){
+    const o={v:from};
+    gsap.to(o,{v:to,duration:dur||1.1,ease:'power2.out',
+      onUpdate(){
+        const cur=Math.round(o.v);
+        el.textContent=cur;
+      },
+      onStart(){ el.setAttribute('data-scramble','1'); }
+    });
+    // effets scramble sur le chiffre lui-même (chars machine)
+    gsap.to(el,{duration:dur||1.1, scrambleText:{text:String(to), chars:'0123456789ABCDEF', speed:.8}});
+  }else{
+    let v=from; const iv=setInterval(()=>{ v=Math.min(to,v+Math.max(1,Math.ceil(to/26))); el.textContent=v; if(v>=to) clearInterval(iv); },42);
+  }
+}
 const TOUCH = 'ontouchstart' in window;
 
 /* ---------- fond : maillage discret (canvas, sobre) ---------- */
@@ -150,18 +171,47 @@ function toggleSpread(){
     wrap.classList.add('spread');
     cw.classList.add('pulse');
     if(hint) hint.textContent='▸ REFERMER';
-    // sphère : onde de choc ring-WAAPI au déploiement
-    try{ cw.animate([{boxShadow:'0 0 0 0 rgba(92,242,255,.55)'},{boxShadow:'0 0 0 90px rgba(92,242,255,0)'}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)'}); }catch(e){}
-    // WAAPI : déploiement physiqué (courbe spring custom, stagger par index)
-    try{
-      const ease='cubic-bezier(.17,1.35,.35,1)'; // overshoot ressort
-      document.querySelectorAll('.card').forEach((el,i)=>{
-        el.animate([
-          {opacity:0, transform:getComputedStyle(el).transform, filter:'blur(3px)'},
-          {opacity:1, transform:CSS.supports('transform','translate(-50%,-50%)')?'translate(-50%,-50%)':'none', filter:'blur(0px)'}
-        ],{duration:760, delay:i*70, easing:ease, fill:'both'});
+    // ── GSAP : TIMELINE IMBRIQUÉE (onde ⊂ cartes ⊂ liens) ──
+    if(window.__deployTL) window.__deployTL.kill();
+    const cards=[...document.querySelectorAll('.card')];
+    if(HAS_GSAP){
+      const tl=gsap.timeline({defaults:{ease:'expo.out'}, onUpdate:null});
+      window.__deployTL=tl;
+      // branche A (0s) : noyau — onde de choc + kick de scale + rotation arc
+      const a1=tl.fromTo(cw,{boxShadow:'0 0 0 0 rgba(92,242,255,.5)'},{boxShadow:'0 0 0 110px rgba(92,242,255,0)',duration:.9,ease:'cubic-bezier(.2,.8,.3,1)'},0);
+      const a2=tl.fromTo('.cnum',{scale:1.18},{scale:1,duration:.7,ease:'back.out(2.4)'},0);
+      const a3=tl.fromTo('.cjarcs',{rotation:-26,opacity:.4},{rotation:0,opacity:1,duration:1.1,ease:'power3.out'},0);
+      // branche B (délai .12) : cartes — spring stagger + blur en sous-timeline
+      const cs=gsap.timeline({},{});
+      tl.add(cs, .12);
+      cards.forEach((el,i)=>{
+        cs.fromTo(el,{opacity:0, scale:.86, filter:'blur(4px)', y:22},
+                     {opacity:1, scale:1, filter:'blur(0px)', y:0, duration:.85, ease:'elastic.out(1,.62)'}, i*.065);
       });
-    }catch(e){}
+      // morph : le cercle « explose » en grille de connexion (2 axes+diag)
+      if(typeof MorphSVGPlugin!=='undefined'){
+        const gp=document.getElementById('cmGrid'), pc=document.getElementById('cmPath');
+        if(gp&&pc){
+          gsap.to(gp,{opacity:.85,duration:.9,ease:'power2.out'},0);
+          // les 4 segments de la grille partent du bord du cercle vers le centre
+          gsap.fromTo(gp,{drawSVG:'0%',opacity:0},{drawSVG:'100%',opacity:.85,duration:1.0,stagger:.09,ease:'power2.inOut'},0);
+        }
+      }
+      // branche C (.9) : liens — DrawSVG dessine la courbe du noyau → carte
+      const lk=cards.map((el,i)=>({el,i}));
+      tl.add(gsap.timeline()
+        .fromTo('#links path.lk',{drawSVG:'0%'},{drawSVG:'100%',duration:.8,stagger:.055,ease:'power2.inOut'},0)
+        .fromTo('#links circle',{scale:0,transformOrigin:'center'},{scale:1,duration:.4,stagger:.05,ease:'back.out(3)'},.25), .9);
+      // branche D (1.0) : mini-graphes zline — le tracé se dessine DrawSVG
+      tl.add(gsap.timeline()
+        .fromTo('.cspark .zline .ztrail',{drawSVG:'0%'},{drawSVG:'100%',duration:.9,stagger:.05,ease:'power1.inOut'},0), 1.0);
+    }else{
+      // fallback: onde WAAPI (navigateurs sans GSAP)
+      try{ cw.animate([{boxShadow:'0 0 0 0 rgba(92,242,255,.55)'},{boxShadow:'0 0 0 90px rgba(92,242,255,0)'}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)'}); }catch(e){}
+      try{
+        cards.forEach((el,i)=>{ el.animate([{opacity:0,filter:'blur(3px)'},{opacity:1,filter:'blur(0px)'}],{duration:760,delay:i*70,easing:'cubic-bezier(.17,1.35,.35,1)',fill:'both'}); });
+      }catch(e){}
+    }
     // déploiement en cascade : chaque carte quitte le noyau avec son délai
     document.querySelectorAll('.card').forEach((el,i)=>{
       el.style.transitionDelay=(i*70)+'ms';
@@ -177,6 +227,16 @@ function toggleSpread(){
     wrap.classList.remove('spread');
     cw.classList.remove('pulse');
     if(hint) hint.textContent='▸ DÉPLOYER LE SIGNAL';
+    if(window.__deployTL){ window.__deployTL.kill(); window.__deployTL=null; }
+    if(HAS_GSAP){
+      const cards=[...document.querySelectorAll('.card')];
+      const tl=gsap.timeline();
+      cards.forEach((el,i)=>{
+        tl.to(el,{opacity:0, scale:.05, filter:'blur(6px)', duration:.5, ease:'power3.in'}, i*.04);
+      });
+      tl.fromTo('.cjarcs',{rotation:0},{rotation:16,duration:.7,ease:'power2.out'},0)
+        .fromTo(cw,{scale:.92},{scale:1,duration:.6,ease:'elastic.out(1,.55)'},.15);
+    }
     // referme : les cartes rentrent DANS le noyau (cascade inversée)
     const els=[...document.querySelectorAll('.card')];
     els.forEach((el,i)=>{
@@ -358,6 +418,24 @@ function drawLinks(){
     }
   });
 }
+/* ═══ SCROLLTRIGGER : le scroll vertical scrub le déploiement ═══ */
+setTimeout(function(){
+  if(!HAS_GSAP || typeof ScrollTrigger==='undefined') return;
+  const cw=document.getElementById('corewrap');
+  ScrollTrigger.create({
+    trigger:document.body, start:'top top', end:'bottom bottom',
+    onUpdate(self){
+      const want=self.progress>=.5;
+      if(want!==SPREAD) toggleSpread();
+      window.__scrollP=self.progress;
+    }
+  });
+  cw.addEventListener('click',function(){
+    const target=SPREAD? window.innerHeight*1.6 : 0;
+    window.scrollTo({top:target,behavior:'smooth'});
+  },{capture:true});
+},80);
+
 // resize : reconstruit au BON ÉTAT (déployé → positions neuves dépliées)
 addEventListener('resize',()=>{
   buildCards();
@@ -497,6 +575,6 @@ $('#hudr').innerHTML=`<div class="clock">--:--:--</div><div class="maj">MAJ ${D.
       buildCards();
       $('#links').innerHTML='';
       // compte animé du noyau
-      const n=$('#coren');let v=0;const iv2=setInterval(()=>{v=Math.min(TOT,v+Math.ceil(TOT/26));n.textContent=v;if(v>=TOT)clearInterval(iv2);},42);
+      const n=$('#coren'); countUpGSAP(n, 0, TOT, 1.2);
     },320);}},64);
 })();
