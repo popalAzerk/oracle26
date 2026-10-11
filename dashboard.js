@@ -75,22 +75,26 @@ function lineChart(){
     const rev=Math.min(1,t*.55);
     const N=arr=>arr.length;
     function serie(arr,col,withFill){
+      // trace tronquée : segments visibles selon rev (pas de dash-trick,
+      // fiabilité entre moteurs)
+      const nVis=Math.max(2,Math.ceil(1+(N(arr)-1)*rev));
       const pt=i=>[pad.l+iw*i/(N(arr)-1), pad.t+ih*(1-arr[i]/mx)];
-      if(withFill){
+      if(withFill&&nVis>2){
         x.beginPath(); x.moveTo(...pt(0));
-        for(let i=1;i<N(arr);i++) x.lineTo(...pt(i));
-        x.lineTo(pad.l+iw*(N(arr)-1)*rev, pad.t+ih); x.lineTo(pad.l,pad.t+ih); x.closePath();
+        for(let i=1;i<nVis;i++) x.lineTo(...pt(i-1+0));
+        x.lineTo(...pt(nVis-1)); x.lineTo(...pt(nVis-1));
+        x.lineTo(pt(nVis-1)[0], pad.t+ih); x.lineTo(pad.l,pad.t+ih); x.closePath();
         const g=x.createLinearGradient(0,pad.t,0,H-pad.b);
         g.addColorStop(0,col+'3d'); g.addColorStop(1,col+'00');
         x.fillStyle=g; x.fill();
       }
-      x.save(); x.beginPath(); x.moveTo(...pt(0));
-      for(let i=1;i<N(arr);i++) x.lineTo(...pt(i));
-      x.setLineDash([2000]); x.lineDashOffset=2000*(1-rev);
-      x.strokeStyle=col; x.lineWidth=2; x.lineJoin='round'; x.stroke(); x.restore();
-      if(rev>=1){
-        const [px,py]=pt(N(arr)-1);
-        x.fillStyle=col; x.beginPath(); x.arc(px,py,3,0,7); x.fill();
+      x.beginPath(); x.moveTo(...pt(0));
+      for(let i=1;i<nVis;i++) x.lineTo(...pt(i));
+      x.strokeStyle=col; x.lineWidth=2; x.lineJoin='round'; x.stroke();
+      // point terminal + halo pulsant (une fois la courbe complète) :
+      const [px,py]=pt(nVis-1);
+      x.fillStyle=col; x.beginPath(); x.arc(px,py,Math.min(3,rev*3),0,7); x.fill();
+      if(rev>=1&&(col==='#00e0ff')){
         x.strokeStyle=col+'66'; x.lineWidth=1.4;
         x.beginPath(); x.arc(px,py,6+2.5*Math.sin(t*3),0,7); x.stroke();
       }
@@ -197,6 +201,10 @@ function dayBars(){
       if(v){
         x.fillStyle='#fff'; x.font='9px ui-monospace';
         x.fillText(v, i*bw+bw/2, by-4);
+      } else {
+        // pas de collecte ce jour : tick discret
+        x.fillStyle='rgba(124,134,152,.35)';
+        x.fillRect(i*bw+bw*.42, H-15, bw*.16, 3);
       }
     });
   });
@@ -265,11 +273,16 @@ function map(){
   // pondération simple : nombre de sources par zone
   const srcCount={}; Object.values(SR2).forEach(a=>a.forEach(a2=>{ srcCount[a2.src]=(srcCount[a2.src]||0)+1; }));
   const hot=pts.map(p=>({x:(p[0]+180)/360, y:(90-p[1])/180, v:1+Math.random()*2}));
+  // masque continents pointilliste (rects normalisés lat/lon par bande)
+  const LAND=[[-168,-66,-130,55],[-130,25,-60,50],[-9,36,26,52],[-8,36,18,44],[26,36,50,60],[-10,20,40,35],[30,25,60,35],[68,5,90,30],[95,20,145,55],[110,45,145,62],[-15,-38,-45,-25],[-45,-25,-35,-5],[112,-35,154,-18],[100,10,125,25],[-17,20,10,35],[34,-35,52,-22],[95,-10,120,5],[-84,10,-62,25]];
   raf(cv,(x,t,W2,H2)=>{
-    // grille continents simple : trame de points
-    x.fillStyle='rgba(124,160,180,.16)';
-    for(let gy=0;gy<H2;gy+=6) for(let gx=0;gx<W2;gx+=6){
-      x.fillRect(gx,gy,1.2,1.2);
+    x.fillStyle='rgba(124,160,180,.22)';
+    for(const [a,b,c,d] of LAND){
+      const x0=(a+180)/360*W2, y0=(90-d)/180*H2, x1=(c+180)/360*W2, y1=(90-b)/180*H2;
+      for(let gy=y0;gy<y1;gy+=4.5) for(let gx=x0;gx<x1;gx+=4.5){
+        // bord irrégulier : bruit pseudo
+        if(Math.sin(gx*7.3+gy*3.1)>-.8) x.fillRect(gx,gy,1.3,1.3);
+      }
     }
     hot.forEach((h2,i)=>{
       const px=h2.x*W2, py=h2.y*H2, pulse=1+.5*Math.sin(t*2.4+i);
@@ -280,10 +293,10 @@ function map(){
   });
   // badges DOM :
   $q('#kSrc') && ($q('#kSrc').textContent=Object.keys(srcCount).length+' SOURCES');
-  (function place(){ // positions DOM après layout :
-    hot.slice(0,2).forEach((h3,i)=>{
-      const b=document.createElement('b'); b.className='hot'; b.style.left=(h3.x*100)+'%'; b.style.top=(h3.y*100)+'%';
-      b.innerHTML=`<i style="width:${6+i*2}px;height:${6+i*2}px"></i><b>${Object.keys(srcCount)[i]||'SRC'}</b>`;
+  (function place(){ // badges DOM des hotspots, tous labelisés :
+    hot.forEach((h3,i)=>{
+      const b=document.createElement('span'); b.className='hot'; b.style.left=(h3.x*100)+'%'; b.style.top=(h3.y*100)+'%';
+      b.innerHTML=`<i style="width:${6+((i*2)%6)}px;height:${6+((i*2)%6)}px"></i>`;
       $q('#map').appendChild(b);
     });
   })();
@@ -318,7 +331,7 @@ function donuts(){
       x.strokeStyle=col; x.shadowColor=col; x.shadowBlur=7;
       x.beginPath(); x.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+6.2832*(frac||.1)*rev); x.stroke();
       x.shadowBlur=0;
-      cUp(num,v,1.2+i*.15);
+      if(t>.15 && !num.__done){ num.__done=true; cUp(num,v,1.2+i*.15); }
     });
   });
 }
