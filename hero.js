@@ -71,8 +71,9 @@
   const bufT=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,bufT); gl.bufferData(gl.ARRAY_BUFFER,tgt,gl.STATIC_DRAW);
   const bufS=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,bufS); gl.bufferData(gl.ARRAY_BUFFER,seed,gl.STATIC_DRAW);
   const aPos=gl.getAttribLocation(pr,'aPos'), aTarget=gl.getAttribLocation(pr,'aTarget'), aSeed=gl.getAttribLocation(pr,'aSeed');
-  gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos,3,gl.FLOAT,false,0,0);
-  gl.enableVertexAttribArray(aTarget); gl.vertexAttribPointer(aTarget,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,bufP); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,bufT); gl.enableVertexAttribArray(aTarget); gl.vertexAttribPointer(aTarget,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,bufS); gl.enableVertexAttribArray(aSeed); gl.vertexAttribPointer(aSeed,1,gl.FLOAT,false,0,0);
   const uMorph=gl.getUniformLocation(pr,'uMorph'), uTime=gl.getUniformLocation(pr,'uTime');
   const uRes=gl.getUniformLocation(pr,'uRes'), uMix=gl.getUniformLocation(pr,'uMix');
   const uColA=gl.getUniformLocation(pr,'uColA'), uColB=gl.getUniformLocation(pr,'uColB');
