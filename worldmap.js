@@ -54,12 +54,14 @@ function renderWorldMap(){
       arts.push({cat, src:a.src, date:a.date, title:a.title, s});
     });
   });
-  // index des marqueurs (par pays pour éviter le doublon de position) :
-  const bySrc={};
-  arts.forEach(a=>{ (bySrc[a.src]=bySrc[a.src]||[]).push(a); });
-  const markers=Object.entries(bySrc).map(([src,list])=>{
-    const s=WSR[src];
-    return {src, lat:s.lat, lon:s.lon, c:s.c, name:s.name, n:list.length};
+  // un marqueur par PAYS (lisibilité à l'échelle carte) ; le détail
+  // par source reste dans le panneau au clic (15 sources listées) :
+  const byC2={};
+  arts.forEach(a=>{ (byC2[a.s.c]=byC2[a.s.c]||{n:0,srcs:new Set()}); byC2[a.s.c].n++; byC2[a.s.c].srcs.add(a.src); });
+  const CXY={US:{lat:39.5,lon:-98.5},FR:{lat:47.2,lon:2.6},UK:{lat:53.5,lon:-1.5},TR:{lat:39.8,lon:30.5}};
+  const markers=Object.entries(byC2).map(([c,o])=>{
+    const xy=CXY[c]||{lat:0,lon:0};
+    return {c, lat:xy.lat, lon:xy.lon, n:o.n, srcs:[...o.srcs]};
   });
   // vols animés : chaque article déclenche un vol à sa date-heure
   // simulée (échelonné) : le vol EST un article réel.
@@ -84,6 +86,7 @@ function renderWorldMap(){
     el.dataset.c=mk.c;
     el.innerHTML=`<i style="background:${WCOLOR[mk.c]};box-shadow:0 0 9px ${WCOLOR[mk.c]}"></i>
       <b class="mkFlag" style="color:${WCOLOR[mk.c]}">${mk.c} · ${mk.n}</b>`;
+    el.title=mk.srcs.join(', ');
     host.appendChild(el);
   });
   // compteur pays :
