@@ -174,28 +174,47 @@ function rings(){
   });
 }
 
-/* ─ 5. aire ondulée KPI central (1065→ total) ── */
+/* ─ 5. KPI central + aire = série réelle (history), pas de sin */
 function wave(){
-  const host=$q('#gl_wave'), w=(host.parentElement.getBoundingClientRect().width||260), h=92;
+  const host=$q('#gl_wave');
+  const w=(host.parentElement.getBoundingClientRect().width||260), h=92;
   cfit(host,w,h);
+  const hist=D2.history||[];
+  const vals=hist.map(x=>x.total||0);
+  const dates=hist.map(x=>x.date.slice(8));
   raf(host,(x,t,W,H)=>{
-    const rev=Math.min(1,t*.5);
-    const g=x.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'rgba(0,224,255,.4)'); g.addColorStop(1,'rgba(0,224,255,0)');
-    x.beginPath(); x.moveTo(0,H);
-    for(let px=0; px<=W; px+=4){
-      const f=px/W;
-      const yy=H*.55 - Math.sin(f*6.3+t*1.4)*H*.22*Math.sin(t*.8+f*2) - Math.sin(f*11+t*.7)*H*.08;
-      x.lineTo(px, H-Math.min(H, (H-yy)*rev+H*(1-rev)*0 ));
+    const rev=Math.min(1,t*.6);
+    const iw=W, ih=H-16;
+    const mx=Math.max(1,...vals)*1.1;
+    // grille pointillée :
+    x.setLineDash([2,4]); x.strokeStyle='rgba(124,134,152,.2)'; x.lineWidth=1;
+    x.beginPath(); x.moveTo(0,H-10); x.lineTo(W,H-10); x.stroke(); x.setLineDash([]);
+    // aire = la série :
+    x.beginPath(); x.moveTo(0,H-10);
+    const N=vals.length;
+    for(let i=0;i<N;i++){
+      const px=iw*(i+0.35)/N, py=H-10-ih*(vals[i]/mx)*rev;
+      i===0? x.lineTo(px,py) : x.lineTo(px,py);
     }
-    x.lineTo(W,H); x.closePath(); x.fillStyle=g; x.fill();
-    x.strokeStyle='#00e0ff'; x.lineWidth=1.6; x.beginPath();
-    for(let px=0; px<=W; px+=4){
-      const f=px/W;
-      const yy=H*.55 - Math.sin(f*6.3+t*1.4)*H*.22*Math.sin(t*.8+f*2) - Math.sin(f*11+t*.7)*H*.08;
-      px? x.lineTo(px,yy) : x.moveTo(px,yy);
+    x.lineTo(iw,H-10); x.closePath();
+    const g=x.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'rgba(0,224,255,.42)'); g.addColorStop(1,'rgba(0,224,255,0)');
+    x.fillStyle=g; x.fill();
+    // ligne + points aux jours réels :
+    x.strokeStyle='#00e0ff'; x.lineWidth=1.8; x.beginPath();
+    for(let i=0;i<N;i++){
+      const px=iw*(i+.35)/N, py=H-10-ih*(vals[i]/mx)*rev;
+      i===0? x.moveTo(px,py) : x.lineTo(px,py);
     }
     x.stroke();
+    for(let i=0;i<N;i++){
+      const px=iw*(i+.35)/N, py=H-10-ih*(vals[i]/mx)*rev;
+      x.fillStyle='#00e0ff'; x.beginPath(); x.arc(px,py,3,0,7); x.fill();
+      x.fillStyle='rgba(124,134,152,.7)'; x.font='7px ui-monospace'; x.textAlign='center';
+      x.fillText(dates[i]||'', px, H-2);
+      x.fillStyle='#fff'; x.font='9px ui-monospace';
+      x.fillText(vals[i], px, py-7);
+    }
   });
 }
 
@@ -271,54 +290,52 @@ function modList(){
   $q('#kMod')&&cUp($q('#kMod'), Object.keys(MC2).length, 1.1);
 }
 
-/* ─ 9. waveform « temps réel » ───────────────── */
+/* ─ 9. FLUX TEMPS RÉEL — chaque impulsion = un article réel du jour.
+   7 barres = 7 catégories (source: D2.counts), hauteur ∝ volume;
+   la barre « battue » au moment t = le signal le plus frais (history
+   courant). PAS de sin décoratif. */
 function eq(){
   const host=$q('#gl_eq'), w=(host.parentElement.getBoundingClientRect().width||300), h=64;
   cfit(host,w,h);
-  const nBars=Math.floor(w/4);
-  const seeds=Array.from({length:nBars},()=>Math.random()*6.28);
-  raf(host,(x,t,W,H)=>{
-    for(let i=0;i<nBars;i++){
-      const yy=(Math.sin(t*2.2+seeds[i])*.5+.5)*.72+.14;
-      const bh=H*yy, bx=i*4, by=(H-bh)/2;
-      x.fillStyle= i%5===0? '#00e0ffcc' : 'rgba(126,166,255,.55)';
-      x.fillRect(bx,by,2.2,bh);
-    }
-    x.fillStyle='rgba(0,224,255,.15)';
-    x.fillRect(0,H/2-.5,W,1);
+  const bars=rowsD.map(([k,v])=>({k,v,col:COLD[k]}));   // 7 catégories réelles
+  const mx=Math.max(1,...bars.map(b=>b.v));
+  const pulses=[]; // impulsions = articles réels (date = veille)
+  const sources=(window.PULSE_SOURCES||{}).sources||{};
+  Object.entries(sources).forEach(([cat,list],ci)=>{
+    list.forEach((a,i)=>{
+      pulses.push({cat, t0:0.4+i*.9+ci*.05, dur:.9});
+    });
   });
-}
-
-/* ─ 11. donuts (santé pipeline) ──────────────── */
-function donuts(){
-  const host=$q('#donuts'); host.innerHTML='';
-  const s=(D2.sentiment||{neutral:32,negative:84,positive:20});
-  const conf=Math.round((D2.avgConf||.752)*100);
-  const items=[
-    [Math.round(TOTD*.76),'COUVERTURE','#00e0ff',.76],
-    [conf,'CONFIANCE','#30d158',conf/100],
-    [Math.round(s.negative/Math.max(1,TOTD)*100),'NÉGATIF %','#ff356e',s.negative/Math.max(1,TOTD)],
-    [8,'SOURCE ACTIVES','#7ea6ff',.8]
-  ];
-  items.forEach(([v,lab,col,frac],i)=>{
-    const el=document.createElement('div'); el.className='dnt';
-    const cv=document.createElement('canvas'); const sz=64;
-    cfit(cv,sz,sz);
-    const num=document.createElement('span'); num.className='dnv'; num.style.color=col;
-    const lb=document.createElement('span'); lb.className='dl'; lb.textContent=lab;
-    el.appendChild(cv); el.appendChild(num); el.appendChild(lb);
-    host.appendChild(el);
-    raf(cv,(x,t,W,H)=>{
-      x.setTransform(DPR3,0,0,DPR3,0,0);
-      const cx=W/2, cy=H/2, R=25;
-      x.lineWidth=7; x.lineCap='round';
-      x.strokeStyle='rgba(35,43,58,.9)';
-      x.beginPath(); x.arc(cx,cy,R,0,6.2832); x.stroke();
-      const rev=Math.min(1,Math.max(0,t*.6));
-      x.strokeStyle=col; x.shadowColor=col; x.shadowBlur=7;
-      x.beginPath(); x.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+6.2832*(frac||.1)*rev); x.stroke();
-      x.shadowBlur=0;
-      if(t>.15 && !num.__done){ num.__done=true; cUp(num,v,1.2+i*.15); }
+  raf(host,(x,t,W,H)=>{
+    const bw=W/bars.length, ih=H-8;
+    bars.forEach((b,i)=>{
+      const rev=Math.min(1,Math.max(0,t*.6-i*.06));
+      const bh=ih*(b.v/mx)*rev;
+      const bx=i*bw+bw*.18, bwid=bw*.6;
+      // le corps ne « bat » pas au hasard : une impulsion le sur-expose
+      // quand un article de CETTE catégorie arrive :
+      let boost=0;
+      pulses.forEach(p=>{ if(p.cat===b.k){ const p2=(t-p.t0)/p.dur;
+        if(p2>0&&p2<1) boost=Math.max(boost,Math.sin(p2*Math.PI)); } });
+      const by=H-6-bh-boost*ih*.17;
+      // tronc :
+      x.fillStyle=b.col;
+      x.globalAlpha=.85;
+      x.fillRect(bx,by,bwid,bh);
+      x.globalAlpha=1;
+      // impulsion au sommet (arrivée d'un article) :
+      if(boost>0){
+        x.shadowColor=b.col; x.shadowBlur=9*boost;
+        x.fillStyle= b.col;
+        x.fillRect(bx,by-2,bwid,3);
+        x.shadowBlur=0;
+      } else {
+        x.fillStyle='rgba(255,255,255,.75)';
+        x.fillRect(bx,by-1,bwid,1.4);
+      }
+      // label catégorie (initiale) :
+      x.fillStyle='rgba(124,134,152,.6)'; x.font='7px ui-monospace'; x.textAlign='center';
+      x.fillText(b.k.slice(0,2).toUpperCase(), i*bw+bw/2, H-1);
     });
   });
 }
