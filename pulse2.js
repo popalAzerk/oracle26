@@ -197,6 +197,9 @@ function toggleSpread(){
           gsap.fromTo(gp,{drawSVG:'0%',opacity:0},{drawSVG:'100%',opacity:.85,duration:1.0,stagger:.09,ease:'power2.inOut'},0);
         }
       }
+      // IMPORTANT : redraw des liens aux positions FINALES des cartes
+      // (les tweens GSAP n'affectent pas getBoundingClientRect avant fin)
+      try{ drawLinks(); }catch(e){}
       // branche C (.9) : liens — DrawSVG dessine la courbe du noyau → carte
       const lk=cards.map((el,i)=>({el,i}));
       tl.add(gsap.timeline()
