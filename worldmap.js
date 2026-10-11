@@ -19,7 +19,7 @@ const WSR={
   'The Register':   {c:'UK', lat:51.5, lon:-0.1,  name:'Royaume-Uni'},
   'Husham':         {c:'TR', lat:41.0, lon:28.9,  name:'Turquie'}
 };
-const WCOLOR={'US':'#00e0ff','FR':'#30d158','UK':'#7ea6ff','TR':'#ff9f0a'};
+const WCOLOR={'US':'#00e0ff','FR':'#30d158','UK':'#bf5af2','TR':'#ff9f0a'};
 const NCD={US:'ÉTATS-UNIS',FR:'FRANCE',UK:'ROYAUME-UNI',TR:'TURQUIE'};
 
 /* Continent outlines simplifiés (lon,lat) equirect */

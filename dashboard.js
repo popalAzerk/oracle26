@@ -420,10 +420,15 @@ function detailPanel(){
       <div class="dcpQuote">Le flux « live » visualise le train d'ingestion nocturne : Harken + Laya pollent les sources, le tri se fait au lever. La visualisation pulse au rythme du cycle.</div>`, 'FLUX');
   }
   function openTabMap(){
-    const srcCount2={}; Object.values(SR2).forEach(a=>a.forEach(a2=>{ srcCount2[a2.src]=(srcCount2[a2.src]||0)+1; }));
-    const srcs=Object.keys(srcCount2);
-    open(`<div class="dcpHead">ORIGINE DES SIGNAUX</div><div class="dcpLab">${srcs.length} SOURCES DE VEILLE</div>`+
-      srcs.slice(0,10).map(s2=>`<div class="dcpRow"><span>●</span><span>${s2}</span><b>${srcCount2[s2]}</b></div>`).join(''), 'ORIGINE');
+    const W2=window.WSR||{}; const NM=window.NCD||{}; const WC=window.WCOLOR||{};
+    const byC={};
+    Object.values(SR2).forEach(a=>a.forEach(a2=>{ const w=W2[a2.src]; if(!w) return;
+      (byC[w.c]=byC[w.c]||{name:w.name,srcs:{},arts:0}); byC[w.c].srcs[a2.src]=(byC[w.c].srcs[a2.src]||0)+1; byC[w.c].arts++; }));
+    const html=Object.entries(byC).map(([c,o])=>
+      `<div class="dcpLab" style="color:${WC[c]}">${NM[c]} · ${o.arts} ARTICLES</div>`+
+      Object.entries(o.srcs).map(([src,n])=>
+        `<div class="dcpRow"><span>●</span><span>${src}</span><b>${n}</b></div>`).join('')).join('');
+    open(`<div class="dcpHead">ORIGINE DES SIGNAUX</div>${html}`,'ORIGINE');
   }
   function openTabMods(){
     const mcs=Object.entries(MC2).map(([m,cats])=>[m,Object.values(cats).reduce((a,b)=>a+b,0)]).sort((a,b)=>b[1]-a[1]);
