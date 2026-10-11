@@ -10,6 +10,10 @@ const TOT = rows.reduce((s,r)=>s+r[1],0)||1;
 // MC[model]={cat:n} → inversé : MC_BY_CAT[cat]={model:n}
 const MC_BY_CAT = (()=>{ const r={}; for(const [m,cats] of Object.entries(MC)) for(const [k2,v] of Object.entries(cats)) (r[k2]=r[k2]||{})[m]=v; return r; })();
 const NAV = typeof navigator!=='undefined'?navigator:{userAgent:''};
+// reload → TOUJOURS le sommet (sinon on atterrit dans la section rack
+// avec le dashboard estompé : « rien ne marche » pour l'utilisateur)
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+addEventListener('load',function(){ scrollTo(0,0); });
 /* ═══ GSAP — timelines imbriquées, DrawSVG, ScrambleText ═══ */
 const HAS_GSAP = typeof gsap!=='undefined';
 if(HAS_GSAP && typeof ScrollTrigger!=='undefined') gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, ScrambleTextPlugin);
