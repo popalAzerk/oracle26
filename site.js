@@ -23,12 +23,6 @@
     gsap.registerPlugin(ScrollTrigger);
     // scroll cue : entrée douce + pulse :
     gsap.from('#scrollCue',{opacity:0,y:-14,duration:.8,ease:'expo.out',delay:.4});
-    // reveals des sections : IntersectionObserver natif (pas de
-    // style inline GSAP qui risque de cacher définitivement) :
-    const io=new IntersectionObserver(es=>es.forEach(e=>{
-      if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); }
-    }),{threshold:.12});
-    document.querySelectorAll('.rv2').forEach(el=>io.observe(el));
   } else {
     document.querySelectorAll('.rv2').forEach(el=>el.classList.add('on'));
   }
@@ -145,6 +139,19 @@
   Object.entries(SRC).forEach(([cat,list])=>list.forEach(a=>allArts.push({a,cat})));
   const items=allArts.map(o=>`<span class="tk-item"><b>${FRD[o.cat]||o.cat}</b> · ${o.a.src} : ${o.a.title.replace(/</g,'&lt;')}</span>`).join('<span style="opacity:.3">/</span>');
   $('#ticker').innerHTML=items+items; // dupliqué pour la boucle
+})();
+/* reveals : IO APRES toutes les injections :
+(function(){
+  const run=()=>{
+    var cue=document.querySelector('#scrollCue');
+    if(cue&&window.gsap){ gsap.from(cue,{opacity:0,y:-14,duration:.8,ease:'expo.out',delay:.4}); }
+    const io=new IntersectionObserver(es=>es.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('on'); io.unobserve(e.target); }
+    }),{threshold:.12});
+    document.querySelectorAll('.rv2').forEach(el=>io.observe(el));
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run);
+  else run();
 })();
 /* injecter l'ancien dashboard dans #dashZone : le markup dashboard.html est
    fêtché par dashboard.js lui-même qui pointe... on garde son fetch
