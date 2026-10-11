@@ -43,8 +43,9 @@ function clockTick(){
 function hbars(){
   const host=$q('#hbars'), hist=D2.history||[];
   const last=(hist[hist.length-1]||{}).counts||{}, prev=(hist[hist.length-2]||{}).counts||{};
+  const NPh=hist.length;
   rowsD.slice(0,3).forEach(([k,v],i)=>{
-    const dl=(last[k]||0)-(prev[k]||0), dsp=(dl>=0?'+':'')+dl;
+    const dl=(last[k]||0)-(prev[k]||0), dsp=NPh<2?'':((dl>=0?'+':'')+dl);
     const row=document.createElement('div'); row.className='hb2';
     row.innerHTML=`<span class="hn" style="color:${COLD[k]}">${FRD[k]}</span>
       <span class="hv">${v}<em>${dsp}</em></span>
@@ -66,8 +67,9 @@ function lineChart(){
   svg.setAttribute('preserveAspectRatio','none');
   svg.style.cssText='display:block;width:100%;height:150px;overflow:visible';
   mod.appendChild(svg);
-  const hist=D2.history||[];
-  if(hist.length<2){ mod.innerHTML+='<span style="font-size:9px;color:#55606f">historique en cours…</span>'; return; }
+  const hist=(D2.history||[]).length?D2.history:[{date:(D2.updated||''),total:TOTD,counts:Object.fromEntries(rowsD)}];
+  const NP=hist.length;
+  const den=Math.max(1,NP-1); // 1 point → ligne plate (courbe dégage un segment)
   const t1=hist.map(h=>h.total||0);
   const k1=rowsD[0][0], k2=rowsD[1][0];
   const t2=hist.map(x=>(x.counts||{})[k1]||0);
@@ -75,7 +77,7 @@ function lineChart(){
   const dates=hist.map(x=>x.date.slice(5).replace('-','/'));
   const W=320,H=150, pad={l:30,r:8,t:12,b:20}, iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
   const mx=Math.max(60,...t1)*1.15;
-  const XX=i=>pad.l+iw*i/(hist.length-1);
+  const XX=i=>pad.l+iw*i/den;
   const YY=v=>pad.t+ih*(1-v/mx);
   let g='';
   // grille + labels :
@@ -88,13 +90,16 @@ function lineChart(){
     g+=`<text x="${XX(i).toFixed(1)}" y="${H-6}" fill="rgba(124,134,152,.65)" font-size="7" text-anchor="middle">${d}</text>`;
   });
   // aire + lignes (la plus grande remplie) :
-  const pts=arr=>arr.map((v,i)=>`${XX(i).toFixed(1)},${YY(v).toFixed(1)}`).join(' ');
+  const pts=arr=>{ const ps=arr.map((v,i)=>`${XX(i).toFixed(1)},${YY(v).toFixed(1)}`); return ps.length===1?[ps[0],ps[0]]:ps.join(' '); };
   g+=`<polygon points="${pts(t1)} ${XX(hist.length-1).toFixed(1)},${H-pad.b} ${pad.l},${H-pad.b}" fill="rgba(0,224,255,.16)"/>`;
   const polys=[[t1,'#00e0ff'],[t2,'#7ea6ff'],[t3,'#2e7cf6']];
   polys.forEach(([arr,col],si)=>{
     g+=`<polyline id="lk${si}" points="${pts(arr)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    g+=`<circle id="ld${si}" cx="${XX(hist.length-1).toFixed(1)}" cy="${YY(arr[arr.length-1]).toFixed(1)}" r="3" fill="${col}" opacity="0"/>`;
+    g+=`<circle id="ld${si}" cx="${XX(NP-1).toFixed(1)}" cy="${YY(arr[arr.length-1]).toFixed(1)}" r="3" fill="${col}" opacity="0"/>`;
   });
+  if(NP===1){
+    g+=`<g font-size="8" fill="rgba(124,134,152,.7)"><text x="${pad.l+4}" y="${pad.t+10}">1 semaine collectée — les suivantes s'accumulent chaque nuit</text></g>`;
+  }
   svg.innerHTML=g;
   // reveal : dash-trick CSS sur polyline (fiable en SVG) :
   polys.forEach(([arr,col],si)=>{
