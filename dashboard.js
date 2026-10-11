@@ -488,7 +488,7 @@ async function init(){
   document.querySelectorAll('#dash .mod').forEach(m=>{ m.classList.add('clic'); m.tabIndex=0; });
   detailPanel();
   // KPI central :
-  if($q('#kTotal')) cUp($q('#kTotal'), TOTD, 1.4);
+  setTimeout(function(){ var k=$q('#kTotal'); if(k&&k.textContent==='0') cUp(k, TOTD, 1.4); }, 1600);
   // GSAP : entrées staggerées des modules (si dispo) :
   if(window.gsap && window.ScrollTrigger){
     gsap.registerPlugin(ScrollTrigger);
