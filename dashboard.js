@@ -132,6 +132,15 @@ function segBars(){
     const b=row.querySelector('.str i');
     setTimeout(()=>{ b.style.transition='width 1.1s cubic-bezier(.2,.8,.2,1)'; b.style.width=pct+'%'; },480+i*200);
   });
+  const oth=TOTD-rowsD.slice(0,3).reduce((a,r)=>a+r[1],0);
+  if(oth>0){
+    const row=document.createElement('div'); row.className='sb';
+    row.innerHTML=`<span class="sn">AUTRES</span><span class="sv">${(oth/TOTD*100).toFixed(0)} %</span>
+      <div class="str"><i style="background:#55606f;width:0"></i></div>`;
+    host.appendChild(row);
+    const b=row.querySelector('.str i');
+    setTimeout(()=>{ b.style.transition='width 1.1s cubic-bezier(.2,.8,.2,1)'; b.style.width=(oth/TOTD*100).toFixed(0)+'%'; },1080);
+  }
 }
 
 /* ─ 4. anneaux pointillés (3 hub KPI) ────────── */
@@ -160,7 +169,7 @@ function rings(){
       x.shadowBlur=0;
       x.setLineDash([]);
       x.fillStyle=col+'33'; x.beginPath(); x.arc(cx,cy,3.2,0,7); x.fill();
-      cUp(num, v, 1.2);
+      if(t>.15 && !num.__done){ num.__done=true; cUp(num, v, 1.1); }
     });
   });
 }
