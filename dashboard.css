@@ -128,3 +128,14 @@ canvas.gl{display:block;width:100%}
 .sn1{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.08em;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.04)}
 .sn1 b{font-size:14px}
 .snNote{font-size:8px;letter-spacing:.08em;color:var(--t3);margin-top:8px;line-height:1.6}
+
+/* ── carte du monde géo-réelle ── */
+#map{aspect-ratio:2.05/1;position:relative}
+#map .hot.mk i{width:6px;height:6px;position:relative}
+#map .mkFlag{position:absolute;left:10px;top:-10px;font-size:7.5px;letter-spacing:.08em;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+#map.pulse{animation:mpul .35s ease}
+@keyframes mpul{50%{transform:scale(1.008)}}
+#mapLegend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+#mapLegend .lg{display:inline-flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.1em;color:var(--t2)}
+#mapLegend .lg i{width:7px;height:7px;border-radius:50%}
+#mapLegend .lg b{color:var(--t1)}

@@ -289,45 +289,6 @@ function eq(){
   });
 }
 
-/* ─ 10. map origine (points pondérés par sources) ── */
-function map(){
-  const host=$q('#map'), cv=$q('#gl_map');
-  const W=host.getBoundingClientRect().width||340, H=W/2.4;
-  cfit(cv,W,H);
-  // positions approx (lat/lon normalisées) des sources web réelles :
-  const pts=[[-74,40.8],[-0.12,51.5],[2.35,48.85],[13.4,52.5],[-122.4,37.8],[-87.6,41.9],[139.7,35.7],[-79.4,43.7],[4.9,52.37],[12.5,41.9]];
-  // pondération simple : nombre de sources par zone
-  const srcCount={}; Object.values(SR2).forEach(a=>a.forEach(a2=>{ srcCount[a2.src]=(srcCount[a2.src]||0)+1; }));
-  const hot=pts.map(p=>({x:(p[0]+180)/360, y:(90-p[1])/180, v:1+Math.random()*2}));
-  // masque continents pointilliste (rects normalisés lat/lon par bande)
-  const LAND=[[-168,-66,-130,55],[-130,25,-60,50],[-9,36,26,52],[-8,36,18,44],[26,36,50,60],[-10,20,40,35],[30,25,60,35],[68,5,90,30],[95,20,145,55],[110,45,145,62],[-15,-38,-45,-25],[-45,-25,-35,-5],[112,-35,154,-18],[100,10,125,25],[-17,20,10,35],[34,-35,52,-22],[95,-10,120,5],[-84,10,-62,25]];
-  raf(cv,(x,t,W2,H2)=>{
-    x.fillStyle='rgba(124,160,180,.22)';
-    for(const [a,b,c,d] of LAND){
-      const x0=(a+180)/360*W2, y0=(90-d)/180*H2, x1=(c+180)/360*W2, y1=(90-b)/180*H2;
-      for(let gy=y0;gy<y1;gy+=4.5) for(let gx=x0;gx<x1;gx+=4.5){
-        // bord irrégulier : bruit pseudo
-        if(Math.sin(gx*7.3+gy*3.1)>-.8) x.fillRect(gx,gy,1.3,1.3);
-      }
-    }
-    hot.forEach((h2,i)=>{
-      const px=h2.x*W2, py=h2.y*H2, pulse=1+.5*Math.sin(t*2.4+i);
-      x.fillStyle='rgba(0,224,255,.95)'; x.shadowColor='#00e0ff'; x.shadowBlur=10;
-      x.beginPath(); x.arc(px,py,2.6*pulse,0,7); x.fill(); x.shadowBlur=0;
-      x.strokeStyle='rgba(0,224,255,.28)'; x.beginPath(); x.arc(px,py,7*pulse,0,7); x.stroke();
-    });
-  });
-  // badges DOM :
-  $q('#kSrc') && ($q('#kSrc').textContent=Object.keys(srcCount).length+' SOURCES');
-  (function place(){ // badges DOM des hotspots, tous labelisés :
-    hot.forEach((h3,i)=>{
-      const b=document.createElement('span'); b.className='hot'; b.style.left=(h3.x*100)+'%'; b.style.top=(h3.y*100)+'%';
-      b.innerHTML=`<i style="width:${6+((i*2)%6)}px;height:${6+((i*2)%6)}px"></i>`;
-      $q('#map').appendChild(b);
-    });
-  })();
-}
-
 /* ─ 11. donuts (santé pipeline) ──────────────── */
 function donuts(){
   const host=$q('#donuts'); host.innerHTML='';
@@ -483,7 +444,8 @@ async function init(){
     const el=document.getElementById(id); if(el) el.remove();
   });
   clockTick(); hbars(); lineChart(); segBars(); rings();
-  wave(); dayBars(); cal(); modList(); eq(); map(); donuts();
+  wave(); dayBars(); cal(); modList(); eq(); donuts();
+  if(window.renderWorldMap) window.renderWorldMap();
   // tags interactivité + panneau :
   const modTags={hbars:'hbars',seg:'seg',rings:'rings',cal:'cal',donuts:'donuts',modList:'modList'};
   document.querySelectorAll('#colL .mod').forEach((m,i)=>m.dataset.mod=['hbars','line','seg','rings'][i]);
