@@ -148,11 +148,16 @@ function renderWorldMap(){
       // flash du hub à l'arrivée :
       if(ease>0.97&&!f.arrived){ f.arrived=true; document.querySelector('#map').classList.remove('pulse'); void document.querySelector('#map').offsetWidth; document.querySelector('#map').classList.add('pulse'); }
     });
-    // halo hub + anneau :
-    x.strokeStyle='rgba(0,224,255,.5)'; x.lineWidth=1.3;
-    x.beginPath(); x.arc(hx,hy,4+2.5*Math.sin(S*2.4),0,7); x.stroke();
-    x.shadowColor='#00e0ff'; x.shadowBlur=8;
-    x.fillStyle='#00e0ff'; x.beginPath(); x.arc(hx,hy,2.8,0,7); x.fill(); x.shadowBlur=0;
+    // hub : double anneau pulsant + cœur lumineux + étiquette
+    x.strokeStyle='rgba(0,224,255,.55)'; x.lineWidth=1.4;
+    x.beginPath(); x.arc(hx,hy,7+3.2*Math.sin(S*2.4),0,7); x.stroke();
+    x.strokeStyle='rgba(0,224,255,.25)';
+    x.beginPath(); x.arc(hx,hy,13+2.2*Math.sin(S*1.7),0,7); x.stroke();
+    x.shadowColor='#00e0ff'; x.shadowBlur=12;
+    x.fillStyle='#00e0ff'; x.beginPath(); x.arc(hx,hy,3.6,0,7); x.fill();
+    x.shadowBlur=0;
+    x.fillStyle='rgba(0,224,255,.95)'; x.font='bold 7px ui-monospace'; x.textAlign='center';
+    x.fillText('HUB', hx+1, hy-16);
     // marqueurs : SPIDERFY aux positions identiques (les 9 US East
     // partagent ~(-74,40) : les écarter en éventail lisible)
     markers.forEach((mk,i)=>{
