@@ -56,52 +56,50 @@ function hbars(){
 
 /* ─ 2. ligne multi-séries (3 semaines historique) ── */
 function lineChart(){
-  const host=$q('#gl_line'), w=host.parentElement.getBoundingClientRect().width||320, h=150;
-  cfit(host,w,h);
+  const host=$q('#gl_line'), h=150;
+  cfit(host, 10, h); // mesure réelle faite par le raf (largeur 10 jetable)
   const hist=D2.history||[];
   const t1=hist.map(h=>h.total||0);
   const k1=rowsD[0][0], k2=rowsD[1][0];
-  const t2=hist.map(h=>(h.counts||{})[k1]||0);
-  const t3=hist.map(h=>(h.counts||{})[k2]||0);
-  const dates=hist.map(h=>h.date.slice(5).replace('-','/'));
-  raf(host,(x,t,W,H)=>{
+  const t2=hist.map(x=>(x.counts||{})[k1]||0);
+  const t3=hist.map(x=>(x.counts||{})[k2]||0);
+  const dates=hist.map(x=>x.date.slice(5).replace('-','/'));
+  raf(host,(g,t,W,H)=>{
     const pad={l:32,r:8,t:12,b:20}, iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
     const mx=Math.max(60,...t1)*1.15;
-    x.setLineDash([2,4]); x.strokeStyle='rgba(124,134,152,.22)'; x.lineWidth=1;
-    for(let g=0; g<=4; g++){
-      const yy=pad.t+ih*g/4;
-      x.beginPath(); x.moveTo(pad.l,yy); x.lineTo(W-pad.r,yy); x.stroke();
-      x.fillStyle='rgba(124,134,152,.75)'; x.font='8px ui-monospace'; x.textAlign='right';
-      x.fillText(Math.round(mx*(1-g/4)), pad.l-5, yy+3);
+    g.setLineDash([2,4]); g.strokeStyle='rgba(124,134,152,.22)'; g.lineWidth=1;
+    for(let k=0;k<=4;k++){
+      const yy=pad.t+ih*k/4;
+      g.beginPath(); g.moveTo(pad.l,yy); g.lineTo(W-pad.r,yy); g.stroke();
+      g.fillStyle='rgba(124,134,152,.75)'; g.font='8px ui-monospace'; g.textAlign='right';
+      g.fillText(String(Math.round(mx*(1-k/4))), pad.l-5, yy+3);
     }
-    x.setLineDash([]);
-    x.font='8px ui-monospace'; x.textAlign='center';
-    dates.forEach((d,i)=>{ x.fillStyle='rgba(124,134,152,.65)'; x.fillText(d, pad.l+iw*i/Math.max(1,dates.length-1), H-5); });
+    g.setLineDash([]);
+    g.font='8px ui-monospace'; g.textAlign='center';
+    dates.forEach((d,i)=>{ g.fillStyle='rgba(124,134,152,.65)';
+      g.fillText(d, pad.l+iw*i/Math.max(1,dates.length-1), H-5); });
     const rev=Math.min(1,t*.55);
-    const N=arr=>arr.length;
     function serie(arr,col,withFill){
-      // trace tronquée : segments visibles selon rev (pas de dash-trick,
-      // fiabilité entre moteurs)
-      const nVis=Math.max(2,Math.ceil(1+(N(arr)-1)*rev));
-      const pt=i=>[pad.l+iw*i/(N(arr)-1), pad.t+ih*(1-arr[i]/mx)];
+      const N=arr.length;
+      const px=i=>pad.l+iw*i/(N-1);
+      const py=i=>pad.t+ih*(1-arr[i]/mx);
+      const nVis=Math.max(2,Math.ceil(1+(N-1)*rev));
       if(withFill&&nVis>2){
-        x.beginPath(); x.moveTo(...pt(0));
-        for(let i=1;i<nVis;i++) x.lineTo(...pt(i-1+0));
-        x.lineTo(...pt(nVis-1)); x.lineTo(...pt(nVis-1));
-        x.lineTo(pt(nVis-1)[0], pad.t+ih); x.lineTo(pad.l,pad.t+ih); x.closePath();
-        const g=x.createLinearGradient(0,pad.t,0,H-pad.b);
-        g.addColorStop(0,col+'3d'); g.addColorStop(1,col+'00');
-        x.fillStyle=g; x.fill();
+        g.beginPath(); g.moveTo(px(0),py(0));
+        for(let i=1;i<nVis;i++) g.lineTo(px(i),py(i));
+        g.lineTo(px(nVis-1),H-pad.b); g.lineTo(pad.l,H-pad.b); g.closePath();
+        const gr=g.createLinearGradient(0,pad.t,0,H-pad.b);
+        gr.addColorStop(0,col+'3d'); gr.addColorStop(1,col+'00');
+        g.fillStyle=gr; g.fill();
       }
-      x.beginPath(); x.moveTo(...pt(0));
-      for(let i=1;i<nVis;i++) x.lineTo(...pt(i));
-      x.strokeStyle=col; x.lineWidth=2; x.lineJoin='round'; x.stroke();
-      // point terminal + halo pulsant (une fois la courbe complète) :
-      const [px,py]=pt(nVis-1);
-      x.fillStyle=col; x.beginPath(); x.arc(px,py,Math.min(3,rev*3),0,7); x.fill();
-      if(rev>=1&&(col==='#00e0ff')){
-        x.strokeStyle=col+'66'; x.lineWidth=1.4;
-        x.beginPath(); x.arc(px,py,6+2.5*Math.sin(t*3),0,7); x.stroke();
+      g.beginPath(); g.moveTo(px(0),py(0));
+      for(let i=1;i<nVis;i++) g.lineTo(px(i),py(i));
+      g.strokeStyle=col; g.lineWidth=2; g.lineJoin='round'; g.stroke();
+      // point terminal + halo une fois complet :
+      g.fillStyle=col; g.beginPath(); g.arc(px(nVis-1),py(nVis-1),Math.min(3,rev*3),0,7); g.fill();
+      if(rev>=1&&col==='#00e0ff'){
+        g.strokeStyle=col+'66'; g.lineWidth=1.4;
+        g.beginPath(); g.arc(px(N-1),py(N-1),6+2.5*Math.sin(t*3),0,7); g.stroke();
       }
     }
     serie(t1,'#00e0ff',true); serie(t2,'#7ea6ff',false); serie(t3,'#2e7cf6',false);
