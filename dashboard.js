@@ -445,7 +445,7 @@ async function init(){
   });
   clockTick(); hbars(); lineChart(); segBars(); rings();
   wave(); dayBars(); cal(); modList(); eq(); donuts();
-  if(window.renderWorldMap) window.renderWorldMap();
+  setTimeout(function(){ if(window.renderWorldMap) try{ window.renderWorldMap(); }catch(e){ (window.__MAP_ERR=window.__MAP_ERR||[]).push(e.message); } }, 120);
   // tags interactivité + panneau :
   const modTags={hbars:'hbars',seg:'seg',rings:'rings',cal:'cal',donuts:'donuts',modList:'modList'};
   document.querySelectorAll('#colL .mod').forEach((m,i)=>m.dataset.mod=['hbars','line','seg','rings'][i]);
