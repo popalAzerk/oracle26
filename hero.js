@@ -79,7 +79,7 @@
   gl.uniform3f(uColA,0.0,0.878,1.0); gl.uniform3f(uColB,0.19,1.0,0.97);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
   // debug handles (tests live) :
-  window.__HEROGL={cv,gl,pr,draw:()=>{ gl.drawArrays(gl.POINTS,0,N); gl.flush(); }};
+  window.__HEROGL={cv,gl,pr,draw:()=>{ gl.drawArrays(gl.POINTS,0,N); gl.flush(); },setMorph:v=>{ gl.uniform1f(uMorph,v); gl.drawArrays(gl.POINTS,0,N); gl.flush(); }};
   function fit(){
     const dpr=Math.min(window.devicePixelRatio||1,1.6);
     cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
