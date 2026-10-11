@@ -14,7 +14,12 @@ function cfit(cv,w,h){ cv._w=w; cv._h=h; cv.width=w*DPR3; cv.height=h*DPR3; cv.s
 function raf(cv,draw){
   const x=cv.getContext('2d'), t0=performance.now(), W=cv._w, H=cv._h;
   (function loop(t){
-    if(!document.hidden){ x.setTransform(DPR3,0,0,DPR3,0,0); x.clearRect(0,0,W,H); draw(x,(t-t0)/1000,W,H); }
+    if(!document.hidden){
+      try{
+        x.setTransform(DPR3,0,0,DPR3,0,0); x.clearRect(0,0,W,H);
+        draw(x,(t-t0)/1000,W,H);
+      }catch(e){ (window.__RAF_ERR=window.__RAF_ERR||{})[cv.id||cv.className]=e.message; }
+    }
     requestAnimationFrame(loop);
   })(t0);
 }
@@ -318,6 +323,98 @@ function donuts(){
   });
 }
 
+/* ═══ INTERACTIVITÉ : chaque module s'ouvre en panneau détail ═══ */
+function detailPanel(){
+  // feuille de détails injectée à la fin du body
+  const pan=document.createElement('div'); pan.id='dpanel';
+  document.body.appendChild(pan);
+  pan.innerHTML=`<div id="dpBack"></div><div id="dpCard"><div id="dpHead"><div id="dpTitle"></div><button id="dpX">FERMER</button></div><div id="dpBody"></div></div>`;
+  const open=html=>{ pan.classList.add('on'); document.getElementById('dpBody').innerHTML=html; };
+  const close=()=>pan.classList.remove('on');
+  document.getElementById('dpBack').addEventListener('click',close);
+  document.getElementById('dpX').addEventListener('click',close);
+  // déléguer les clics : .mod + barres de catégorie :
+  document.getElementById('dash').addEventListener('click', e=>{
+    if(!pan.classList.contains('on')){
+      const bar=e.target.closest('.hb2,.sb,.mr');
+      if(bar){ return openBar(bar); }
+    } else {
+      const row=e.target.closest('.dcpRow.cat');
+      if(row){ return openCat(row.dataset.k); }
+    }
+    const mod=e.target.closest('.mod');
+    if(mod){ return openMod(mod); }
+  });
+  function openBar(el){
+    // barre = une catégorie : détail complet de cette catégorie
+    const nameEl=el.querySelector('.hn,.sn,.mn');
+    if(!nameEl) return;
+    const nm=nameEl.textContent.trim().toUpperCase();
+    const k=Object.keys(FRD).find(key=>FRD[key]===nm);
+    if(!k) return;
+    openCat(k);
+  }
+  function openCat(k){
+    const v=(D2.counts||{})[k]||0;
+    const srcs=SR2[k]||[];
+    const ex=(D2.examples||{})[k]||[];
+    const mods=Object.entries(MC2).filter(([,cs])=>cs[k]).sort((a,b)=>(b[1][k]||0)-(a[1][k]||0)).slice(0,8);
+    const html=`
+      <div class="dcpHead" style="color:${COLD[k]||'#8f8f9f'}">${FRD[k]||k.toUpperCase()}</div>
+      <div class="dcpKpi"><b>${v}</b><span>signaux · ${Math.round(v/TOTD*100)} % du total</span></div>
+      ${mods.length?`<div class="dcpLab">MODÈLES TOUCHÉS</div>`+mods.map(([m,cs])=>{
+        const n=cs[k]||0;
+        return `<div class="dcpRow"><span>${m===('iPhone '+m.replace(/^iPhone\s*/i,''))?m:'iPhone '+m.replace(/^iPhone\s*/i,'')}</span><b>${n}</b></div>`;
+      }).join(''):''}
+      ${srcs.length?`<div class="dcpLab">SOURCES · VEILLE WEB</div>`+srcs.slice(0,6).map(a=>
+        `<a class="dcpLink" href="${a.url}" target="_blank" rel="noopener">
+          <span class="dcpDate">${a.date}</span><span class="dcpTit">${a.title}</span><span class="dcpSrc">${a.src} ↗</span>
+        </a>`).join(''):''}
+      ${ex.length?`<div class="dcpLab">EXEMPLES UTILISATEURS</div>`+ex.slice(0,3).map(a=>
+        `<div class="dcpQuote">« ${(a.text_tr||a.text||'').slice(0,220).replace(/\n/g,' ')}${(a.text_tr||a.text||'').length>220?'…':''} »</div>`).join(''):''}
+    `;
+    open(html);
+    document.getElementById('dpTitle').textContent=FRD[k]||k.toUpperCase();
+  }
+  function openMod(mod){
+    const id=mod.dataset.mod;
+    if(id==='hbars'||id==='seg'){ return; } // les barres s'ouvrent par catégorie
+    if(id==='line'){ return openTabLine(); }
+    if(id==='cal'){ return openTabCal(); }
+    if(id==='donuts'){ return openTabPipe(); }
+    if(mod.contains(mod.querySelector('.kpi'))&&window.getComputedStyle(mod).borderTopWidth!=='0px'){ /* rien */ }
+    // défaut : lister les catégories :
+    const total=rowsD.map(([k,v])=>`<div class="dcpRow cat" data-k="${k}"><span style="color:${COLD[k]}">●</span><span>${FRD[k]}</span><b>${v}</b><small>${Math.round(v/TOTD*100)}</small></div>`).join('');
+    open(`<div class="dcpHead">SIGNALS · DÉTAIL</div><div class="dcpLab">PAR CATÉGORIE — CLIQUEZ POUR OUVRIR</div>${total}`);
+    document.getElementById('dpBody').querySelectorAll('.dcpRow.cat').forEach(r=>r.addEventListener('click',()=>openCat(r.dataset.k)));
+  }
+  function openTabLine(){
+    const hist=D2.history||[];
+    const rows=hist.map(h=>{
+      const c=h.counts||{};
+      const top=rowsD.slice(0,3).map(([k])=>(c[k]||0)).join(' · ');
+      return `<div class="dcpRow"><span>${h.date}</span><b>${h.total}</b><small>${top}</small></div>`;
+    }).join('');
+    open(`<div class="dcpHead">ÉVOLUTION · 5 SEMAINES</div><div class="dcpLab">TOTAL / TOP3 (BATTERIE · ESTHÉTIQUE · CHARGE)</div>${rows}`);
+  }
+  function openTabCal(){
+    open(`<div class="dcpHead">CYCLE DE COLLECTE</div>
+      <div class="dcpQuote">Le signal se collecte la nuit (Harken + Laya), se trie au lever par classification, fusionne les tarifs, puis s'affiche ici à 9 h. Prochain cycle dans la nuit.</div>
+      <div class="dcpLab">DERNIÈRES COLLECTES</div>`+
+      (D2.history||[]).map(h=>`<div class="dcpRow"><span>${h.date}</span><b>${h.total}</b><small>signaux</small></div>`).join(''));
+  }
+  function openTabPipe(){
+    const s=D2.sentiment||{};
+    const conf=Math.round((D2.avgConf||.75)*100);
+    open(`<div class="dcpHead">SANTÉ PIPELINE</div>
+      <div class="dcpKpi"><b style="color:#30d158">${conf} %</b><span>confiance moyenne du signal</span></div>
+      <div class="dcpRow"><span>Positifs</span><b>${s.positive||0}</b></div>
+      <div class="dcpRow"><span>Neutres</span><b>${s.neutral||0}</b></div>
+      <div class="dcpRow"><span>Négatifs</span><b style="color:#ff356e">${s.negative||0}</b></div>`);
+  }
+  window.__openCat=openCat; // debug
+}
+
 /* ═══ INIT : injecter le HTML des composants puis tout lancer ═══ */
 async function init(){
   // injecte le markup :
@@ -330,8 +427,15 @@ async function init(){
   });
   clockTick(); hbars(); lineChart(); segBars(); rings();
   wave(); dayBars(); cal(); modList(); eq(); map(); donuts();
+  // tags interactivité + panneau :
+  const modTags={hbars:'hbars',seg:'seg',rings:'rings',cal:'cal',donuts:'donuts',modList:'modList'};
+  document.querySelectorAll('#colL .mod').forEach((m,i)=>m.dataset.mod=['hbars','line','seg','rings'][i]);
+  document.querySelectorAll('#colC .mod').forEach((m,i)=>m.dataset.mod=['wave','bars','cal','modList'][i]);
+  document.querySelectorAll('#colR .mod').forEach((m,i)=>m.dataset.mod=['eq','map','pipe'][i]);
+  document.querySelectorAll('#dash .mod').forEach(m=>{ m.classList.add('clic'); m.tabIndex=0; });
+  detailPanel();
   // KPI central :
-  cUp($q('#kTotal'), TOTD, 1.4);
+  if($q('#kTotal')) cUp($q('#kTotal'), TOTD, 1.4);
   // GSAP : entrées staggerées des modules (si dispo) :
   if(window.gsap && window.ScrollTrigger){
     gsap.registerPlugin(ScrollTrigger);
