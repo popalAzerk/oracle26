@@ -444,6 +444,10 @@ setTimeout(function(){
 setTimeout(function(){
   const sec=document.getElementById('dcs');
   if(!sec || !HAS_GSAP || typeof ScrollTrigger==='undefined') return;
+  // fade du stage (cartes+sphère) pendant la section datacenter
+  gsap.to('#stage',{opacity:0,filter:'blur(4px)',duration:.5,ease:'power2.out',
+    scrollTrigger:{trigger:sec,start:'top 55%',end:'top 30%',scrub:true}});
+  gsap.set('#stage',{willChange:'opacity'});
   gsap.from(sec.querySelectorAll('.dcnode'),{
     opacity:0, y:34, scale:.92, stagger:.08, duration:.7, ease:'expo.out',
     scrollTrigger:{trigger:sec, start:'top 70%'}
