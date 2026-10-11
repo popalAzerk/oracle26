@@ -19,7 +19,7 @@
       // point size selon la phase :
       float sz=mix(1.6,2.2,t);
       gl_PointSize=sz*(uRes.y/600.);
-      gl_Position=vec4(p/uRes*2.-1.,0.,1.);
+      gl_Position=vec4((p.xy/uRes+0.5)*2.-1.,0.,1.);
     }`;
   const FS=`
     precision mediump float;
