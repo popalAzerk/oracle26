@@ -6,7 +6,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Cascadia Mono',monospace;
-  overflow:hidden;-webkit-font-smoothing:antialiased}
+  overflow-x:hidden;-webkit-font-smoothing:antialiased}
 #fx{position:fixed;inset:0;z-index:0}
 #fx2{position:fixed;inset:0;z-index:0;opacity:.85}
 #vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
