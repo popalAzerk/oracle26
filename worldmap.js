@@ -74,9 +74,10 @@ function renderWorldMap(){
   host.querySelectorAll('.hot').forEach(x=>x.remove());
   const seenLat={};
   markers.forEach((mk,i)=>{
-    // dés-agglomérer les 9 US : jitter vertical sur les labels répétés
-    const same=(seenLat[mk.c]||0); seenLat[mk.c]=same+1;
-    const jy = same ? (same*7):0;
+    // dés-agglomérer les labels des marqueurs superposés
+    const peers2=markers.filter(o2=>Math.abs(o2.lon-mk.lon)<1.5&&Math.abs(o2.lat-mk.lat)<4&&o2!==mk);
+    const idx2=peers2.indexOf(mk)+1;
+    const jy=idx2?idx2*13:0;
     const el=document.createElement('span'); el.className='hot mk';
     el.style.left=(mk.lon+180)/360*100+'%';
     el.style.top=((90-mk.lat)/180*100)+jy/((host.getBoundingClientRect().height||180))+'%';
@@ -149,9 +150,18 @@ function renderWorldMap(){
     x.beginPath(); x.arc(hx,hy,4+2.5*Math.sin(S*2.4),0,7); x.stroke();
     x.shadowColor='#00e0ff'; x.shadowBlur=8;
     x.fillStyle='#00e0ff'; x.beginPath(); x.arc(hx,hy,2.8,0,7); x.fill(); x.shadowBlur=0;
-    // marqueurs fixes :
+    // marqueurs : SPIDERFY aux positions identiques (les 9 US East
+    // partagent ~(-74,40) : les écarter en éventail lisible)
     markers.forEach((mk,i)=>{
-      const [px,py]=proj(mk.lon,mk.lat,W,H);
+      let [px,py]=proj(mk.lon,mk.lat,W,H);
+      const sameL=markers.filter(o2=>o2.mk===undefined&&Math.abs(o2.lon-mk.lon)<1.5&&Math.abs(o2.lat-mk.lat)<4);
+      const peers=markers.filter(o2=>Math.abs(o2.lon-mk.lon)<1.5&&Math.abs(o2.lat-mk.lat)<4&&o2!==mk);
+      if(peers.length){
+        const idx=peers.indexOf(mk)+1;
+        const a2=-Math.PI/2+idx*(Math.PI*1.3/(peers.length+1));
+        const R2=10+Math.min(16,peers.length*2.4);
+        px+=Math.cos(a2)*R2; py+=Math.abs(Math.sin(a2))*R2*.9;
+      }
       const col=WCOLOR[mk.c];
       x.shadowColor=col; x.shadowBlur=6;
       x.fillStyle=col; x.beginPath(); x.arc(px,py,3.2,0,7); x.fill();
