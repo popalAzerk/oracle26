@@ -430,8 +430,17 @@ setTimeout(function(){
   ScrollTrigger.create({
     trigger:document.body, start:'top top', end:'bottom bottom',
     onUpdate(self){
-      // scrub VISUEL uniquement : l'état (tap) reste maître du déploiement
+      // scrub VISUEL : fade du stage quand la section datacenter monte
       window.__scrollP=self.progress;
+      const sec=document.getElementById('dcs');
+      const stage=document.getElementById('stage');
+      if(sec&&stage){
+        const r=sec.getBoundingClientRect();
+        // 1 → 0 quand le top de la section descend de 60% à 30% du viewport
+        const a=Math.max(0,Math.min(1,(innerHeight*.6-r.top)/(innerHeight*.3)));
+        stage.style.opacity=(1-a).toFixed(3);
+        stage.style.filter=a>.02?('blur('+ (a*4).toFixed(1) +'px)'):'';
+      }
     }
   });
   cw.addEventListener('click',function(){
@@ -444,10 +453,6 @@ setTimeout(function(){
 setTimeout(function(){
   const sec=document.getElementById('dcs');
   if(!sec || !HAS_GSAP || typeof ScrollTrigger==='undefined') return;
-  // fade du stage (cartes+sphère) pendant la section datacenter
-  gsap.fromTo('#stage',{opacity:1,filter:'blur(0px)'},{opacity:0,filter:'blur(4px)',ease:'power2.out',immediateRender:false,
-    scrollTrigger:{trigger:sec,start:'top 55%',end:'top 30%',scrub:true}});
-  gsap.set('#stage',{willChange:'opacity'});
   gsap.from(sec.querySelectorAll('.dcnode'),{
     opacity:0, y:34, scale:.92, stagger:.08, duration:.7, ease:'expo.out',
     scrollTrigger:{trigger:sec, start:'top 70%'}
