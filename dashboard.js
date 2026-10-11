@@ -12,16 +12,21 @@ const eo=t=>1-Math.pow(1-t,3);
 /* ─ helpers canvas ─────────────────────────────── */
 function cfit(cv,w,h){ cv._w=w; cv._h=h; cv.width=w*DPR3; cv.height=h*DPR3; cv.style.width=w+'px'; cv.style.height=h+'px'; }
 function raf(cv,draw){
-  const x=cv.getContext('2d'), t0=performance.now(), W=cv._w, H=cv._h;
-  (function loop(t){
-    if(!document.hidden){
+  const x=cv.getContext('2d'); let t0=null, W=cv._w, H=cv._h;
+  (function loop(ts){
+    if(t0===null){ t0=ts; }
+    if(!W||!H){ // mesure paresseuse : le layout est prêt
+      const r=cv.getBoundingClientRect();
+      if(r.width>10){ W=cv._w=r.width; H=cv._h=cv._h||r.height; x.scale(DPR3,DPR3); }
+    }
+    if(!document.hidden&&W){
       try{
         x.setTransform(DPR3,0,0,DPR3,0,0); x.clearRect(0,0,W,H);
-        draw(x,(t-t0)/1000,W,H);
+        draw(x,(ts-t0)/1000,W,H);
       }catch(e){ (window.__RAF_ERR=window.__RAF_ERR||{})[cv.id||cv.className]=e.message; }
     }
     requestAnimationFrame(loop);
-  })(t0);
+  })(performance.now());
 }
 function cUp(el,to,dur){ const t0=performance.now();
   (function st(t){ const p=Math.min(1,(t-t0)/(dur*1000)); el.textContent=Math.round(to*eo(p)); if(p<1) requestAnimationFrame(st); })(t0); }
