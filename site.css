@@ -1,0 +1,105 @@
+/* ═══ PULSE 2.0 — structure claire en 4 sections ═══ */
+:root{
+  --bg:#05080f; --bg2:#0a0f1a; --ink:#eaf1f9; --t2:#8a97a8; --t3:#55606f;
+  --cy:#00e0ff; --gr:#30d158; --pk:#ff356e; --yl:#ffd60a; --or:#ff9f0a; --vi:#bf5af2;
+  --line:rgba(255,255,255,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-x:hidden}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+::selection{background:var(--cy);color:#000}
+
+/* ── S0 HERO ── */
+#hero{position:relative;height:100vh;min-height:640px;overflow:hidden;border-bottom:1px solid var(--line)}
+#glHero{position:absolute;inset:0;width:100%;height:100%;display:block}
+.heroContent{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;padding:24px}
+.heroTag{font-size:10px;letter-spacing:.5ex;color:var(--cy);margin-bottom:18px;text-transform:uppercase}
+.heroTitle{font-size:clamp(34px,6.5vw,86px);line-height:1.02;letter-spacing:-0.03em;font-weight:800}
+.heroTitle em{font-style:normal;color:var(--cy)}
+.heroSub{margin-top:18px;font-size:12px;letter-spacing:.14ex;color:var(--t2);max-width:640px;line-height:1.8}
+.heroNav{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap;justify-content:center}
+.heroNav a{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border:1px solid var(--line);
+  border-radius:999px;color:var(--ink);text-decoration:none;font-size:11px;letter-spacing:.2ex;
+  background:rgba(255,255,255,.03);transition:border .2s,background .2s}
+.heroNav a:hover{background:rgba(0,224,255,.09);border-color:rgba(0,224,255,.4)}
+.heroNav a b{color:var(--cy)}
+.heroMeta{margin-top:36px;display:flex;gap:22px;font-size:9px;letter-spacing:.22ex;color:var(--t3)}
+.heroMeta b{color:var(--ink)}
+#heroScroll{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:.4ex;
+  color:var(--t3);animation:bob 2.1s infinite ease-in-out}
+@keyframes bob{50%{transform:translate(-50%,7px)}}
+.heroTitle .hword{display:inline-block;opacity:0;transform:translateY(28px)}
+
+/* ── container sections ── */
+.sec{max-width:1240px;margin:0 auto;padding:96px 28px}
+.secHead{margin-bottom:40px;border-bottom:1px solid var(--line);padding-bottom:22px}
+.secHead .k{font-size:9px;letter-spacing:.42ex;color:var(--cy);text-transform:uppercase}
+.secHead h2{font-size:clamp(22px,3.2vw,34px);letter-spacing:-.02em;margin-top:10px;font-weight:800}
+.secHead p{margin-top:10px;font-size:11px;color:var(--t2);line-height:1.8;max-width:760px}
+
+/* ── S1 SIGNAL : grille composants avec % + chaleur ── */
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
+.heatCard{border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));transition:transform .25s,border .25s;cursor:pointer}
+.heatCard:hover{transform:translateY(-3px);border-color:rgba(0,224,255,.35)}
+.heatCard .pc{position:absolute;top:12px;right:16px;font-size:26px;font-weight:800;letter-spacing:-.03em}
+.heatCard h3{font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+.heatCard .n{font-size:10px;color:var(--t2);margin-top:6px}
+.heatCard .bar{margin-top:14px;height:5px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.heatCard .bar i{display:block;height:100%;border-radius:3px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.heatCard .fr{margin-top:12px;font-size:10px;color:var(--t2);line-height:1.62}
+.heatCard .heatL{margin-top:12px;display:flex;align-items:center;gap:7px;font-size:8.5px;letter-spacing:.16ex;color:var(--t3)}
+.heatCard .heatL i{width:7px;height:7px;border-radius:50%;animation:glow 1.6s infinite ease-in-out}
+@keyframes glow{50%{transform:scale(1.5);opacity:.55}}
+.heatNote{margin-top:20px;font-size:9px;color:var(--t3);letter-spacing:.1ex;line-height:1.8}
+
+/* ── S2 ASTUCES : cartes sources réelles ── */
+.trickGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.trick{border:1px solid var(--line);border-radius:14px;padding:20px;background:rgba(255,255,255,.02)}
+.trick h3{font-size:13px;letter-spacing:.06em;line-height:1.5}
+.trick p{margin-top:10px;font-size:11px;color:var(--t2);line-height:1.75}
+.trick .who{margin-top:14px;font-size:9px;color:var(--t3);letter-spacing:.14ex}
+.trick .who a{color:var(--cy);text-decoration:none}
+.trick .who a:hover{text-decoration:underline}
+.trick .win{margin-top:12px;display:inline-block;font-size:9px;letter-spacing:.2ex;padding:4px 10px;border-radius:999px;
+  border:1px solid rgba(48,209,88,.35);color:var(--gr)}
+.trickTall{grid-row:span 2;border-color:rgba(0,224,255,.3)}
+
+/* ── S3 AVIS : ticker + plateformes ── */
+.ratingRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:34px}
+.rate{border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center;background:rgba(255,255,255,.02)}
+.rate .stars{color:var(--yl);font-size:16px;letter-spacing:3px}
+.rate .note{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.rate .plt{margin-top:6px;font-size:9px;letter-spacing:.24ex;color:var(--t3);text-transform:uppercase}
+.rate b.n{font-variant-numeric:tabular-nums}
+.quotes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.quote{border:1px solid var(--line);border-left:none;border-radius:12px;padding:16px 18px;background:rgba(255,255,255,.02)}
+.quote .qq{font-size:11px;line-height:1.8;color:var(--t2)}
+.quote .qa{margin-top:12px;font-size:9px;color:var(--t3);display:flex;justify-content:space-between;letter-spacing:.12ex}
+.quote .stars{color:var(--yl);font-size:10px}
+.tickerWrap{overflow:hidden;border-block:1px solid var(--line);padding:14px 0;margin:34px -28px}
+.ticker{display:flex;gap:40px;width:max-content;animation:tk 38s linear infinite}
+.tickerWrap:hover .ticker{animation-play-state:paused}
+@keyframes tk{to{transform:translateX(-50%)}}
+.tk-item{font-size:10px;color:var(--t2);white-space:nowrap}
+.tk-item b{color:var(--yl)}
+
+/* ── S4 dashboard (ancien) : bandeau discret + container ── */
+#secDash .secHead .k{color:var(--vi)}
+#dashZone{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#070b12,#05080f);padding:18px}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:34px 28px;text-align:center;font-size:9px;letter-spacing:.22ex;color:var(--t3)}
+
+/* reveal on scroll */
+.rv2{opacity:0;transform:translateY(30px)}
+.nojs .rv2,.rv2.on{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+
+@media(max-width:720px){
+  .sec{padding:64px 18px}
+  .heat,.trickGrid,.quotes{grid-template-columns:1fr 1fr}
+  .heatCard .pc{font-size:20px}
+}
+@media(max-width:480px){ .heat,.trickGrid,.quotes{grid-template-columns:1fr} }

@@ -472,7 +472,7 @@ async function init(){
   // injecte le markup :
   const resp=await fetch('dashboard.html?v='+Date.now());
   const html=await resp.text();
-  document.body.insertAdjacentHTML('afterbegin',html);
+  document.body.insertAdjacentHTML((document.getElementById('dashZone')?'afterbegin':'afterbegin'),html); if(document.getElementById('dashZone')&&document.getElementById('dash')){ document.getElementById('dashZone').appendChild(document.getElementById('dash')); };
   // l'ancien stage est démoné :
   ['stage','dcs','intro','zoom','links','corewrap','cards'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.remove();
