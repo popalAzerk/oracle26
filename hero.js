@@ -72,7 +72,7 @@
   const bufS=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,bufS); gl.bufferData(gl.ARRAY_BUFFER,seed,gl.STATIC_DRAW);
   const aPos=gl.getAttribLocation(pr,'aPos'), aTarget=gl.getAttribLocation(pr,'aTarget'), aSeed=gl.getAttribLocation(pr,'aSeed');
   gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos,3,gl.FLOAT,false,0,0);
-  gl.disableVertexAttribArray(aTarget); // swap on demand…
+  gl.enableVertexAttribArray(aTarget); gl.vertexAttribPointer(aTarget,3,gl.FLOAT,false,0,0);
   const uMorph=gl.getUniformLocation(pr,'uMorph'), uTime=gl.getUniformLocation(pr,'uTime');
   const uRes=gl.getUniformLocation(pr,'uRes'), uMix=gl.getUniformLocation(pr,'uMix');
   const uColA=gl.getUniformLocation(pr,'uColA'), uColB=gl.getUniformLocation(pr,'uColB');
@@ -103,7 +103,6 @@
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform1f(uMorph,morph); gl.uniform1f(uTime,S);
     gl.uniform1f(uMix,0.5+0.5*Math.sin(S*0.7));
-    if(morph>0.02){ gl.enableVertexAttribArray(aTarget); gl.vertexAttribPointer(aTarget,3,gl.FLOAT,false,0,0); } else { gl.disableVertexAttribArray(aTarget); gl.vertexAttrib3f(aTarget,0,0,0); }
     gl.drawArrays(gl.POINTS,0,N);
     requestAnimationFrame(loop);
   })(t0);
