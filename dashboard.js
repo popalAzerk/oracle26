@@ -16,8 +16,9 @@ function raf(cv,draw){
   (function loop(ts){
     if(t0===null){ t0=ts; }
     if(!W||W<60||!H){ // mesure paresseuse : le layout est prêt
-      const r=cv.getBoundingClientRect();
-      if(r.width>10&&Math.abs(r.width-(cv._w||0))>2){ cv._w=r.width; cfit(cv,r.width,cv._h||r.height); W=cv._w; H=cv._h; x.scale(DPR3,DPR3); }
+      // mesurer le PARENT (le canvas lui-même garde sa largeur fixée)
+      const r=cv.parentElement.getBoundingClientRect();
+      if(r.width>60&&Math.abs(r.width-(cv._w||0))>2){ cfit(cv,r.width,cv._h||r.height); W=cv._w; H=cv._h; }
     }
     if(!document.hidden&&W){
       try{
