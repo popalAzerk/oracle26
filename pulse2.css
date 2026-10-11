@@ -212,7 +212,7 @@ main#stage{position:fixed;inset:0;pointer-events:none}
 main#stage > *{pointer-events:auto}
 
 /* section datacenter (scroll) */
-#dcs{position:relative;z-index:5;max-width:860px;margin:0 auto;padding:120px 28px 160px;color:var(--t1)}
+#dcs{position:relative;z-index:5;max-width:860px;margin:100vh auto 0;padding:120px 28px 160px;color:var(--t1)}
 #dcs h2{font-size:15px;letter-spacing:.42em;color:var(--cyan);text-shadow:0 0 14px rgba(74,227,255,.6)}
 .dcsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:34px}
 .dcnode{border:1px solid var(--bord);background:rgba(6,12,20,.72);padding:18px 16px;position:relative}
