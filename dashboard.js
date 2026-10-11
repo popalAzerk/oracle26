@@ -189,7 +189,19 @@ function wave(){
     // grille pointillée :
     x.setLineDash([2,4]); x.strokeStyle='rgba(124,134,152,.2)'; x.lineWidth=1;
     x.beginPath(); x.moveTo(0,H-10); x.lineTo(W,H-10); x.stroke(); x.setLineDash([]);
-    // aire = la série :
+    if(vals.length===1){
+      // 1 semaine = 1 jour réel : barre + point, pas de décor
+      const px=iw*.35, py=H-10-ih*(vals[0]/mx)*rev;
+      x.setLineDash([]);
+      x.fillStyle='rgba(0,224,255,.3)'; x.fillRect(px-10,py,iw*0.55,H-10-py);
+      x.fillStyle='#00e0ff'; x.beginPath(); x.arc(px,py,3,0,7); x.fill();
+      x.fillStyle='rgba(124,134,152,.7)'; x.font='7px ui-monospace'; x.textAlign='center';
+      x.fillText(dates[0]||'', px, H-2);
+      x.fillStyle='#fff'; x.font='9px ui-monospace';
+      x.fillText(vals[0], px+4, py-8);
+      return;
+    }
+    // aire = la série (N≥2) :
     x.beginPath(); x.moveTo(0,H-10);
     const N=vals.length;
     for(let i=0;i<N;i++){
