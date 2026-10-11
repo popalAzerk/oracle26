@@ -329,7 +329,7 @@ function detailPanel(){
   const pan=document.createElement('div'); pan.id='dpanel';
   document.body.appendChild(pan);
   pan.innerHTML=`<div id="dpBack"></div><div id="dpCard"><div id="dpHead"><div id="dpTitle"></div><button id="dpX">FERMER</button></div><div id="dpBody"></div></div>`;
-  const open=html=>{ pan.classList.add('on'); document.getElementById('dpBody').innerHTML=html; };
+  const open=(html,title)=>{ pan.classList.add('on'); document.getElementById('dpBody').innerHTML=html; if(title!==undefined) document.getElementById('dpTitle').textContent=title; };
   const close=()=>pan.classList.remove('on');
   document.getElementById('dpBack').addEventListener('click',close);
   document.getElementById('dpX').addEventListener('click',close);
@@ -373,8 +373,7 @@ function detailPanel(){
       ${ex.length?`<div class="dcpLab">EXEMPLES UTILISATEURS</div>`+ex.slice(0,3).map(a=>
         `<div class="dcpQuote">« ${(a.text_tr||a.text||'').slice(0,220).replace(/\n/g,' ')}${(a.text_tr||a.text||'').length>220?'…':''} »</div>`).join(''):''}
     `;
-    open(html);
-    document.getElementById('dpTitle').textContent=FRD[k]||k.toUpperCase();
+    open(html, FRD[k]||k.toUpperCase());
   }
   function openMod(mod){
     const id=mod.dataset.mod;
@@ -385,7 +384,7 @@ function detailPanel(){
     if(mod.contains(mod.querySelector('.kpi'))&&window.getComputedStyle(mod).borderTopWidth!=='0px'){ /* rien */ }
     // défaut : lister les catégories :
     const total=rowsD.map(([k,v])=>`<div class="dcpRow cat" data-k="${k}"><span style="color:${COLD[k]}">●</span><span>${FRD[k]}</span><b>${v}</b><small>${Math.round(v/TOTD*100)}</small></div>`).join('');
-    open(`<div class="dcpHead">SIGNALS · DÉTAIL</div><div class="dcpLab">PAR CATÉGORIE — CLIQUEZ POUR OUVRIR</div>${total}`);
+    open(`<div class="dcpHead">SIGNALS · DÉTAIL</div><div class="dcpLab">PAR CATÉGORIE — CLIQUEZ POUR OUVRIR</div>${total}`,'SIGNALS');
     document.getElementById('dpBody').querySelectorAll('.dcpRow.cat').forEach(r=>r.addEventListener('click',()=>openCat(r.dataset.k)));
   }
   function openTabLine(){
@@ -395,13 +394,13 @@ function detailPanel(){
       const top=rowsD.slice(0,3).map(([k])=>(c[k]||0)).join(' · ');
       return `<div class="dcpRow"><span>${h.date}</span><b>${h.total}</b><small>${top}</small></div>`;
     }).join('');
-    open(`<div class="dcpHead">ÉVOLUTION · 5 SEMAINES</div><div class="dcpLab">TOTAL / TOP3 (BATTERIE · ESTHÉTIQUE · CHARGE)</div>${rows}`);
+    open(`<div class="dcpHead">ÉVOLUTION · 5 SEMAINES</div><div class="dcpLab">TOTAL / TOP3 (BATTERIE · ESTHÉTIQUE · CHARGE)</div>${rows}`,'ÉVOLUTION');
   }
   function openTabCal(){
-    open(`<div class="dcpHead">CYCLE DE COLLECTE</div>
+    open(`<div class="dcpHead">CYCLE DE COLLECTE</div
       <div class="dcpQuote">Le signal se collecte la nuit (Harken + Laya), se trie au lever par classification, fusionne les tarifs, puis s'affiche ici à 9 h. Prochain cycle dans la nuit.</div>
       <div class="dcpLab">DERNIÈRES COLLECTES</div>`+
-      (D2.history||[]).map(h=>`<div class="dcpRow"><span>${h.date}</span><b>${h.total}</b><small>signaux</small></div>`).join(''));
+      (D2.history||[]).map(h=>`<div class="dcpRow"><span>${h.date}</span><b>${h.total}</b><small>signaux</small></div>`).join(''),'CYCLE');
   }
   function openTabPipe(){
     const s=D2.sentiment||{};
@@ -410,7 +409,7 @@ function detailPanel(){
       <div class="dcpKpi"><b style="color:#30d158">${conf} %</b><span>confiance moyenne du signal</span></div>
       <div class="dcpRow"><span>Positifs</span><b>${s.positive||0}</b></div>
       <div class="dcpRow"><span>Neutres</span><b>${s.neutral||0}</b></div>
-      <div class="dcpRow"><span>Négatifs</span><b style="color:#ff356e">${s.negative||0}</b></div>`);
+      <div class="dcpRow"><span>Négatifs</span><b style="color:#ff356e">${s.negative||0}</b></div>`,'SANTÉ PIPELINE');
   }
   window.__openCat=openCat; // debug
 }
