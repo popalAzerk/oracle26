@@ -141,11 +141,11 @@ const TOUCH = 'ontouchstart' in window;
   function sz3(){ W3=cv.width=innerWidth*DPR3; H3=cv.height=innerHeight*DPR3; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; gl.viewport(0,0,W3,H3); }
   const VS=`attribute vec3 aP; attribute float aS; uniform mat4 uM; uniform float uT; varying float vS;
     void main(){ vec3 p=aP; p.x+=sin(uT*.35+p.y*2.1)*.35; p.y+=cos(uT*.28+p.z*1.7)*.3; p.z+=sin(uT*.22+p.x*1.9)*.35;
-    gl_Position=uM*vec4(p,1.); gl_PointSize=max(1.3,aS*(uM[1].y>1.5?2.4:1.9)); vS=aS; }`;
+    gl_Position=uM*vec4(p,1.); gl_PointSize=max(2.0,aS*3.2); vS=aS; }`;
   const FS=`precision mediump float; varying float vS; void main(){
     vec2 d=gl_PointCoord-vec2(.5); float r=length(d);
     if(r>.5) discard;
-    float a=(1.-r*2.) *.5; // halo doux
+    float a=(1.-r*2.)*.85; // halo doux
     vec3 c=mix(vec3(.42,.86,1.), vec3(.19,.82,.35), step(.78,vS));
     c=mix(c, vec3(1.,.62,.04), step(.93,vS));
     gl_FragColor=vec4(c,a); }`;
@@ -164,8 +164,17 @@ const TOUCH = 'ontouchstart' in window;
   const aP=gl.getAttribLocation(pr,'aP'), aS=gl.getAttribLocation(pr,'aS');
   const uM=gl.getUniformLocation(pr,'uM'), uT=gl.getUniformLocation(pr,'uT');
   function mat(rX,rY){ const cX=Math.cos(rX),sX=Math.sin(rX),cY=Math.cos(rY),sY=Math.sin(rY);
-    const f=2.2, asp=innerWidth/innerHeight;
-    return new Float32Array([ 2.2/asp*cY,f*sX*sY,f*cX*sY,0,  0,f*cX,0- f*sX*.0,0,  -2.2*sY,f*sX*cY,f*cX*cY,0,  0,0,-f*2.6,1 ]);
+    const cam=5.4, f=1.35;
+    const rx=new Float32Array([1,0,0,0, 0,cX,sX,0, 0,-sX,cX,0, 0,0,0,1]);
+    const ry=new Float32Array([cY,0,-sY,0, 0,1,0,0, sY,0,cY,0, 0,0,0,1]);
+    const mv=new Float32Array(16);
+    for(let co=0;co<4;co++)for(let li=0;li<4;li++){ let v=0; for(let kk=0;kk<4;kk++) v+=rx[kk*4+li]*ry[co*4+kk]; mv[co*4+li]=v; }
+    mv[14]-=cam;
+    const asp=innerWidth/innerHeight, fn=1/Math.tan(f*.5), zn=1.0, zf=30;
+    const prj=new Float32Array([fn/asp,0,0,0, 0,fn,0,0, 0,0,(zf+zn)/(zn-zf),-1, 0,0,2*zf*zn/(zn-zf),0]);
+    const out=new Float32Array(16);
+    for(let co=0;co<4;co++)for(let li=0;li<4;li++){ let v=0; for(let kk=0;kk<4;kk++) v+=prj[kk*4+li]*mv[co*4+kk]; out[co*4+li]=v; }
+    return out;
   }
   let rX=-.32, rY=0, tRX=-.32, tRY=0, drag=null, px=0, py=0;
   // interaction : pointerdown/drag = orbite, pointermove = répulsion douce
