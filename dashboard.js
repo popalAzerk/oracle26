@@ -101,10 +101,9 @@ function lineChart(){
     // une semaine = un point : pas de courbe sensée. Remplacer le
     // module par une lecture claire des 3 séries :
     mod.innerHTML=`<div class="lab"><span>ÉVOLUTION CUMULÉE</span><b>1ʳᵉ SEMAINE</b></div>
-      <div class="sn1"><span style="color:#00e0ff">●</span> TOTAL <b>${t1[0]}</b></div>
-      <div class="sn1"><span style="color:${COLD[k1]}">●</span> ${FRD[k1]} <b>${t2[0]}</b></div>
-      <div class="sn1"><span style="color:${COLD[k2]}">●</span> ${FRD[k2]} <b>${t3[0]||((D2.counts||{})[k2]||0)}</b></div>
-      <div class="snNote">Collecte du ${hist[0].date} · la courbe s'active dès 2 semaines (les nuits s'accumulent).</div>`;
+      <div class="sn1"><span style="color:#00e0ff">●</span> TOTAL <b>${hist[0].total}</b></div>`+
+      rowsD.slice(0,3).map(([k,v])=>`<div class="sn1"><span style="color:${COLD[k]}">●</span> ${FRD[k]} <b>${v}</b></div>`).join('')+
+      `<div class="snNote">Collecte du ${hist[0].date} · la courbe s'active dès 2 semaines (les nuits s'accumulent).</div>`;
     return;
   }
   svg.innerHTML=g;
