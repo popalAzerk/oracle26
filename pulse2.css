@@ -143,8 +143,7 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
   #zin h2{font-size:20px;letter-spacing:.2em}
   .card{position:absolute}
 }
-#cards.spread .card{animation:cardin .72s cubic-bezier(.2,.9,.3,1.12) forwards;
-  animation-delay:var(--pd,0s)}
+#cards.spread .card{opacity:1} /* déploiement piloté par WAAPI */
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .card{opacity:1}

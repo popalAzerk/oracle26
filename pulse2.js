@@ -150,6 +150,18 @@ function toggleSpread(){
     wrap.classList.add('spread');
     cw.classList.add('pulse');
     if(hint) hint.textContent='▸ REFERMER';
+    // sphère : onde de choc ring-WAAPI au déploiement
+    try{ cw.animate([{boxShadow:'0 0 0 0 rgba(92,242,255,.55)'},{boxShadow:'0 0 0 90px rgba(92,242,255,0)'}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)'}); }catch(e){}
+    // WAAPI : déploiement physiqué (courbe spring custom, stagger par index)
+    try{
+      const ease='cubic-bezier(.17,1.35,.35,1)'; // overshoot ressort
+      document.querySelectorAll('.card').forEach((el,i)=>{
+        el.animate([
+          {opacity:0, transform:getComputedStyle(el).transform, filter:'blur(3px)'},
+          {opacity:1, transform:CSS.supports('transform','translate(-50%,-50%)')?'translate(-50%,-50%)':'none', filter:'blur(0px)'}
+        ],{duration:760, delay:i*70, easing:ease, fill:'both'});
+      });
+    }catch(e){}
     // déploiement en cascade : chaque carte quitte le noyau avec son délai
     document.querySelectorAll('.card').forEach((el,i)=>{
       el.style.transitionDelay=(i*70)+'ms';
