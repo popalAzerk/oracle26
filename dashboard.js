@@ -57,53 +57,55 @@ function hbars(){
 
 /* ─ 2. ligne multi-séries (3 semaines historique) ── */
 function lineChart(){
-  const host=$q('#gl_line'), h=150;
-  cfit(host, 10, h); // mesure réelle faite par le raf (largeur 10 jetable)
+  // SVG DOM (pas canvas) : rendu garanti visible
+  const host=$q('#gl_line'); // conteneur = le module
+  const mod=host.parentElement; mod.classList.add('lineMod');
+  host.remove();
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id='svgLine'; svg.setAttribute('viewBox','0 0 320 150');
+  svg.setAttribute('preserveAspectRatio','none');
+  svg.style.cssText='display:block;width:100%;height:150px;overflow:visible';
+  mod.appendChild(svg);
   const hist=D2.history||[];
+  if(hist.length<2){ mod.innerHTML+='<span style="font-size:9px;color:#55606f">historique en cours…</span>'; return; }
   const t1=hist.map(h=>h.total||0);
   const k1=rowsD[0][0], k2=rowsD[1][0];
   const t2=hist.map(x=>(x.counts||{})[k1]||0);
   const t3=hist.map(x=>(x.counts||{})[k2]||0);
   const dates=hist.map(x=>x.date.slice(5).replace('-','/'));
-  raf(host,(g,t,W,H)=>{
-    const pad={l:32,r:8,t:12,b:20}, iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
-    const mx=Math.max(60,...t1)*1.15;
-    g.setLineDash([2,4]); g.strokeStyle='rgba(124,134,152,.22)'; g.lineWidth=1;
-    for(let k=0;k<=4;k++){
-      const yy=pad.t+ih*k/4;
-      g.beginPath(); g.moveTo(pad.l,yy); g.lineTo(W-pad.r,yy); g.stroke();
-      g.fillStyle='rgba(124,134,152,.75)'; g.font='8px ui-monospace'; g.textAlign='right';
-      g.fillText(String(Math.round(mx*(1-k/4))), pad.l-5, yy+3);
-    }
-    g.setLineDash([]);
-    g.font='8px ui-monospace'; g.textAlign='center';
-    dates.forEach((d,i)=>{ g.fillStyle='rgba(124,134,152,.65)';
-      g.fillText(d, pad.l+iw*i/Math.max(1,dates.length-1), H-5); });
-    const rev=Math.min(1,t*.55);
-    function serie(arr,col,withFill){
-      const N=arr.length;
-      const px=i=>pad.l+iw*i/(N-1);
-      const py=i=>pad.t+ih*(1-arr[i]/mx);
-      const nVis=Math.max(2,Math.ceil(1+(N-1)*rev));
-      if(withFill&&nVis>2){
-        g.beginPath(); g.moveTo(px(0),py(0));
-        for(let i=1;i<nVis;i++) g.lineTo(px(i),py(i));
-        g.lineTo(px(nVis-1),H-pad.b); g.lineTo(pad.l,H-pad.b); g.closePath();
-        const gr=g.createLinearGradient(0,pad.t,0,H-pad.b);
-        gr.addColorStop(0,col+'3d'); gr.addColorStop(1,col+'00');
-        g.fillStyle=gr; g.fill();
-      }
-      g.beginPath(); g.moveTo(px(0),py(0));
-      for(let i=1;i<nVis;i++) g.lineTo(px(i),py(i));
-      g.strokeStyle=col; g.lineWidth=2; g.lineJoin='round'; g.stroke();
-      // point terminal + halo une fois complet :
-      g.fillStyle=col; g.beginPath(); g.arc(px(nVis-1),py(nVis-1),Math.min(3,rev*3),0,7); g.fill();
-      if(rev>=1&&col==='#00e0ff'){
-        g.strokeStyle=col+'66'; g.lineWidth=1.4;
-        g.beginPath(); g.arc(px(N-1),py(N-1),6+2.5*Math.sin(t*3),0,7); g.stroke();
-      }
-    }
-    serie(t1,'#00e0ff',true); serie(t2,'#7ea6ff',false); serie(t3,'#2e7cf6',false);
+  const W=320,H=150, pad={l:30,r:8,t:12,b:20}, iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const mx=Math.max(60,...t1)*1.15;
+  const XX=i=>pad.l+iw*i/(hist.length-1);
+  const YY=v=>pad.t+ih*(1-v/mx);
+  let g='';
+  // grille + labels :
+  for(let k=0;k<=4;k++){
+    const yy=(pad.t+ih*k/4).toFixed(1);
+    g+=`<line x1="${pad.l}" y1="${yy}" x2="${W-pad.r}" y2="${yy}" stroke="rgba(124,134,152,.22)" stroke-dasharray="2 4"/>`;
+    g+=`<text x="${pad.l-5}" y="${+yy+3}" fill="rgba(124,134,152,.8)" font-size="7" text-anchor="end">${Math.round(mx*(1-k/4))}</text>`;
+  }
+  dates.forEach((d,i)=>{
+    g+=`<text x="${XX(i).toFixed(1)}" y="${H-6}" fill="rgba(124,134,152,.65)" font-size="7" text-anchor="middle">${d}</text>`;
+  });
+  // aire + lignes (la plus grande remplie) :
+  const pts=arr=>arr.map((v,i)=>`${XX(i).toFixed(1)},${YY(v).toFixed(1)}`).join(' ');
+  g+=`<polygon points="${pts(t1)} ${XX(hist.length-1).toFixed(1)},${H-pad.b} ${pad.l},${H-pad.b}" fill="rgba(0,224,255,.16)"/>`;
+  const polys=[[t1,'#00e0ff'],[t2,'#7ea6ff'],[t3,'#2e7cf6']];
+  polys.forEach(([arr,col],si)=>{
+    g+=`<polyline id="lk${si}" points="${pts(arr)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    g+=`<circle id="ld${si}" cx="${XX(hist.length-1).toFixed(1)}" cy="${YY(arr[arr.length-1]).toFixed(1)}" r="3" fill="${col}" opacity="0"/>`;
+  });
+  svg.innerHTML=g;
+  // reveal : dash-trick CSS sur polyline (fiable en SVG) :
+  polys.forEach(([arr,col],si)=>{
+    const pl=svg.querySelector('#lk'+si);
+    const L=pl.getTotalLength();
+    pl.style.strokeDasharray=L; pl.style.strokeDashoffset=L;
+    pl.style.transition='stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1) '+(si*0.18)+'s';
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ pl.style.strokeDashoffset=0; }); });
+    const dot=svg.querySelector('#ld'+si);
+    dot.style.transition='opacity .4s ease '+(1.2+si*.18)+'s';
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ dot.setAttribute('opacity','1'); }); });
   });
 }
 
