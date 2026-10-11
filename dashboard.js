@@ -1,6 +1,6 @@
 /* ═══ PULSE DASHBOARD — composants canvas animés, données réelles ═══ */
 'use strict';
-const D2=window.PULSE_DATA||{}, SR2=(window.PULSE_SOURCES||{}).sources||{};
+const D2=window.PULSE_DATA||{}, MC2=D2.model_counts||{}, SR2=(window.PULSE_SOURCES||{}).sources||{};
 const FRD={battery:'BATTERIE',screen:'ÉCRAN',charging:'CHARGE',cosmetic:'ESTHÉTIQUE',audio:'AUDIO',buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA'};
 const COLD={battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff356e',audio:'#bf5af2',buttons:'#8e8e93',network:'#00e0ff',camera:'#ff9f0a'};
 const rowsD=Object.entries(D2.counts||{}).sort((a,b)=>b[1]-a[1]);
@@ -321,7 +321,7 @@ function donuts(){
 /* ═══ INIT : injecter le HTML des composants puis tout lancer ═══ */
 async function init(){
   // injecte le markup :
-  const resp=await fetch('dashboard.html');
+  const resp=await fetch('dashboard.html?v='+Date.now());
   const html=await resp.text();
   document.body.insertAdjacentHTML('afterbegin',html);
   // l'ancien stage est démoné :
