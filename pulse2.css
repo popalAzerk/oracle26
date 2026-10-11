@@ -210,7 +210,12 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 /* scroll-narratif : 300vh de trajet pour la chorégraphie */
 body{min-height:300vh}
 main#stage{position:fixed;inset:0;pointer-events:none}
-main#stage > *{pointer-events:auto}
+main#stage > *{pointer-events:none !important}
+#corewrap{pointer-events:auto !important}
+#cards{pointer-events:none !important}
+#cards.spread .card{pointer-events:auto !important}
+#links{pointer-events:none !important}
+#hud{pointer-events:none !important}
 
 /* section datacenter (scroll) */
 #dcs{position:relative;z-index:5;max-width:860px;margin:100vh auto 0;padding:120px 28px 160px;color:var(--t1)}
