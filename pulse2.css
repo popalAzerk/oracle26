@@ -210,3 +210,15 @@ body{background:var(--bg);color:var(--t1);font-family:ui-monospace,'SF Mono','Ca
 body{min-height:300vh}
 main#stage{position:fixed;inset:0;pointer-events:none}
 main#stage > *{pointer-events:auto}
+
+/* section datacenter (scroll) */
+#dcs{position:relative;z-index:5;max-width:860px;margin:0 auto;padding:120px 28px 160px;color:var(--t1)}
+#dcs h2{font-size:15px;letter-spacing:.42em;color:var(--cyan);text-shadow:0 0 14px rgba(74,227,255,.6)}
+.dcsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:34px}
+.dcnode{border:1px solid var(--bord);background:rgba(6,12,20,.72);padding:18px 16px;position:relative}
+.dcnode::before{content:'';position:absolute;left:14px;right:14px;top:0;height:2px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.dcnode i{position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%;background:#30d158;box-shadow:0 0 9px #30d158;animation:clp 2.2s ease-in-out infinite}
+.dcnode b{display:block;font-size:11px;letter-spacing:.18em;color:#dff6ff}
+.dcnode span{display:block;margin-top:6px;font-size:9px;letter-spacing:.08em;color:var(--t2)}
+.dcfoot{margin-top:40px}
+#dcs .dcfoot{margin-top:44px;font-size:10px;letter-spacing:.14em;color:var(--t3)}

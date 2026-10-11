@@ -425,8 +425,7 @@ setTimeout(function(){
   ScrollTrigger.create({
     trigger:document.body, start:'top top', end:'bottom bottom',
     onUpdate(self){
-      const want=self.progress>=.5;
-      if(want!==SPREAD) toggleSpread();
+      // scrub VISUEL uniquement : l'état (tap) reste maître du déploiement
       window.__scrollP=self.progress;
     }
   });
@@ -435,6 +434,17 @@ setTimeout(function(){
     window.scrollTo({top:target,behavior:'smooth'});
   },{capture:true});
 },80);
+
+// ── section narrative au-delà du pli : « SALLES · DATACENTER » ──
+setTimeout(function(){
+  const sec=document.getElementById('dcs');
+  if(!sec || !HAS_GSAP || typeof ScrollTrigger==='undefined') return;
+  gsap.from(sec.querySelectorAll('.dcnode'),{
+    opacity:0, y:34, scale:.92, stagger:.08, duration:.7, ease:'expo.out',
+    scrollTrigger:{trigger:sec, start:'top 70%'}
+  });
+  gsap.from(sec.querySelector('h2'),{duration:1.2, scrambleText:{text:'SALLES · DATACENTER', chars:'01ABCDEF#/|', speed:.4}, scrollTrigger:{trigger:sec, start:'top 75%'}});
+},140);
 
 // resize : reconstruit au BON ÉTAT (déployé → positions neuves dépliées)
 addEventListener('resize',()=>{
