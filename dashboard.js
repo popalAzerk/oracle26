@@ -419,7 +419,12 @@ function detailPanel(){
     if(id==='hbars'||id==='seg'){ return; } // les barres s'ouvrent par catégorie
     if(id==='line'){ return openTabLine(); }
     if(id==='cal'){ return openTabCal(); }
-    if(id==='donuts'){ return openTabPipe(); }
+    if(id==='donuts'||id==='pipe'||id==='rings'){ return openTabPipe(); }
+    if(id==='wave'||id==='bars'){ return openTabLine(); }
+    if(id==='eq'){ return openTabEq(); }
+    if(id==='map'){ return openTabMap(); }
+    if(id==='modList'){ return openTabMods(); }
+    if(id==='donuts'||id==='pipe'||id==='rings'){ return openTabPipe(); }
     if(mod.contains(mod.querySelector('.kpi'))&&window.getComputedStyle(mod).borderTopWidth!=='0px'){ /* rien */ }
     // défaut : lister les catégories :
     const total=rowsD.map(([k,v])=>`<div class="dcpRow cat" data-k="${k}"><span style="color:${COLD[k]}">●</span><span>${FRD[k]}</span><b>${v}</b><small>${Math.round(v/TOTD*100)}</small></div>`).join('');
@@ -449,6 +454,21 @@ function detailPanel(){
       <div class="dcpRow"><span>Positifs</span><b>${s.positive||0}</b></div>
       <div class="dcpRow"><span>Neutres</span><b>${s.neutral||0}</b></div>
       <div class="dcpRow"><span>Négatifs</span><b style="color:#ff356e">${s.negative||0}</b></div>`,'SANTÉ PIPELINE');
+  }
+  function openTabEq(){
+    open(`<div class="dcpHead">FLUX TEMPS RÉEL</div>
+      <div class="dcpQuote">Le flux « live » visualise le train d'ingestion nocturne : Harken + Laya pollent les sources, le tri se fait au lever. La visualisation pulse au rythme du cycle.</div>`, 'FLUX');
+  }
+  function openTabMap(){
+    const srcCount2={}; Object.values(SR2).forEach(a=>a.forEach(a2=>{ srcCount2[a2.src]=(srcCount2[a2.src]||0)+1; }));
+    const srcs=Object.keys(srcCount2);
+    open(`<div class="dcpHead">ORIGINE DES SIGNAUX</div><div class="dcpLab">${srcs.length} SOURCES DE VEILLE</div>`+
+      srcs.slice(0,10).map(s2=>`<div class="dcpRow"><span>●</span><span>${s2}</span><b>${srcCount2[s2]}</b></div>`).join(''), 'ORIGINE');
+  }
+  function openTabMods(){
+    const mcs=Object.entries(MC2).map(([m,cats])=>[m,Object.values(cats).reduce((a,b)=>a+b,0)]).sort((a,b)=>b[1]-a[1]);
+    open(`<div class="dcpHead">MODÈLES SUIVIS · ${mcs.length}</div><div class="dcpLab">SIGNALS PAR MODÈLE</div>`+
+      mcs.map(([m,v])=>`<div class="dcpRow"><span>iPhone ${m.replace(/^iPhone\s*/i,'')}</span><b>${v}</b></div>`).join(''), 'MODÈLES');
   }
   window.__openCat=openCat; // debug
 }
