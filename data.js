@@ -1,15 +1,35 @@
 window.PULSE_DATA = {
  "updated": "2026-10-12",
  "period": "échantillon du 12/10/2026 — collecte nocturne Harken, classification Laya",
- "total": 0,
- "counts": {},
+ "total": 11,
+ "counts": {
+  "battery": 7,
+  "system_bug": 2,
+  "process": 1,
+  "screen": 1
+ },
  "sentiment": {
-  "neutral": 0,
-  "negative": 0,
+  "neutral": 2,
+  "negative": 9,
   "positive": 0
  },
- "avgConf": 0.0,
- "examples": {},
+ "avgConf": 0.924,
+ "examples": {
+  "battery": [
+   "Swollen Battery on iPhone 15 Pro and iPho… - Apple Community Community reports online can be useful signals, but they are not confirmation of a systemic softwar…",
+   "IOS 27 battery drain issue - Apple Community Updated to iOS 27 last night and within 2 hours of waking up my battery is on 81%."
+  ],
+  "system_bug": [
+   "Ios 26.6.1 is a battery drainer - Apple Community Also, the decrease in battery health is not linear.",
+   "My iphone is not charging….. - Apple Community If it's still unresponsive, try force restarting it."
+  ],
+  "process": [
+   "iPhone overheating - Apple Community Some warmth is to be anticipated.* Read this article about keeping your iPhone, iPad, or iPod touch within acceptable opera…"
+  ],
+  "screen": [
+   "How to get rid of black lines on my iPhon… - Apple Community nusrat256 Said:\"A thin black line on my iPhone screen: [...]I took a screenshot but the line is not…"
+  ]
+ },
  "history": [
   {
    "date": "2026-09-21",
@@ -55,8 +75,13 @@ window.PULSE_DATA = {
   },
   {
    "date": "2026-10-12",
-   "total": 0,
-   "counts": {}
+   "total": 11,
+   "counts": {
+    "battery": 7,
+    "system_bug": 2,
+    "process": 1,
+    "screen": 1
+   }
   }
  ]
 };
@@ -106,8 +131,13 @@ window.PULSE_HISTORY = [
  },
  {
   "date": "2026-10-12",
-  "total": 0,
-  "counts": {}
+  "total": 11,
+  "counts": {
+   "battery": 7,
+   "system_bug": 2,
+   "process": 1,
+   "screen": 1
+  }
  }
 ];
 
