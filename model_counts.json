@@ -1,58 +1,117 @@
 {
  "iPhone 14 Pro": {
   "screen": 1,
-  "battery": 1
+  "battery": 1,
+  "system_bug": 2,
+  "camera": 1
  },
  "iPhone 18 Pro Max": {
-  "battery": 6
+  "battery": 6,
+  "camera": 1
  },
  "iPhone 11": {
-  "screen": 1,
+  "screen": 3,
   "network": 1
  },
  "iPhone 18 Pro": {
   "battery": 2,
   "camera": 2,
-  "charging": 1
+  "charging": 1,
+  "audio": 1
  },
  "iPhone 17 Pro Max": {
-  "camera": 1,
+  "camera": 3,
   "charging": 14,
   "audio": 5,
-  "battery": 2,
+  "battery": 6,
   "screen": 3,
   "network": 1
  },
  "iPhone 16 Pro": {
   "charging": 1,
-  "battery": 1
+  "battery": 3,
+  "emerging": 1,
+  "cosmetic": 1,
+  "screen": 1
  },
  "iPhone 13": {
-  "battery": 1,
-  "buttons": 1
+  "battery": 4,
+  "buttons": 1,
+  "screen": 1,
+  "cosmetic": 1,
+  "system_bug": 2
  },
  "iPhone 17 Pro": {
   "charging": 2,
   "audio": 1,
-  "screen": 1
+  "screen": 1,
+  "battery": 2,
+  "system_bug": 1
  },
  "iPhone 16": {
-  "screen": 1,
-  "charging": 1
+  "screen": 2,
+  "charging": 3,
+  "battery": 3,
+  "audio": 1
  },
  "iPhone 17": {
-  "charging": 6,
-  "battery": 3,
-  "screen": 1
+  "charging": 7,
+  "battery": 11,
+  "screen": 4,
+  "cosmetic": 1,
+  "system_bug": 1,
+  "camera": 4
  },
  "iPhone 15 Pro": {
-  "battery": 1
+  "battery": 3
  },
  "iPhone 14 Pro Max": {
   "screen": 1,
-  "buttons": 1
+  "buttons": 1,
+  "charging": 1,
+  "system_bug": 1
  },
  "iPhone 16 Pro Max": {
-  "screen": 1
+  "screen": 1,
+  "buttons": 1,
+  "charging": 2,
+  "battery": 1,
+  "system_bug": 1,
+  "cosmetic": 1
+ },
+ "iPhone 14": {
+  "battery": 1,
+  "camera": 2,
+  "charging": 1,
+  "system_bug": 3,
+  "cosmetic": 1
+ },
+ "iPhone 13 Pro Max": {
+  "system_bug": 2
+ },
+ "iPhone 15": {
+  "battery": 3,
+  "camera": 3,
+  "emerging": 1
+ },
+ "iPhone 13 Pro": {
+  "battery": 1
+ },
+ "iPhone 12": {
+  "charging": 1,
+  "system_bug": 2
+ },
+ "iPhone 14 Plus": {
+  "emerging": 1
+ },
+ "iPhone 15 Pro Max": {
+  "charging": 1
+ },
+ "iPhone 13 Mini": {
+  "charging": 1,
+  "battery": 1
+ },
+ "iPhone 15 Plus": {
+  "system_bug": 1
  }
 }

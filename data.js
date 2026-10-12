@@ -1,73 +1,67 @@
 window.PULSE_DATA = {
- "updated": "2026-10-08",
- "period": "cumul matériel — veille web (iPhone 17 PM → 18) + Harken, depuis 09/25",
- "total": 178,
+ "updated": "2026-10-12",
+ "period": "échantillon 2026-10-12 — backfill 3 mois (agents) + collecte nocturne Harken, classification Laya",
+ "total": 202,
  "counts": {
-  "battery": 57,
-  "charging": 33,
-  "screen": 26,
-  "audio": 6,
-  "buttons": 5,
-  "network": 5,
-  "camera": 4,
-  "cosmetic": 42
+  "battery": 75,
+  "system_bug": 53,
+  "screen": 21,
+  "camera": 14,
+  "charging": 11,
+  "process": 7,
+  "emerging": 7,
+  "cosmetic": 5,
+  "pricing": 3,
+  "buttons": 2,
+  "audio": 2,
+  "fraud": 2
  },
  "sentiment": {
-  "neutral": 32,
-  "negative": 84,
-  "positive": 20
+  "neutral": 9,
+  "negative": 107,
+  "positive": 6
  },
- "avgConf": 0.752,
+ "avgConf": 0.853,
  "examples": {
-  "battery": [
-   {
-    "text": "Working on what I thought was a code issue, I had forgotten ESP32 basic units only support 2.4GHz!\n\nWhy can’t I connect to my other hotspot? Because it’s 5GHz, …",
-    "text_tr": "En travaillant sur ce que je pensais être un problème de code, j'avais oublié que les unités de base ESP32 ne prennent en charge que 2,4 GHz !\n\nPourquoi ne puis-je pas me connecter à mon autre point d'accès ? Parce que c'est 5 GHz, …"
-   },
-   {
-    "text": "Yeah me too. I get frustrated easily with it as well. As much as I love having an iPad, I wish there wasn’t such an emphasis on having an iPhone here (and mine …",
-    "text_tr": "Ouais, moi aussi, ça me frustre facilement. Même si j'adore avoir un iPad, j'aimerais qu'on ne mette pas autant l'accent sur le fait d'avoir un iPhone ici (et le mien …"
-   }
+  "buttons": [
+   "iPhone 16 Pro Max camera button overheating Why does my iPhone 16 Pro Max camera button get extremely hot",
+   "Green line suddenly appeared on my iPhone Got my iPhone on **12 Nov 2022**. After the **iOS 18 update**, I got a line on the extreme left. After updat…"
   ],
-  "charging": [
-   {
-    "text": "Tested the VamosPRO phone holder on the court today, conclusions\n\n- iPhone is overheating\n- Suction cups weaken in the sun\n- Needs a downward camera angle\n- Hol…",
-    "text_tr": "Testé le support de téléphone VamosPRO sur le terrain aujourd'hui, conclusions\n\n- L'iPhone surchauffe\n- Les ventouses s'affaiblissent au soleil\n- Nécessite un angle de caméra vers le bas\n- Hol..."
-   },
-   {
-    "text": "Just FYI, this is the person who drowned their iPhone when it indicated it was overheating. You know, because it's supposed to be waterproof, so why not dunk it…",
-    "text_tr": "Juste pour info, c'est la personne qui a noyé son iPhone quand il a indiqué qu'il surchauffait. Tu sais, parce qu'il est censé être étanche, alors pourquoi ne pas le tremper…"
-   }
+  "battery": [
+   "Mise à jour iOS 26.6 batterie iPhone 17 pro Je fais un point batterie suite à la mise à jour 26.6 de iOS qui est sortie hier   Elle pesait 29 Go sur m…",
+   "Ios 26.5.2 battery drain I woke up to my iphone 17 pro with 100% battery health updating to ios26.5.2 because i forgot to turn off the automatic insta…"
+  ],
+  "cosmetic": [
+   "condensation in my iphone camera????? help i don’t know what to do!!! i dropped my phone in the toilet and my iphone camera is really blurry. there wa…",
+   "Panic full 16 PM Water Damage Salut les gars,\n\nJ’ai récupéré cet iPhone 16 Pro Max tombé dans l’eau, il ne s’allumait plus.  \nJe l’ai ouvert et j’ai o…"
   ],
   "screen": [
-   {
-    "text": "Some users mentioned that even after replacement of the full device or replacement of the speakers, the issue still remained.",
-    "text_tr": "Certains utilisateurs ont mentionné que même après le remplacement de l'appareil complet ou le remplacement des haut-parleurs, le problème persistait."
-   },
-   {
-    "text": "earlier today i had a weird issue where my phone refused to load any websites / apps from wifi or cellular. \n\ni did almost everything but erase it, and decided …",
-    "text_tr": "plus tôt aujourd'hui, j'ai eu un problème étrange où mon téléphone a refusé de charger des sites Web / applications à partir du wifi ou du cellulaire. \n\nj'ai presque tout fait sauf l'effacer, et j'ai décidé ..."
-   }
+   "My iPhone 13 screen is bulging looks like a swollen battery I’ve had my iPhone 13 for about `2.5 years`, and overall it’s been great. My battery healt…",
+   "iPhone 11 green lines and screen glitching after possible minor water exposure, now suddenly normal My iPhone 11 was exposed to a small amount of wate…"
+  ],
+  "charging": [
+   "iPhone 16 charging issue, intermittent for months My iPhone 16 has had a weird intermittent charging problem for the last **2–3 months**. It’s only 9 …",
+   "Charging Port … blocked? (iPhone 12) iPhone 12, iOS 26.6.1, question below   Hello!  For some months now, I‘ve not been able to use my charging port. …"
+  ],
+  "system_bug": [
+   "iPhone 13 Pro Max microphone randomly stops working I’ve had my iPhone 13 Pro Max since around 2022 and it has worked fine, but recently my microphone…",
+   "iPhone 14 not working properly after liquid detected I left my phone in the vehicle when I went to Walmart, when I got out, it was pouring down rainin…"
+  ],
+  "camera": [
+   "iPhone camera lags, crashes, and won’t save photos Hi everyone. For a few days now, my iPhone 15's camera has been giving me problems. The app constan…",
+   "My iPhone’s camera doesn’t work… My iPhone 14’s camera suddenly stopped working one morning and i dont know why. \n\nInitially, it was my back camera, d…"
   ],
   "audio": [
-   {
-    "text": "I have used it for 15 days (no issue) but now occasionally it overheats when connected to car speakers via Bluetooth or when I use my AirPods .",
-    "text_tr": "Je l'utilise depuis 15 jours (aucun problème), mais maintenant, il surchauffe parfois lorsque je suis connecté à des haut-parleurs de voiture via Bluetooth ou lorsque j'utilise mes AirPods ."
-   },
-   {
-    "text": "## If it persists: likely causes and what they imply\n### Cause B: Hardware issue with the speaker, amplifier, or moisture damage\nIf the hiss remains across multiple known-good chargers and outlets, hardware becomes more likely—especially if the speaker itself sounds worse (or dis…",
-    "text_tr": "## Si cela persiste : les causes probables et ce qu'elles impliquent\n### Cause B : Problème matériel avec le haut-parleur, l'amplificateur ou dommages causés par l'humidité\nSi le sifflement reste sur plusieurs chargeurs et prises connus, le matériel devient plus probable, surtout si le haut-parleur lui-même sonne moins bien (ou dis..."
-   }
+   "New iPhone 18 Pro - Sudden Bad Quality with Cellular Audio? So my husband and I each got a new iPhone 18 Pro on release.  \n\nI came from an iPhone 16 P…",
+   "Certain videos have no sound Hi there! I am re-watching some of my concert videos from a music festival that happened a month ago and I’m just now see…"
   ],
-  "buttons": [
-   {
-    "text": "How to fix an iCloud sign in unknown error occurred problem\n\nOk, so if you follow me you'll probably know I change my mind and processes a lot and when trying t…",
-    "text_tr": "Problème survenu lors de la résolution d'une erreur de connexion iCloud inconnue\n\nOk, donc si vous me suivez, vous saurez probablement que je change d'avis et que je traite beaucoup et lorsque j'essaie de…"
-   },
-   {
-    "text": "Me: I should look at the new iPhone. My 15 has that overheating issue because Titanium was a stupid metal. I wonder if there are any good deals.\n\nVerizon: Trade…",
-    "text_tr": "Moi : Je devrais regarder le nouvel iPhone. Mon 15 a ce problème de surchauffe parce que le titane était un métal stupide. Je me demande s'il y a de bonnes affaires.\n\nVerizon : Commerce…"
-   }
+  "emerging": [
+   "Dropped my 16pro in sea water and I still get mouisture warning after 10h Today i accidentally dropped my iPhone 16pro in sea water while at the beach…",
+   "Face ID suddenly stopped working on my iPhone 14 Plus. Face ID unavailable, try again later. Has anyone fixed this? Hi everyone,  \nI’m a student, and …"
+  ],
+  "fraud": [
+   "My old Iphone broke due to water damage. My new iphone requires my old iphone to turn on. What do I do? Every single alternative step requires some fo…",
+   "astuce_cs_code_assistance FR: un 'Technicien Apple' conseille de demander un 'CS code' via l'assistance (arbitrage d'exception, grâce exceptionnelle) …"
   ],
   "network": [
    {
@@ -78,134 +72,56 @@ window.PULSE_DATA = {
     "text": "I had something similar happen with my OM-D Mark IV, seemed to be a security issue.  Any chance that one of the tricks in this forum worked, mainly forgetting t…",
     "text_tr": "J'ai eu quelque chose de similaire avec mon OM-D Mark IV, cela semblait être un problème de sécurité.  Toute chance que l'une des astuces de ce forum ait fonctionné, en oubliant principalement t…"
    }
-  ],
-  "camera": [
-   "I finally went to Las Vegas’s Neon Museum. It was so hot it wasn’t going to open until 9pm, which then got delayed to 9:30. Even at that hour, my iPhone kept te…",
-   {
-    "text": "From Google Pixel 10 Pro (been using Pixels since the Pixel 2) to iPhone 17 Pro Max. Pixels have been getting worse with each model, and there are lingering iss…",
-    "text_tr": "De Google Pixel 10 Pro (utilise des Pixels depuis le Pixel 2) à iPhone 17 Pro Max. Les pixels ont empiré avec chaque modèle, et il y a des émissions persistantes…"
-   }
-  ],
-  "cosmetic": [
-   {
-    "text": "Key facts\n\n- ▪ Home > Tech > Mobile Some iPhone 18 Pro and Max users say the devices' color is already fading Last year, it was Scratchgate.",
-    "text_tr": "Faits clés\n\n- ▪ Accueil > Technologie > Mobile Certains utilisateurs d'iPhone 18 Pro et Max disent que la couleur des appareils s'estompe déjà L'année dernière, c'était Scratchgate."
-   },
-   {
-    "text": "Now, aluminum used on iPhone’s vanilla models is also prone to scratches on darker shades, but we never saw such serious reports for them.",
-    "text_tr": "Maintenant, l'aluminium utilisé sur les modèles de vanille de l'iPhone est également sujet aux rayures sur les nuances plus foncées, mais nous n'avons jamais vu de rapports aussi sérieux pour eux."
-   }
   ]
  },
- "model_counts": {
-  "iPhone 14 Pro": {
-   "screen": 1,
-   "battery": 1,
-   "cosmetic": 1
-  },
-  "iPhone 18 Pro Max": {
-   "battery": 6
-  },
-  "iPhone 11": {
-   "screen": 1,
-   "network": 1
-  },
-  "iPhone 18 Pro": {
-   "battery": 2,
-   "camera": 2,
-   "charging": 1,
-   "cosmetic": 11
-  },
-  "iPhone 17 Pro Max": {
-   "camera": 1,
-   "charging": 14,
-   "audio": 5,
-   "battery": 2,
-   "screen": 3,
-   "network": 1
-  },
-  "iPhone 16 Pro": {
-   "charging": 1,
-   "battery": 1
-  },
-  "iPhone 13": {
-   "battery": 1,
-   "buttons": 1
-  },
-  "iPhone 17 Pro": {
-   "charging": 2,
-   "audio": 1,
-   "screen": 1,
-   "cosmetic": 3
-  },
-  "iPhone 16": {
-   "screen": 1,
-   "charging": 1
-  },
-  "iPhone 17": {
-   "charging": 6,
-   "battery": 3,
-   "screen": 1,
-   "cosmetic": 3
-  },
-  "iPhone 15 Pro": {
-   "battery": 1,
-   "cosmetic": 6
-  },
-  "iPhone 14 Pro Max": {
-   "screen": 1,
-   "buttons": 1
-  },
-  "iPhone 16 Pro Max": {
-   "screen": 1
-  },
-  "iPhone 15": {
-   "cosmetic": 1
-  },
-  "iPhone 18": {
-   "cosmetic": 2
-  },
-  "iPhone 14": {
-   "cosmetic": 1
-  }
- },
-
  "ai_patterns": [
-  {"t":"iPhone 18 Pro/Max — lignes d’écran (magenta/vert)","p":"≥3 signaux cette semaine + confirmation fabricant. Dépannage anticipé : tester une rangée de pixels plein écran à l’arrivée du client ; échange direct si le lot est touché — pas de re-reset."},
-  {"t":"iPhone 17/18 Pro — surchauffe en charge + Bluetooth auto (audio)","p":"Les mêmes clients signalent chaleur + son qui bascule sur le haut-parleur. Dépannage : diagnostic thermique Apple officiel + test d’isolation Bluetooth AVANT de proposer une réparation."},
-  {"t":"Batterie gonflée après mise à jour (15 Pro)","p":"Récurrence sur forums. Dépannage : vérifier la santé batterie en première ligne et préparer le devis du programme concerné."},
-  {"t":"Teardown : cadre d’écran qui déchire (3/4 modèles)","p":"iFixit 7/10. Le client qui avait déjà un passage ailleurs arrive parfois avec le cadre fragilisé : inspecter avant dépose."}
+  {
+   "t": "iPhone 18 Pro/Max — lignes d’écran (magenta/vert)",
+   "p": "≥3 signaux cette semaine + confirmation fabricant. Dépannage anticipé : tester une rangée de pixels plein écran à l’arrivée du client ; échange direct si le lot est touché — pas de re-reset."
+  },
+  {
+   "t": "iPhone 17/18 Pro — surchauffe en charge + Bluetooth auto (audio)",
+   "p": "Les mêmes clients signalent chaleur + son qui bascule sur le haut-parleur. Dépannage : diagnostic thermique Apple officiel + test d’isolation Bluetooth AVANT de proposer une réparation."
+  },
+  {
+   "t": "Batterie gonflée après mise à jour (15 Pro)",
+   "p": "Récurrence sur forums. Dépannage : vérifier la santé batterie en première ligne et préparer le devis du programme concerné."
+  },
+  {
+   "t": "Teardown : cadre d’écran qui déchire (3/4 modèles)",
+   "p": "iFixit 7/10. Le client qui avait déjà un passage ailleurs arrive parfois avec le cadre fragilisé : inspecter avant dépose."
+  }
  ],
  "ai_fraud": [
-  {"t":"« Mon écran a de nouveau les lignes, je veux un neuf » (sans preuve)","p":"Signal d’alerte : lignes qui disparaissent quand on filme l’écran à froid. Le vrai lot touché présente les lignes EN PRESENCE du Genius. Vérifier : photos horodatées, historique de réparation."},
-  {"t":"Inonder le téléphone d’eau AVANT le rendez-vous pour forcer l’échange","p":"Astuce qui circule sur des vidéos virales : un iPhone déjà mouillé = hors garantie. Détecter : marqueurs d’humidité (LCI), corrosion présente à l’ouverture."},
-  {"t":"« La batterie <80 % alors je veux le modèle au-dessus »","p":"AppleCare+ couvre le REMPLACEMENT batterie, pas un upgrade de modèle. Repérer la confusion dans la demande, expliquer l’égalité de modèle."},
-  {"t":"Coques « qui cachent un dommage » posées à l’avance","p":"Signal : coque neuve retirée devant le Genius révélant une fissure ancienne. Toujours inspecter l’appareil nu, d’abord."}
+  {
+   "t": "« Mon écran a de nouveau les lignes, je veux un neuf » (sans preuve)",
+   "p": "Signal d’alerte : lignes qui disparaissent quand on filme l’écran à froid. Le vrai lot touché présente les lignes EN PRESENCE du Genius. Vérifier : photos horodatées, historique de réparation."
+  },
+  {
+   "t": "Inonder le téléphone d’eau AVANT le rendez-vous pour forcer l’échange",
+   "p": "Astuce qui circule sur des vidéos virales : un iPhone déjà mouillé = hors garantie. Détecter : marqueurs d’humidité (LCI), corrosion présente à l’ouverture."
+  },
+  {
+   "t": "« La batterie <80 % alors je veux le modèle au-dessus »",
+   "p": "AppleCare+ couvre le REMPLACEMENT batterie, pas un upgrade de modèle. Repérer la confusion dans la demande, expliquer l’égalité de modèle."
+  },
+  {
+   "t": "Coques « qui cachent un dommage » posées à l’avance",
+   "p": "Signal : coque neuve retirée devant le Genius révélant une fissure ancienne. Toujours inspecter l’appareil nu, d’abord."
+  }
  ],
  "ai_csat": [
-  {"t":"Délai au Bar trop long en fin de journée","p":"Levier : afficher le créneau réel à la réservation + pré-diagnostic en ligne (le formulaire PULSE réduit à 60 s) — moins d’attente = +0,3★ typiques."},
-  {"t":"Refus de réparation en garantie peu expliqué","p":"Levier : montrer l’état de l’inspecteur à l’écran (photos + critères) — la transparence du refus rassure (-40 % d’avis négatifs relatifs aux refus, tendance observée sur Trustpilot)."},
-  {"t":"« Le Genius ne m’a pas expliqué les tarifs avant le devis »","p":"Levier : tarif affiché AVANT la pose (l’outil repairprice.popalazerk.com couvre 229 modèles) — l’absence de surprise = mention positive dans les avis."}
- ],
- "history": [
   {
-   "date": "2026-10-08",
-   "total": 136,
-   "counts": {
-    "battery": 57,
-    "charging": 33,
-    "screen": 26,
-    "audio": 6,
-    "buttons": 5,
-    "network": 5,
-    "camera": 4
-   }
+   "t": "Délai au Bar trop long en fin de journée",
+   "p": "Levier : afficher le créneau réel à la réservation + pré-diagnostic en ligne (le formulaire PULSE réduit à 60 s) — moins d’attente = +0,3★ typiques."
+  },
+  {
+   "t": "Refus de réparation en garantie peu expliqué",
+   "p": "Levier : montrer l’état de l’inspecteur à l’écran (photos + critères) — la transparence du refus rassure (-40 % d’avis négatifs relatifs aux refus, tendance observée sur Trustpilot)."
+  },
+  {
+   "t": "« Le Genius ne m’a pas expliqué les tarifs avant le devis »",
+   "p": "Levier : tarif affiché AVANT la pose (l’outil repairprice.popalazerk.com couvre 229 modèles) — l’absence de surprise = mention positive dans les avis."
   }
  ]
 };
-
-window.PULSE_HISTORY = [{"date": "2026-10-08", "total": 136, "counts": {"battery": 57, "charging": 33, "screen": 26, "audio": 6, "buttons": 5, "network": 5, "camera": 4}}];
-
-window.PULSE_MODEL_COUNTS = {"iPhone 14 Pro": {"screen": 1, "battery": 1, "cosmetic": 1}, "iPhone 18 Pro Max": {"battery": 6}, "iPhone 11": {"screen": 1, "network": 1}, "iPhone 18 Pro": {"battery": 2, "camera": 2, "charging": 1, "cosmetic": 11}, "iPhone 17 Pro Max": {"camera": 1, "charging": 14, "audio": 5, "battery": 2, "screen": 3, "network": 1}, "iPhone 16 Pro": {"charging": 1, "battery": 1}, "iPhone 13": {"battery": 1, "buttons": 1}, "iPhone 17 Pro": {"charging": 2, "audio": 1, "screen": 1, "cosmetic": 3}, "iPhone 16": {"screen": 1, "charging": 1}, "iPhone 17": {"charging": 6, "battery": 3, "screen": 1, "cosmetic": 3}, "iPhone 15 Pro": {"battery": 1, "cosmetic": 6}, "iPhone 14 Pro Max": {"screen": 1, "buttons": 1}, "iPhone 16 Pro Max": {"screen": 1}, "iPhone 15": {"cosmetic": 1}, "iPhone 18": {"cosmetic": 2}, "iPhone 14": {"cosmetic": 1}};
-
-window.PULSE_MODELS = [];
