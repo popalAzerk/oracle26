@@ -26,7 +26,7 @@
   }
   // WebGL hero a son propre pilote (hero.js)
 
-  /* ── S1 : les composants avec % + chaleur ── */
+  /* ── S1 : composants COMPACTS + dépliage au clic ── */
   const rows=Object.entries(D.counts||{}).sort((a,b)=>b[1]-a[1]);
   const tot=rows.reduce((s,r)=>s+r[1],0)||1;
   const exByCat=D.examples||{};
@@ -35,25 +35,98 @@
     const col=COLD[k]||'#00e0ff';
     const heat=HEATW[k]||.4;
     const hpct=(heat*100).toFixed(0);
-    const ex=(exByCat[k]||[])[0];
-    const exFr=(ex&&((ex.text_tr||ex.text||'').trim()))||'';
-    return `<article class="heatCard rv2" data-cat="${k}" style="--hc:${col}">
-      <span class="pc" style="color:${col}">${pct.toFixed(1)}&thinsp;%</span>
-      <h3 style="color:${col}">${FRD[k]||k.toUpperCase()}</h3>
-      <div class="n">${v} signaux · ${srcs.size? 'veille du':''} ${D.updated}</div>
-      <div class="bar"><i style="background:${col}" data-w="${pct.toFixed(1)}"></i></div>
-      ${exFr?`<p class="fr">« ${exFr.slice(0,150).replace(/\n/g,' ')}${exFr.length>150?'…':''} »</p>`:''}
-      <div class="heatL"><i style="background:${col};opacity:${(0.35+heat*0.65).toFixed(2)}"></i>
-        CHALEUR DES DISCUSSIONS <b style="color:${col}">${hpct}</b></div>
+    return `<article class="heatCard c1 rv2" data-cat="${k}" style="--hc:${col}" tabindex="0">
+      <div class="cHead"><span class="pc" style="color:${col}">${pct.toFixed(1)}&thinsp;%</span>
+        <h3 style="color:${col}">${FRD[k]||k.toUpperCase()}</h3></div>
+      <div class="heatMini"><i style="background:${col};width:${(0.3+heat*0.7)*100}%"></i></div>
+      <div class="cPlus">+</div>
     </article>`;
   }).join('');
-  // clic carte → panneau détail de catégorie (réutilise detailPanel) :
+  // dépliant : graphique animé en boucle (canvas) + verbatim :
+  const sweepAnims={};
   $('#heatGrid').addEventListener('click',e=>{
     const card=e.target.closest('.heatCard'); if(!card) return;
-    if(window.__openCat) window.__openCat(card.dataset.cat);
+    toggleCard(card);
   });
+  $('#heatGrid').addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){ const card=e.target.closest('.heatCard'); if(card){ e.preventDefault(); toggleCard(card); } }
+  });
+  function toggleCard(card){
+    const cat=card.dataset.cat;
+    const was=card.classList.contains('open');
+    document.querySelectorAll('#heatGrid .heatCard.open').forEach(c=>{ c.classList.remove('open'); c.querySelector('.unfold').remove(); });
+    Object.values(sweepAnims).forEach(a=>a.dead=true); // stop les boucles
+    if(was) return;
+    // données du dépliant :
+    const col=COLD[cat]||'#00e0ff';
+    const ex=(exByCat[cat]||[]);
+    const exHtml=ex.map(x=>{
+      const t=((x.text_tr||x.text||'')+'').trim().replace(/</g,'&lt;');
+      if(!t) return '';
+      return `<blockquote class="uQuote">« ${t.slice(0,400).replace(/\n/g,' / ')}${t.length>400?'…':''} »</blockquote>`;
+    }).join('');
+    const hist=(window.PULSE_HISTORY||D.history||[]).map(h=>({d:h.date,v:(h.counts||{})[cat]||0}));
+    const v=rows.find(r=>r[0]===cat)[1];
+    const pct=(v/tot*100).toFixed(1);
+    const u=document.createElement('div');
+    u.className='unfold';
+    u.innerHTML=`<canvas class="sweepCv"></canvas>
+      <div class="uMeta">SUR ${hist.filter(h=>h.v>0).length||'—'} POIN&nbsp;TS DE COLLECTE · ${v} SIGNAUX · ${pct}&thinsp;%</div>
+      ${exHtml||'<p class="uNote">Verbatims en cours de collecte.</p>'}`;
+    card.appendChild(u);
+    card.classList.add('open');
+    // graphique animé en boucle (sweep continu) :
+    requestAnimationFrame(()=>startSweep(u.querySelector('.sweepCv'),hist,col,cat));
+  }
+  function startSweep(cv,hist,col,cat){
+    if(!cv||cv.clientWidth<10) return; // pas dans le viewport : pas de draw
+    const fit=()=>{ const w=cv.clientWidth,h=90; cv.width=w*2; cv.height=h*2; cv.style.height=h+'px';
+      return {x:cv.getContext('2d'),w,h}; };
+    let c=fit(); const dpr=2;
+    let t0=performance.now(); const obj={dead:false}; sweepAnims[cat]=obj;
+    (function loop(t){
+      if(obj.dead) return;
+      if(!cv.isConnected){ requestAnimationFrame(loop); return; }
+      const n=c.w-8;
+      if(cv.clientWidth!==c.w){ c=fit(); } // resize
+      c.x.clearRect(0,0,c.w*dpr,c.h*dpr);
+      // valeurs → courbe lissée (min 4 points de bruit pour lisibilité) :
+      const vals=hist.map(h=>h.v);
+      const max=Math.max(1,...vals);
+      // axes : ligne base
+      c.x.strokeStyle='rgba(255,255,255,.08)'; c.x.lineWidth=1;
+      c.x.beginPath(); c.x.moveTo(0*dpr,(c.h-18)*dpr); c.x.lineTo(c.w*dpr,(c.h-18)*dpr); c.x.stroke();
+      // courbe :
+      const pts=hist.map((h,i)=>[ (i/Math.max(1,hist.length-1))*c.w*.86+4, c.h-22-(h.v/max)*(c.h-40) ]);
+      if(pts.length>0){
+        c.x.strokeStyle=col; c.x.lineWidth=1.6*dpr; c.x.beginPath();
+        const N=100; const cyc=(t-t0)/3000; // sweep 3s en boucle
+        const m=Math.min(cyc,1)*(pts.length-1);
+        for(let i=0;i<=Math.floor(m);i++){ const p=pts[i]; i===0?c.x.moveTo(p[0]*dpr,p[1]*dpr):c.x.lineTo(p[0]*dpr,p[1]*dpr); }
+        // segment partiel :
+        const f=m%1; if(Math.floor(m)<pts.length-1&&Math.floor(m)>0){ const a=pts[Math.floor(m)],b=pts[Math.floor(m)+1];
+          c.x.lineTo((a[0]+(b[0]-a[0])*f)*dpr,(a[1]+(b[1]-a[1])*f)*dpr); }
+        c.x.stroke();
+        // tête lumineuse :
+        const mI=Math.min(Math.floor(m),pts.length-1);
+        const hp=pts[mI];
+        c.x.fillStyle='#fff'; c.x.shadowColor=col; c.x.shadowBlur=10;
+        c.x.beginPath(); c.x.arc(hp[0]*dpr,hp[1]*dpr,2.6*dpr,0,7); c.x.fill(); c.x.shadowBlur=0;
+        // fill doux sous la courbe :
+        c.x.globalAlpha=.12; c.x.lineTo(pts[pts.length-1][0]*dpr,(c.h-18)*dpr); c.x.lineTo(pts[0][0]*dpr,(c.h-18)*dpr); c.x.closePath(); c.x.fillStyle=col; c.x.fill(); c.x.globalAlpha=1;
+        // date courante (au sweep) :
+        if(hist[mI]&&hist[mI].d){
+          c.x.fillStyle='rgba(232,240,250,.8)'; c.x.font=(8*dpr)+'px ui-monospace';
+          c.x.textAlign='left'; c.x.fillText(hist[mI].d, 6*dpr, 12*dpr);
+          c.x.textAlign='right'; c.x.fillStyle=col; c.x.fillText('v='+hist[mI].v, (c.w-6)*dpr, 12*dpr);
+        }
+      }
+      if(cyc>1.06){ t0=performance.now(); } // BOUCLE : re-sweep
+      requestAnimationFrame(loop);
+    })(t0);
+  }
 
-  /* ── S2 : astuces (réalité: sources citées publiquement) ── */
+/* ── S2 : astuces (réalité: sources citées publiquement) ── */
   const TRICKS=[
     {t:'Vérifier si le bug est connu avant d’aller au Bar',
      p:'Si votre panne correspond à un bug identifié publiquement (ex. « No Service » de l’iPhone 7, lignes d’écran de l’iPhone 18), la réparation tombe souvent sous garantie programmée. Relayer le numéro de programme de réparation de la fiche officielle Apple change la conversation.',
@@ -94,11 +167,18 @@
      w:'iFixit (op. cit.)',
      win:'Plus de créneaux'}
   ];
-  $('#trickGrid').innerHTML=TRICKS.map(tk=>`<article class="trick rv2 ${tk.cls||''}">
-      <h3>${tk.t}</h3><p>${tk.p}</p>
-      <div class="win">● ${tk.win}</div>
-      <div class="who">SOURCE · ${tk.w}</div>
+  $('#trickGrid').innerHTML=TRICKS.map(tk=>`<article class="trick c1 rv2" tabindex="0">
+      <h3>${tk.t}</h3><div class="win">● ${tk.win}</div>
+      <div class="tBody" hidden><p>${tk.p}</p><div class="who">SOURCE · ${tk.w}</div></div>
+      <div class="cPlus">+</div>
     </article>`).join('');
+  // dépliage astuces (une seule ouverte) :
+  $('#trickGrid').addEventListener('click',e=>{
+    const card=e.target.closest('.trick'); if(!card) return;
+    const was=card.classList.contains('open');
+    document.querySelectorAll('#trickGrid .trick.open').forEach(c=>{ c.classList.remove('open'); c.querySelector('.tBody').hidden=true; });
+    if(!was){ card.classList.add('open'); card.querySelector('.tBody').hidden=false; }
+  });
 
   /* ── S3 : avis & satisfaction (données réelles du sentiment + plateformes citées) ── */
   const sent=D.sentiment||{};
@@ -109,12 +189,19 @@
     {p:'Apple Community', n:'8,7/10', s:'★★★★☆', d:'entraide + retours remplacements'},
     {p:'Reddit r/apple', n:'—', s:'mélange', d:'« horrible experience » vs succès'}
   ];
-  $('#ratingRow').innerHTML=plat.map(p=>`<div class="rate rv2">
+  $('#ratingRow').innerHTML=plat.map(p=>`<div class="rate c1 rv2" tabindex="0">
       <div class="stars">${p.s}</div>
       <div class="note">${p.n}</div>
       <div class="plt">${p.p}</div>
-      <div class="n" style="margin-top:8px;font-size:9.5px;color:var(--t2);letter-spacing:.04ex">${p.d}</div>
+      <div class="tBody" hidden><div class="n" style="margin-top:8px;font-size:10px;color:var(--t2);letter-spacing:.04ex">${p.d}</div></div>
+      <div class="cPlus">+</div>
     </div>`).join('');
+  $('#ratingRow').addEventListener('click',e=>{
+    const card=e.target.closest('.rate'); if(!card) return;
+    const was=card.classList.contains('open');
+    document.querySelectorAll('#ratingRow .rate.open').forEach(c=>{ c.classList.remove('open'); c.querySelector('.tBody').hidden=true; });
+    if(!was){ card.classList.add('open'); card.querySelector('.tBody').hidden=false; }
+  });
   // citations réelles de la veille (traduites) :
   const qs=rows.slice(0,4).map(([k,v])=>{
     const a=(exByCat[k]||[])[0]; const t=(a&&(a.text_tr||a.text||'').trim().slice(0,240))||'';

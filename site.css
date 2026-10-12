@@ -112,3 +112,30 @@ footer{border-top:1px solid var(--line);padding:34px 28px;text-align:center;font
 .aiRow b{font-size:11.5px;display:block;line-height:1.5}
 .aiRow p{font-size:10.5px;color:var(--t2);line-height:1.75;margin-top:5px}
 .aiCard .aiSrc{margin-top:5px;font-size:8.5px;letter-spacing:.14ex;color:var(--t3)}
+
+/* ── CARTE COMPACTE + DÉPLIÉ (clic) ── */
+.heatCard.c1,.trick.c1,.rate.c1{position:relative;cursor:pointer;transition:border-color .2s, transform .2s}
+.heatCard.c1{padding:16px 18px 13px}
+.heatCard.c1 .cHead{display:flex;align-items:baseline;gap:12px}
+.heatCard.c1 .pc{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.heatCard.c1 h3{font-size:12px;letter-spacing:.12em;margin:0}
+.heatCard.c1 .heatMini{margin-top:9px;height:3px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+.heatCard.c1 .heatMini i{display:block;height:100%;border-radius:99px}
+.heatCard.c1 .heatL,.heatCard.c1 .bar,.heatCard.c1 .fr,.heatCard.c1 .n{display:none}
+.heatCard.c1 .cPlus,.trick.c1 .cPlus,.rate.c1 .cPlus{position:absolute;top:10px;right:14px;
+  width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--t2);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1), color .2s, border-color .2s}
+.heatCard.c1:hover,.trick.c1:hover,.rate.c1:hover{border-color:rgba(255,255,255,.22)}
+.heatCard.c1.open,.trick.c1.open,.rate.c1.open{border-color:var(--hc,var(--cy))}
+.heatCard.c1.open .cPlus,.trick.c1.open .cPlus,.rate.c1.open .cPlus{transform:rotate(45deg);color:var(--hc,var(--cy))}
+/* le déplié : */
+.unfold{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
+.unfold .sweepCv{width:100%;display:block}
+.unfold .uMeta{font-size:8px;letter-spacing:.3ex;color:var(--t3);margin:7px 0 10px}
+.unfold .uQuote{font-size:10.5px;line-height:1.8;color:var(--t2);border-left:2px solid var(--hc);padding-left:10px;margin-bottom:8px}
+.unfold .uNote{font-size:10px;color:var(--t3)}
+/* tricks/rates dépliés : */
+.trick.c1 .tBody[hidden], .rate.c1 .tBody[hidden]{display:none}
+.trick.c1.open .tBody,.rate.c1.open .tBody{display:block;animation:unfIn .35s ease}
+@keyframes unfIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
