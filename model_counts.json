@@ -25,28 +25,33 @@
   "audio": 5,
   "battery": 6,
   "screen": 3,
-  "network": 1
+  "network": 1,
+  "buttons": 2,
+  "system_bug": 1
  },
  "iPhone 16 Pro": {
-  "charging": 1,
+  "charging": 2,
   "battery": 3,
   "emerging": 1,
   "cosmetic": 1,
-  "screen": 1
+  "screen": 1,
+  "system_bug": 1
  },
  "iPhone 13": {
   "battery": 4,
   "buttons": 1,
   "screen": 1,
   "cosmetic": 1,
-  "system_bug": 2
+  "system_bug": 3
  },
  "iPhone 17 Pro": {
   "charging": 2,
   "audio": 1,
-  "screen": 1,
+  "screen": 2,
   "battery": 2,
-  "system_bug": 1
+  "system_bug": 1,
+  "emerging": 1,
+  "camera": 1
  },
  "iPhone 16": {
   "screen": 2,
@@ -84,7 +89,8 @@
   "camera": 2,
   "charging": 1,
   "system_bug": 3,
-  "cosmetic": 1
+  "cosmetic": 1,
+  "screen": 1
  },
  "iPhone 13 Pro Max": {
   "system_bug": 2
@@ -95,7 +101,7 @@
   "emerging": 1
  },
  "iPhone 13 Pro": {
-  "battery": 1
+  "battery": 2
  },
  "iPhone 12": {
   "charging": 1,
@@ -113,5 +119,11 @@
  },
  "iPhone 15 Plus": {
   "system_bug": 1
+ },
+ "iPhone 12 Mini": {
+  "battery": 1
+ },
+ "iPhone 12 Pro": {
+  "screen": 1
  }
 }

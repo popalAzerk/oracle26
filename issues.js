@@ -1,5 +1,5 @@
 window.PULSE_SOURCES = {
- "updated": "2026-10-09",
+ "updated": "2026-10-12",
  "sources": {
   "screen": [
    {
@@ -39,6 +39,12 @@ window.PULSE_SOURCES = {
     "date": "27/07",
     "src": "Mac4Ever",
     "url": "https://www.mac4ever.com/iphone/197330-ios-26-5-2-vide-la-batterie-de-certains-i"
+   },
+   {
+    "title": "Décharge nocturne 16/17 Pro : 5–20 % en veille, diagnosticApple « OK » — plus haut volume de la nuit",
+    "date": "11/10",
+    "src": "r/applehelp",
+    "url": "https://www.reddit.com/r/applehelp/comments/1ii337g/iphone_16_pro_battery_drain"
    }
   ],
   "system_bug": [
@@ -59,6 +65,12 @@ window.PULSE_SOURCES = {
     "date": "09/25",
     "src": "Apple Community",
     "url": "https://communities.apple.com/fr/thread/256137300"
+   },
+   {
+    "title": "iOS 26.1 : Wi-Fi « connecté sans internet », déconnexions cycliques 13→17 Pro Max",
+    "date": "11/10",
+    "src": "OSXDaily + Communautés Apple",
+    "url": "https://osxdaily.com/2025/11/18/fix-ios-26-wi-fi-issues-not-working-dropping-slow"
    }
   ],
   "pricing": [
@@ -99,6 +111,12 @@ window.PULSE_SOURCES = {
     "date": "21/09",
     "src": "AppleInsider",
     "url": "https://appleinsider.com/articles/26/09/21/sensitive-camera-blades-and-more-shown-in-iphone-18-pro-teardown"
+   },
+   {
+    "title": "Écran fissuré <2 ans : la garantie légale ne couvre pas la chute (rappel FR)",
+    "date": "10/10",
+    "src": "Communauté Apple FR",
+    "url": "https://communities.apple.com/fr/thread/252606345"
    }
   ],
   "emerging": [
@@ -119,6 +137,42 @@ window.PULSE_SOURCES = {
     "date": "07/10",
     "src": "9to5Mac",
     "url": "https://9to5mac.com/2026/10/07/ios-27-2-release-date-new-iphone-features/"
+   },
+   {
+    "title": "Scratchgate au microscope : anodisation fragile aux angles (17/18 Pro)",
+    "date": "09/10",
+    "src": "iFixit",
+    "url": "https://www.ifixit.com/News/113388/iphone-17-pro-teardown"
+   }
+  ],
+  "charging": [
+   {
+    "title": "iOS 18 marque en orange les chargeurs <20 W — les clients viennent poser la question",
+    "date": "09/10",
+    "src": "TotalTech",
+    "url": "https://totaltech.blog/ios-18-slow-iphone-charger-alert-guide"
+   }
+  ],
+  "csat": [
+   {
+    "title": "« L'horaire ne couvrait pas l'acte » : rdv batterie → diagnostic seulement (yelp + reddit)",
+    "date": "11/10",
+    "src": "r/applehelp",
+    "url": "https://www.reddit.com/r/applehelp/comments/1q55hen/genius_bar_battery_replacement_appointment_mess/"
+   }
+  ],
+  "fraud": [
+   {
+    "title": "ULPT « neuf pour 29 $ » : casse déclarée accident + AppleCare frais",
+    "date": "11/10",
+    "src": "r/UnethicalLifeProTips",
+    "url": "https://www.reddit.com/r/UnethicalLifeProTips/comments/1e37dya/ulpt_how_to_get_a_brand_new_iphone_for_only_29/"
+   },
+   {
+    "title": "Les « 3 mots magiques » pour un échange gratuit — vidéo virale",
+    "date": "11/10",
+    "src": "YouTube",
+    "url": "https://www.youtube.com/watch?v=2zYmQbryvKU"
    }
   ]
  }
