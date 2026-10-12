@@ -1,33 +1,39 @@
 window.PULSE_DATA = {
  "updated": "2026-10-12",
  "period": "échantillon du 12/10/2026 — collecte nocturne Harken, classification Laya",
- "total": 10,
+ "total": 17,
  "counts": {
-  "battery": 6,
+  "battery": 9,
+  "screen": 3,
+  "process": 2,
   "system_bug": 2,
-  "process": 1,
-  "screen": 1
+  "pricing": 1
  },
  "sentiment": {
-  "neutral": 2,
-  "negative": 8,
+  "neutral": 7,
+  "negative": 10,
   "positive": 0
  },
- "avgConf": 0.917,
+ "avgConf": 0.855,
  "examples": {
-  "system_bug": [
-   "Ios 26.6.1 is a battery drainer - Apple Community Also, the decrease in battery health is not linear.",
-   "My iphone is not charging….. - Apple Community If it's still unresponsive, try force restarting it."
-  ],
   "battery": [
    "IOS 27 battery drain issue - Apple Community Updated to iOS 27 last night and within 2 hours of waking up my battery is on 81%.",
    "iPhone overheating - Apple Community Read this support article to learn about the battery health feature —> iPhone Battery and Performance - Apple SupportIf you…"
   ],
+  "pricing": [
+   "iphone not charging overnight - Apple Community Try what is on this Link: If your iPhone, iPad, or iPod touch won't Turn on or is Frozen - Apple SupportII."
+  ],
   "process": [
-   "iPhone overheating - Apple Community Some warmth is to be anticipated.* Read this article about keeping your iPhone, iPad, or iPod touch within acceptable opera…"
+   "How can I display up to date Step Count as an iPad widget? How can I display up to date Step Count as an iPad widget? — TLDR: Can’t find an iPad widget to displ…",
+   "iPhone overheating - Apple Community Some warmth is to be anticipated.* \"Keep your iPhone, the power adapter, and any wireless charger in a well-ventilated area…"
   ],
   "screen": [
-   "How to get rid of black lines on my iPhon… - Apple Community nusrat256 Said:\"A thin black line on my iPhone screen: [...]I took a screenshot but the line is not…"
+   "How to get rid of black lines on my iPhon… - Apple Community nusrat256 Said:\"A thin black line on my iPhone screen: [...]I took a screenshot but the line is not…",
+   "Camera not working after ios update 27. Camera not working after ios update 27. — So after i update my phone to the iOS update 27, when i go to my camera it jus…"
+  ],
+  "system_bug": [
+   "Ios 26.6.1 is a battery drainer - Apple Community Also, the decrease in battery health is not linear.",
+   "Does anyone about this? Does anyone about this? — So like I wanna sign into a new apple id on my ipad since the current one it's working on is my parents apple …"
   ]
  },
  "history": [
@@ -75,12 +81,13 @@ window.PULSE_DATA = {
   },
   {
    "date": "2026-10-12",
-   "total": 10,
+   "total": 17,
    "counts": {
-    "system_bug": 2,
-    "battery": 6,
-    "process": 1,
-    "screen": 1
+    "battery": 9,
+    "pricing": 1,
+    "process": 2,
+    "screen": 3,
+    "system_bug": 2
    }
   }
  ]
@@ -131,12 +138,13 @@ window.PULSE_HISTORY = [
  },
  {
   "date": "2026-10-12",
-  "total": 10,
+  "total": 17,
   "counts": {
-   "system_bug": 2,
-   "battery": 6,
-   "process": 1,
-   "screen": 1
+   "battery": 9,
+   "pricing": 1,
+   "process": 2,
+   "screen": 3,
+   "system_bug": 2
   }
  }
 ];
