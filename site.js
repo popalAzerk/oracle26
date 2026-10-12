@@ -5,9 +5,7 @@
   const $=s=>document.querySelector(s);
   const $e=(sel)=>document.querySelector(sel);
   const setTxt=(sel,v)=>{ const el=$e(sel); if(el) el.textContent=v; };
-  const FRD={battery:'BATTERIE',charging:'CHARGE',screen:'ÉCRAN',audio:'AUDIO',
-             buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA',cosmetic:'ESTHÉTIQUE',
-             system_bug:'BUG SYSTÈME',pricing:'TARIFS',process:'PROCÉDURE',emerging:'ÉMERGENT'};
+  const FRD={battery:'BATTERIE',screen:'ÉCRAN',charging:'CHARGE',cosmetic:'ESTHÉTIQUE',audio:'AUDIO',buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA',system_bug:'BUG SYSTÈME',process:'PROCÉDURE',emerging:'NOUVEAUX CAS',pricing:'TARIFS',service:'SAV',warranty:'GARANTIE',sensory:'CAPTEURS',csat:'SATISFACTION',fraud:'FRAUDE'};
   const COLD={battery:'#30d158',charging:'#ffd60a',screen:'#00e0ff',audio:'#bf5af2',
               buttons:'#ff9f0a',network:'#7ea6ff',camera:'#64d2ff',cosmetic:'#ff356e'};
   const HEATW={battery:.95,cosmetic:.86,charging:.78,screen:.72,audio:.42,network:.3,buttons:.22,camera:.18,

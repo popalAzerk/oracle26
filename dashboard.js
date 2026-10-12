@@ -1,8 +1,8 @@
 /* ═══ PULSE DASHBOARD — composants canvas animés, données réelles ═══ */
 'use strict';
 const D2=window.PULSE_DATA||{}, MC2=D2.model_counts||{}, SR2=(window.PULSE_SOURCES||{}).sources||{};
-const FRD={battery:'BATTERIE',screen:'ÉCRAN',charging:'CHARGE',cosmetic:'ESTHÉTIQUE',audio:'AUDIO',buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA'};
-const COLD={battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff356e',audio:'#bf5af2',buttons:'#8e8e93',network:'#00e0ff',camera:'#ff9f0a'};
+const FRD={battery:'BATTERIE',screen:'ÉCRAN',charging:'CHARGE',cosmetic:'ESTHÉTIQUE',audio:'AUDIO',buttons:'BOUTONS',network:'RÉSEAU',camera:'CAMÉRA',system_bug:'BUG SYSTÈME',process:'PROCÉDURE',emerging:'NOUVEAUX CAS',pricing:'TARIFS',service:'SAV',warranty:'GARANTIE',sensory:'CAPTEURS',csat:'SATISFACTION',fraud:'FRAUDE'};
+const COLD={battery:'#30d158',screen:'#2997ff',charging:'#ffd60a',cosmetic:'#ff356e',audio:'#bf5af2',buttons:'#8e8e93',network:'#00e0ff',camera:'#ff9f0a',system_bug:'#64d2ff',process:'#5e5ce6',emerging:'#ff9f0a',pricing:'#ffd60a',service:'#bf5af2',warranty:'#30d158',sensory:'#bf5af2',csat:'#30d158',fraud:'#ff356e'};
 const rowsD=Object.entries(D2.counts||{}).sort((a,b)=>b[1]-a[1]);
 const TOTD=rowsD.reduce((s,r)=>s+r[1],0)||1;
 const DPR3=Math.min(devicePixelRatio||1,2);
