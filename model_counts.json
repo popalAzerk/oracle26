@@ -7,7 +7,8 @@
  },
  "iPhone 18 Pro Max": {
   "battery": 6,
-  "camera": 1
+  "camera": 1,
+  "system_bug": 2
  },
  "iPhone 11": {
   "screen": 3,
@@ -38,7 +39,7 @@
   "system_bug": 1
  },
  "iPhone 13": {
-  "battery": 4,
+  "battery": 6,
   "buttons": 1,
   "screen": 1,
   "cosmetic": 1,
@@ -68,7 +69,9 @@
   "camera": 4
  },
  "iPhone 15 Pro": {
-  "battery": 3
+  "battery": 3,
+  "network": 2,
+  "camera": 1
  },
  "iPhone 14 Pro Max": {
   "screen": 1,
@@ -98,7 +101,8 @@
  "iPhone 15": {
   "battery": 3,
   "camera": 3,
-  "emerging": 1
+  "emerging": 1,
+  "system_bug": 2
  },
  "iPhone 13 Pro": {
   "battery": 2
@@ -111,7 +115,7 @@
   "emerging": 1
  },
  "iPhone 15 Pro Max": {
-  "charging": 1
+  "charging": 2
  },
  "iPhone 13 Mini": {
   "charging": 1,

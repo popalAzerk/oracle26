@@ -1,7 +1,13 @@
 window.PULSE_SOURCES = {
- "updated": "2026-10-12",
+ "updated": "2026-10-13",
  "sources": {
   "screen": [
+   {
+    "title": "Ghost touch iPhone 18 Pro Max : symptôme rapporté, pas encore défaut Apple confirmé",
+    "date": "13/10",
+    "src": "cloudo3.com",
+    "url": "https://cloudo3.com/en/ios/the-ghost-touch-bug-on-iphone-18-pro-max-is-your-hp1/99939785"
+   },
    {
     "title": "iPhone 18 Pro : lignes vertes et roses à l'écran, sans fix logiciel",
     "date": "01/10",
@@ -22,6 +28,18 @@ window.PULSE_SOURCES = {
    }
   ],
   "battery": [
+   {
+    "title": "iPhone 13 : batterie gonflée juste après la maj iOS 26",
+    "date": "13/10",
+    "src": "Apple Community",
+    "url": "https://discussions.apple.com/thread/256344538"
+   },
+   {
+    "title": "Drain nocturne iOS 27 : 81 % restants 2 h après le réveil",
+    "date": "13/10",
+    "src": "Apple Community",
+    "url": "https://discussions.apple.com/thread/256360287"
+   },
    {
     "title": "La batterie de l'iPhone 18 Pro passe à 149 € en France (+14 €)",
     "date": "30/09",
@@ -48,6 +66,12 @@ window.PULSE_SOURCES = {
    }
   ],
   "system_bug": [
+   {
+    "title": "Notifications SMS retardées (5-20 min) ou perdues, + Snap/Outlook",
+    "date": "13/10",
+    "src": "r/applehelp",
+    "url": "https://reddit.com/r/applehelp/comments/1x4i38e/iphone_notificationsme"
+   },
    {
     "title": "Apple confirme : les 18 Pro Max AT&T touchés exigent un remplacement",
     "date": "03/10",
@@ -147,6 +171,12 @@ window.PULSE_SOURCES = {
   ],
   "charging": [
    {
+    "title": "iPad Air M3 ne charge plus — santé 99 %, remplacement quoté 529 $",
+    "date": "13/10",
+    "src": "r/applehelp",
+    "url": "https://reddit.com/r/applehelp/comments/1x4ez9w/ipad_air_m3_died_on_me"
+   },
+   {
     "title": "iOS 18 marque en orange les chargeurs <20 W — les clients viennent poser la question",
     "date": "09/10",
     "src": "TotalTech",
@@ -155,6 +185,12 @@ window.PULSE_SOURCES = {
   ],
   "csat": [
    {
+    "title": "Avis Vélizy : rdv Genius Bar non honoré (30 min sans prise en charge, aucune excuse)",
+    "date": "13/10",
+    "src": "avis Apple Store (magasin.tel)",
+    "url": "https://magasin.tel/f/apple-store-5622065/"
+   },
+   {
     "title": "« L'horaire ne couvrait pas l'acte » : rdv batterie → diagnostic seulement (yelp + reddit)",
     "date": "11/10",
     "src": "r/applehelp",
@@ -162,6 +198,12 @@ window.PULSE_SOURCES = {
    }
   ],
   "fraud": [
+   {
+    "title": "r/ipad : « acheter AppleCare > attendre un jour/semaine > réclamer » (remplacement injustifié)",
+    "date": "13/10",
+    "src": "r/ipad",
+    "url": "https://www.reddit.com/r/ipad/comments/1l6ca9g/it_hasnt_even_been_a_week/"
+   },
    {
     "title": "ULPT « neuf pour 29 $ » : casse déclarée accident + AppleCare frais",
     "date": "11/10",
@@ -173,6 +215,22 @@ window.PULSE_SOURCES = {
     "date": "11/10",
     "src": "YouTube",
     "url": "https://www.youtube.com/watch?v=2zYmQbryvKU"
+   }
+  ],
+  "audio": [
+   {
+    "title": "AirPods Pro 3 : son étouffé sur l'oreillette gauche (tous modes)",
+    "date": "13/10",
+    "src": "r/applehelp",
+    "url": "https://reddit.com/r/applehelp/comments/1x4fvau/left_airpods_pro_3_sou"
+   }
+  ],
+  "network": [
+   {
+    "title": "AirDrop 15 Pro ↔ Mac : transferts échouent la plupart du temps",
+    "date": "13/10",
+    "src": "Apple Community DE",
+    "url": "https://communities.apple.com/de/thread/256235102"
    }
   ]
  }
