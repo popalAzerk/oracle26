@@ -56,7 +56,7 @@ ents.forEach(([k,n])=>{
     <div class="ft"><a class="more" href="#">▸ En savoir plus</a><span class="n-mod">${n} signal${n>1?"s":""} · ${(Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{})).length} modèle${(Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{})||[]).length>1?"s":""}</span></div>
     <div class="det">
       <h5>Verbatims sources</h5>
-      ${exs.map(v=>{const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN : ${esc(String(v.orig).slice(0,120))}…</span>`:""}</p>`;}).join("")}
+      ${exs.slice(1).map(v=>{const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN — ${esc(String(v.orig).slice(0,110))}…</span>`:""}</p>`;}).join("")||"<p class='v'>Verbatim complet ci-dessus.</p>"}
       <h5>Sources presse / forums du jour</h5>
       ${(SRC[k]||[]).slice(0,4).map(s=>`<p class="v">${esc(s.title)} <span class="src">${esc(s.date)} · ${esc(s.src)} · <a href="${esc(s.url)}" target="_blank" rel="noopener">source</a></span></p>`).join("")||"<p class='v'>Aucune source presse aujourd'hui.</p>"}
     </div>`;
