@@ -1,82 +1,59 @@
 <!doctype html>
 <html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PULSE — la voix des clients Apple, en temps réel</title>
-<link rel="stylesheet" href="site.css?v=ep1">
+<title>PULSE — veille client Apple</title>
+<link rel="stylesheet" href="site.css?v=v3a">
 </head><body>
-
-<!-- ═══ S0 · HERO : vidéo 16/9 (anneaux Apple-Watch + particules) ═══ -->
-<section id="hero">
-  <div class="introWrap">
-    <canvas id="introCv"></canvas>
+<header class="hd">
+  <div class="hd-in">
+    <div class="logo">PULSE<span>·</span>veille client Apple</div>
+    <div class="upd mono" id="hd-upd">—</div>
   </div>
-  <a class="scrollCue" id="scrollCue" href="#secSignal" aria-label="Glisser vers le contenu">
-    <span class="scTxt">GLISSER</span>
-    <span class="scArrow">↓</span>
-  </a>
-</section>
+</header>
+<main>
+  <!-- S1 · LE SIGNAL -->
+  <section class="s" id="s-signal">
+    <div class="s-head">
+      <div class="k">01 · Le signal du jour</div>
+      <h1>Ce qui casse, en ce moment</h1>
+      <p class="sub"><b id="tot">—</b> signaux classés par composant — part des posts publics du jour. Franchise AC+ au clic.</p>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="cards" id="cards"></div>
+    <div class="note" id="verdict"></div>
+  </section>
 
-<!-- ═══ S1 · CE QUI CASSE : chaque composant, son % des posts du jour ═══ -->
-<section id="secSignal" class="sec">
-  <div class="secHead rv2">
-    <div class="k">01 · Ce qui casse</div>
-    <h2>Chaque composant, ramené au total des posts du jour</h2>
-    <p>Les <span id="sigN">—</span> signaux collectés cette semaine sont répartis par composant. Le % = la part des posts internet qui parlent de ce composant. Plus l'indicateur de chaleur est haut, plus la discussion s'emballe en ce moment.</p>
-  </div>
-  <div class="heat" id="heatGrid"></div>
-  <div class="heatNote rv2">Part du jour calculée sur les posts publics analysés automatiquement (classification par composant, seuil de confiance 75 %). Cliquez une carte pour les sources du jour.</div>
-</section>
+  <!-- S2 · LES ASTUCES -->
+  <section class="s" id="s-tricks">
+    <div class="s-head">
+      <div class="k">02 · Ce qui se dit pour forcer l'issue</div>
+      <h1>Astuces qui circulent sur les forums</h1>
+      <p class="sub">Méthodes relayées par les utilisateurs — comment les repérer au Bar. Sources datées, cliquables.</p>
+    </div>
+    <div class="tricks" id="tricks"></div>
+  </section>
 
-<!-- ═══ S2 · ASTUCES : ce qui se dit pour convaincre le Genius Bar ═══ -->
-<section id="secTricks" class="sec">
-  <div class="secHead rv2">
-    <div class="k">02 · Les astuces du Bar</div>
-    <h2>Ce qui se dit sur internet pour obtenir remplacement ou remboursement</h2>
-    <p>Synthèse de guides et de récits d'utilisateurs — iFixit, Business Insider, AppleInsider, forums Apple. Ce sont les méthodes relayées publiquement, pas un conseil officiel d'Apple.</p>
-  </div>
-  <div class="trickGrid" id="trickGrid"></div>
-</section>
+  <!-- S3 · SATISFACTION -->
+  <section class="s" id="s-csat">
+    <div class="s-head">
+      <div class="k">03 · La satisfaction révélée</div>
+      <h1>Ce que les clients rapportent après passage</h1>
+    </div>
+    <div class="csat" id="csat"></div>
+  </section>
 
-<!-- ═══ S3 · SATISFACTION : la traque des avis multi-plateformes ═══ -->
-<section id="secReviews" class="sec">
-  <div class="secHead rv2">
-    <div class="k">03 · La satisfaction</div>
-    <h2>Ce que les clients disent du Genius Bar</h2>
-    <p>Agrégation des avis publics : plateformes notées (Google, Yelp, Trustpilot) et forums de discussion non notés (Reddit, Apple Community, MacRumors).</p>
-  </div>
-  <div class="ratingRow" id="ratingRow"></div>
-  <div class="quotes" id="quoteGrid"></div>
-  <div class="tickerWrap rv2"><div class="ticker" id="ticker"></div></div>
-</section>
+  <!-- S4 · L'ANALYSE -->
+  <section class="s" id="s-ai">
+    <div class="s-head">
+      <div class="k">04 · L'analyse de la nuit</div>
+      <h1>Trois lectures générées du signal</h1>
+    </div>
+    <div class="ai" id="ai"></div>
+  </section>
+</main>
+<footer>PULSE · veille client Apple — chiffres issus des posts publics analysés automatiquement · pipeline nocturne 02:00</footer>
+<script src="data.js?v=v3a"></script>
+<script src="issues.js?v=v3a"></script>
 
-<!-- ═══ S35 · ANALYSE IA : patrons, fraude, satisfaction ═══ -->
-<section id="secAI" class="sec">
-  <div class="secHead rv2">
-    <div class="k">04 · L'analyse</div>
-    <h2>Ce que la veille en déduit chaque nuit</h2>
-    <p>Trois lectures générées par le pipeline : les problèmes récurrents à anticiper, les astuces de contournement qui circulent (et comment les repérer au Bar), et les leviers concrets pour faire monter la satisfaction.</p>
-  </div>
-  <div class="aiGrid" id="aiGrid"></div>
-</section>
-
-<!-- ═══ S4 · LE DASHBOARD complet de la veille (ci-dessous) ═══ -->
-<section id="secDash" class="sec">
-  <div class="secHead rv2">
-    <div class="k">05 · Le tableau de la veille</div>
-    <h2>Le signal en détail — live</h2>
-    <p>La vue de contrôle complète : flux, cartes, modèles, pipeline. Utilisez-la pour explorer.</p>
-  </div>
-  <div id="dashZone"></div>
-</section>
-
-<footer>PULSE · VEILLE CLIENT APPLE — les chiffres reflètent les posts publics analysés · MAJ 2026.10.08</footer>
-
-<script src="data.js?v=2026101502$(date +%Y%m%d%H)"></script>
-<script src="issues.js?v=5"></script>
-<script src="vendor/gsap.min.js"></script>
-<script src="vendor/ScrollTrigger.min.js"></script>
-<script src="intro.js?v=fe1"></script>
-<script src="site.js?v=el2"></script>
-<script src="worldmap.js?v=dj1"></script>
-<script src="dashboard.js?v=dp2"></script>
+<script src="site.js?v=v3a"></script>
 </body></html>

@@ -1,141 +1,97 @@
-/* ═══ PULSE 2.0 — structure claire en 4 sections ═══ */
-:root{
-  --bg:#05080f; --bg2:#0a0f1a; --ink:#eaf1f9; --t2:#8a97a8; --t3:#7a8698;
-  --cy:#00e0ff; --gr:#30d158; --pk:#ff356e; --yl:#ffd60a; --or:#ff9f0a; --vi:#bf5af2;
-  --line:rgba(255,255,255,.07);
-}
+/* PULSE v3 « Terminal clair » — mobile-first, Linear/Notion */
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-x:hidden}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-::selection{background:var(--cy);color:#000}
-
-/* ── S0 HERO : vidéo 16/9 + scroll cue ── */
-#hero{position:relative;max-width:1100px;margin:0 auto;padding:46px 28px 8px;border-bottom:none}
-.introWrap{position:relative;aspect-ratio:16/9;border-radius:22px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-  background:radial-gradient(120% 90% at 50% 42%,#0c1626 0%,#05080f 68%)}
-.introWrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
-#hero>*{pointer-events:none}
-.scrollCue{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:4px;
-  margin:14px auto 0;width:max-content;color:var(--t2);text-decoration:none;transition:color .25s}
-.scrollCue:hover{color:var(--cy)}
-.scTxt{font-size:9px;letter-spacing:.42ex}
-.scArrow{font-size:15px;animation:cuedip 1.6s infinite ease-in-out}
-@keyframes cuedip{50%{transform:translateY(7px);opacity:.55}}
-
-/* ── container sections ── */
-.sec{max-width:1240px;margin:0 auto;padding:96px 28px}
-.secHead{margin-bottom:40px;border-bottom:1px solid var(--line);padding-bottom:22px}
-.secHead .k{font-size:9px;letter-spacing:.42ex;color:var(--cy);text-transform:uppercase}
-.secHead h2{font-size:clamp(22px,3.2vw,34px);letter-spacing:-.02em;margin-top:10px;font-weight:800}
-.secHead p{margin-top:10px;font-size:11px;color:var(--t2);line-height:1.8;max-width:760px}
-
-/* ── S1 SIGNAL : grille composants avec % + chaleur ── */
-.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
-.heatCard{border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden;
-  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));transition:transform .25s,border .25s;cursor:pointer}
-.heatCard:hover{transform:translateY(-3px);border-color:rgba(0,224,255,.35)}
-.heatCard .pc{position:absolute;top:12px;right:16px;font-size:26px;font-weight:800;letter-spacing:-.03em}
-.heatCard h3{font-size:14px;letter-spacing:.12em;text-transform:uppercase}
-.heatCard .n{font-size:10px;color:var(--t2);margin-top:6px}
-.heatCard .bar{margin-top:14px;height:5px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
-.heatCard .bar i{display:block;height:100%;border-radius:3px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
-.heatCard .fr{margin-top:12px;font-size:10px;color:var(--t2);line-height:1.62}
-.heatCard .heatL{margin-top:12px;display:flex;align-items:center;gap:7px;font-size:8.5px;letter-spacing:.16ex;color:var(--t3)}
-.heatCard .heatL i{width:7px;height:7px;border-radius:50%;animation:glow 1.6s infinite ease-in-out}
-@keyframes glow{50%{transform:scale(1.5);opacity:.55}}
-.heatNote{margin-top:20px;font-size:9px;color:var(--t3);letter-spacing:.1ex;line-height:1.8}
-
-/* ── S2 ASTUCES : cartes sources réelles ── */
-.trickGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.trick{border:1px solid var(--line);border-radius:14px;padding:20px;background:rgba(255,255,255,.02)}
-.trick h3{font-size:13px;letter-spacing:.06em;line-height:1.5}
-.trick p{margin-top:10px;font-size:11px;color:var(--t2);line-height:1.75}
-.trick .who{margin-top:14px;font-size:9px;color:var(--t3);letter-spacing:.14ex}
-.trick .who a{color:var(--cy);text-decoration:none}
-.trick .who a:hover{text-decoration:underline}
-.trick .win{margin-top:12px;display:inline-block;font-size:9px;letter-spacing:.2ex;padding:4px 10px;border-radius:999px;
-  border:1px solid rgba(48,209,88,.35);color:var(--gr)}
-.trickTall{grid-row:span 2;border-color:rgba(0,224,255,.3)}
-
-/* ── S3 AVIS : ticker + plateformes ── */
-.ratingRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:34px}
-.rate{border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center;background:rgba(255,255,255,.02)}
-.rate .stars{color:var(--yl);font-size:16px;letter-spacing:3px}
-.rate .note{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
-.rate .plt{margin-top:6px;font-size:9px;letter-spacing:.24ex;color:var(--t3);text-transform:uppercase}
-.rate b.n{font-variant-numeric:tabular-nums}
-.quotes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.quote{border:1px solid var(--line);border-left:none;border-radius:12px;padding:16px 18px;background:rgba(255,255,255,.02)}
-.quote .qq{font-size:11px;line-height:1.8;color:var(--t2)}
-.quote .qa{margin-top:12px;font-size:9px;color:var(--t3);display:flex;justify-content:space-between;letter-spacing:.12ex}
-.quote .stars{color:var(--yl);font-size:10px}
-.tickerWrap{overflow:hidden;border-block:1px solid var(--line);padding:14px 0;margin:34px -28px}
-.ticker{display:flex;gap:40px;width:max-content;animation:tk 38s linear infinite}
-.tickerWrap:hover .ticker{animation-play-state:paused}
-@keyframes tk{to{transform:translateX(-50%)}}
-.tk-item{font-size:10px;color:var(--t2);white-space:nowrap}
-.tk-item b{color:var(--yl)}
-
-/* ── S4 dashboard (ancien) : bandeau discret + container ── */
-#secDash .secHead .k{color:var(--vi)}
-#dashZone{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#070b12,#05080f);padding:18px}
-
-/* footer */
-footer{border-top:1px solid var(--line);padding:34px 28px;text-align:center;font-size:9px;letter-spacing:.22ex;color:var(--t3)}
-
-/* reveal on scroll : défaut VISIBLE ; .pre n'est posée QUE par JS
-   sur les éléments hors écran → jamais de contenu perdu */
-.rv2{opacity:1;transform:none}
-.rv2.pre{opacity:0;transform:translateY(30px)}
-.rv2{transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
-
-@media(max-width:720px){
-  .sec{padding:64px 18px}
-  .heat,.trickGrid,.quotes{grid-template-columns:1fr 1fr}
-  .heatCard .pc{font-size:20px}
+:root{
+  --bg:#fbfbfa; --card:#ffffff; --line:#e6e6e3;
+  --text:#18181a; --mut:#6b6b66; --faint:#98988f;
+  --act:#0b62d6; --act-soft:#f0f6ff;
+  --c-battery:#c2410c; --c-system:#b91c1c; --c-screen:#7c3aed;
+  --c-charge:#0891b2; --c-process:#52525b; --c-warranty:#a16207;
+  --c-pricing:#047857; --c-service:#4f46e5; --c-sensory:#be185d;
+  --c-emerging:#57534e; --c-network:#0369a1; --c-camera:#b45309;
+  --c-cosmetic:#9d174d; --c-audio:#374151;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
-@media(max-width:480px){ .heat,.trickGrid,.quotes{grid-template-columns:1fr} }
-
-/* révélation : sans GSAP inline, la transition .rv2.on suffit */
-
-/* ── S5 analyse IA ── */
-.aiGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
-.aiCard{border:1px solid var(--line);border-radius:14px;padding:20px;background:rgba(255,255,255,.02)}
-.aiCard.aiBlue{border-top:2px solid var(--cy)}
-.aiCard.aiRed{border-top:2px solid var(--pk)}
-.aiCard.aiGreen{border-top:2px solid var(--gr)}
-.aiCard .aiK{font-size:8px;letter-spacing:.4ex;color:var(--t3)}
-.aiCard h3{font-size:15px;letter-spacing:.06em;margin-top:8px;margin-bottom:14px;text-transform:uppercase}
-.aiRow{margin-bottom:12px}
-.aiRow b{font-size:11.5px;display:block;line-height:1.5}
-.aiRow p{font-size:10.5px;color:var(--t2);line-height:1.75;margin-top:5px}
-.aiCard .aiSrc{margin-top:5px;font-size:8.5px;letter-spacing:.14ex;color:var(--t3)}
-
-/* ── CARTE COMPACTE + DÉPLIÉ (clic) ── */
-.heatCard.c1,.trick.c1,.rate.c1{position:relative;cursor:pointer;transition:border-color .2s, transform .2s}
-.heatCard.c1{padding:16px 18px 13px}
-.heatCard.c1 .cHead{display:flex;align-items:baseline;gap:12px}
-.heatCard.c1 .pc{font-size:20px;font-weight:800;letter-spacing:-.02em}
-.heatCard.c1 h3{font-size:12px;letter-spacing:.12em;margin:0}
-.heatCard.c1 .heatMini{margin-top:9px;height:3px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
-.heatCard.c1 .heatMini i{display:block;height:100%;border-radius:99px}
-.heatCard.c1 .heatL,.heatCard.c1 .bar,.heatCard.c1 .fr,.heatCard.c1 .n{display:none}
-.heatCard.c1 .cPlus,.trick.c1 .cPlus,.rate.c1 .cPlus{position:absolute;top:10px;right:14px;
-  width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--t2);
-  transition:transform .25s cubic-bezier(.2,.8,.2,1), color .2s, border-color .2s}
-.heatCard.c1:hover,.trick.c1:hover,.rate.c1:hover{border-color:rgba(255,255,255,.22)}
-.heatCard.c1.open,.trick.c1.open,.rate.c1.open{border-color:var(--hc,var(--cy))}
-.heatCard.c1.open .cPlus,.trick.c1.open .cPlus,.rate.c1.open .cPlus{transform:rotate(45deg);color:var(--hc,var(--cy))}
-/* le déplié : */
-.unfold{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
-.unfold .sweepCv{width:100%;display:block}
-.unfold .uMeta{font-size:8px;letter-spacing:.3ex;color:var(--t3);margin:7px 0 10px}
-.unfold .uQuote{font-size:10.5px;line-height:1.8;color:var(--t2);border-left:2px solid var(--hc);padding-left:10px;margin-bottom:8px}
-.unfold .uNote{font-size:10px;color:var(--t3)}
-/* tricks/rates dépliés : */
-.trick.c1 .tBody[hidden], .rate.c1 .tBody[hidden]{display:none}
-.trick.c1.open .tBody,.rate.c1.open .tBody{display:block;animation:unfIn .35s ease}
-@keyframes unfIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono)}
+a{color:var(--act);text-decoration:none}
+a:hover{text-decoration:underline}
+b,strong{font-weight:600}
+/* header */
+.hd{position:sticky;top:0;z-index:9;background:rgba(251,251,250,.92);backdrop-filter:saturate(140%) blur(6px);border-bottom:1px solid var(--line)}
+.hd-in{max-width:860px;margin:0 auto;padding:12px 18px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.logo{font-weight:700;letter-spacing:.02em;font-size:15.5px}
+.logo span{color:var(--act)}
+.upd{color:var(--faint);font-size:11.5px;white-space:nowrap}
+/* sections */
+main{max-width:860px;margin:0 auto;padding:0 18px}
+.s{padding:34px 0 10px}
+.s+.s{border-top:1px solid var(--line)}
+.k{color:var(--act);font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.s h1{font-size:21px;letter-spacing:-.01em;margin:5px 0 4px;font-weight:700}
+.sub{color:var(--mut);font-size:13.5px;max-width:640px}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0 6px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.kpi .n{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.kpi .l{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.kpi.t .n{color:var(--text)}
+/* cartes composants */
+.cards{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.card .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card .nm{font-size:14.5px;font-weight:600}
+.card .pct{font-family:var(--mono);font-size:19px;font-weight:700}
+.card .bar{height:4px;background:#efefec;border-radius:2px;margin:8px 0 10px;overflow:hidden}
+.card .bar i{display:block;height:100%;border-radius:2px;width:0;transition:width .7s cubic-bezier(.2,.8,.3,1)}
+.card .q{color:var(--mut);font-size:13px;border-left:2px solid var(--line);padding-left:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
+.card .ft .more{font-size:12.5px}
+.card .ft .n-mod{color:var(--faint);font-size:11.5px}
+/* détail dépliable (En savoir +) */
+.det{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.card.open .det{display:block}
+.det .v{margin:7px 0;color:#3f3f45;font-size:12.5px;line-height:1.45}
+.det .v .src{display:block;color:var(--faint);font-size:10.5px;margin-top:1px}
+.det h5{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin:9px 0 3px}
+/* note patron */
+.note{display:none;background:var(--act-soft);border:1px solid #cfe1fb;border-radius:12px;padding:13px 15px;margin-top:13px;font-size:13.5px}
+.note.on{display:block}
+.note b{color:#0b44a8}
+/* astuces */
+.tricks{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
+.trick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.trick h4{font-size:14px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
+.tag.fraud{background:#fee2e2;color:#b91c1c}
+.tag.rec{background:#fef9c3;color:#854d0e}
+.trick p{color:var(--mut);font-size:12.5px;margin-top:5px}
+.trick .src-row{margin-top:7px;font-size:11.5px;color:var(--faint)}
+.trick .src-row a{font-weight:600}
+/* csat */
+.csat{margin-top:14px}
+.rrow{display:flex;gap:10px;align-items:baseline;padding:10px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+.rrow b{min-width:96px}
+.stars{color:#d97706;letter-spacing:1px;font-size:12px}
+.rrow .m{font-family:var(--mono);font-weight:600}
+.rrow .c{color:var(--faint);font-size:12px}
+.qbox{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.qbox .q{color:#3f3f45;font-size:13px;font-style:italic}
+.qbox .src{color:var(--faint);font-size:11px;margin-top:4px}
+/* ai — 3 lectures */
+.ai{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
+.ai .blk{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.ai .blk h4{font-size:13.5px}
+.ai .blk p{color:var(--mut);font-size:12.5px;margin-top:6px}
+/* footer */
+footer{border-top:1px solid var(--line);margin:34px 0 20px;padding:14px 0;color:var(--faint);font-size:11px}
+/* Desktop */
+@media(min-width:640px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .cards{grid-template-columns:1fr 1fr}
+  .tricks{grid-template-columns:1fr 1fr}
+  .ai{grid-template-columns:repeat(3,1fr)}
+  .s h1{font-size:24px}
+  .hd-in,.main{padding:}
+}
