@@ -9,6 +9,17 @@ const FILTERS = [
   {label:'iOS / bug',   frag:'iOS bug OR crash'},
   {label:'Genius Bar',  frag:'"genius bar" appointment'},
   {label:'Garantie',    frag:'warranty AppleCare'},
+
+  {label:'Charge', frag:"charging OR 'won\'t charge' OR slow charge"},
+  {label:'Caméra', frag:'camera issue OR "camera not working"'},
+  {label:'Réseau', frag:'network issue OR signal OR wifi OR cellular'},
+  {label:'Audio', frag:'audio issue OR speaker sound'},
+  {label:'Capteurs', frag:'Face ID OR Touch ID OR sensors'},
+  {label:'Tarifs', frag:'repair price OR pricing'},
+  {label:'Service', frag:"service OR appointment 'genius bar'"},
+  {label:'Process', frag:'repair process OR trade in'},
+  {label:'Esthétique', frag:'cosmetic scratch dent'},
+  {label:'Émergent', frag:'new issue emerging'}
 ];
 const REGIONS = [
   {label:'Monde',     frag:''},
