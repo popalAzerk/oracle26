@@ -1,29 +1,30 @@
 window.PULSE_DATA = {
- "updated": "2026-10-14",
- "period": "échantillon du 14/10/2026 — collecte nocturne Harken, classification Laya",
- "total": 13,
+ "updated": "2026-10-15",
+ "period": "échantillon du 15/10/2026 — collecte nocturne Harken, classification Laya",
+ "total": 14,
  "counts": {
-  "system_bug": 5,
-  "battery": 5,
-  "screen": 2,
-  "process": 1
+  "battery": 6,
+  "system_bug": 4,
+  "process": 2,
+  "screen": 2
  },
  "sentiment": {
   "neutral": 1,
-  "negative": 12,
+  "negative": 13,
   "positive": 0
  },
- "avgConf": 0.874,
+ "avgConf": 0.867,
  "examples": {
   "system_bug": [
    "Ios 26.6.1 is a battery drainer - Apple Community Also, the decrease in battery health is not linear.",
-   "The camera flash problem The camera flash problem — Hi everyone , recently i tried to take a picture in a dark room with my iphone 17 and there is a problem, th…"
+   "Can't drag folders into iPhone apps anymore from either Windows Apple Devices or OS X. Can't drag folders into iPhone apps anymore from either Windows Apple Dev…"
   ],
   "battery": [
    "IOS 27 battery drain issue - Apple Community Updated to iOS 27 last night and within 2 hours of waking up my battery is on 81%.",
-   "iPhone overheating - Apple Community Read this support article to learn about the battery health feature —> iPhone Battery and Performance - Apple SupportIf you…"
+   "iPhone 17 battery drains faster and phone gets warm when Low Power Mode is turned off. Is anyone else experiencing this on iOS 26? Should I  iPhone 17 battery d…"
   ],
   "process": [
+   "Iphone trade in but payment thru affirm Iphone trade in but payment thru affirm — Hello. I’m planning to trade in my iphone 16 promax for an 18 pro. But I was t…",
    "iPhone overheating - Apple Community Some warmth is to be anticipated.* \"Keep your iPhone, the power adapter, and any wireless charger in a well-ventilated area…"
   ],
   "screen": [
@@ -75,12 +76,12 @@ window.PULSE_DATA = {
    }
   },
   {
-   "date": "2026-10-14",
-   "total": 13,
+   "date": "2026-10-15",
+   "total": 14,
    "counts": {
-    "system_bug": 5,
-    "battery": 5,
-    "process": 1,
+    "system_bug": 4,
+    "battery": 6,
+    "process": 2,
     "screen": 2
    }
   }
@@ -131,12 +132,12 @@ window.PULSE_HISTORY = [
   }
  },
  {
-  "date": "2026-10-14",
-  "total": 13,
+  "date": "2026-10-15",
+  "total": 14,
   "counts": {
-   "system_bug": 5,
-   "battery": 5,
-   "process": 1,
+   "system_bug": 4,
+   "battery": 6,
+   "process": 2,
    "screen": 2
   }
  }
