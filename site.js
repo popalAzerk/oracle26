@@ -132,13 +132,15 @@ const tricks=$("#tricks");
 
 /* S3 satisfaction */
 const csat=$("#csat");
-const RATINGS=[
-  {l:"Google",v:4.1,c:1240},{l:"Yelp",v:4.5,c:312},{l:"Trustpilot",v:3.4,c:486}
-];
-RATINGS.forEach(r=>{
-  const full="★".repeat(Math.round(r.v)), rest="☆".repeat(5-Math.round(r.v));
-  csat.insertAdjacentHTML("beforeend",`<div class="rrow"><b>${esc(r.l)}</b><span class="stars">${full}${rest}</span><span class="m mono">${String(r.v).replace(".",",")}/5</span><span class="c">${r.c} avis</span></div>`);
-});
+const ST=D.csat_stats||{};
+const rv=ST.google_confluence||3.6, rc=ST.avis||1963;
+const full="★".repeat(Math.round(rv)), rest="☆".repeat(5-Math.round(rv));
+csat.insertAdjacentHTML("beforeend",`<div class="rrow"><b>Apple Store Confluence · Google</b><span class="stars">${full}${rest}</span><span class="m mono">${String(rv).replace(".",",")}/5</span><span class="c">${rc} avis</span></div>`);
+if(ST.distribution){
+  const tot=Object.values(ST.distribution).reduce((a,b)=>a+b,0);
+  const d5=Math.round(ST.distribution["5"]/tot*100), d1=Math.round(ST.distribution["1"]/tot*100);
+  csat.insertAdjacentHTML("beforeend",`<p class="src">Répartition : ${d5} % de 5★ · ${d1} % de 1★ — l'extrême domine : le service fait la réputation ou la dissout.</p>`);
+}
 /* retours clients sur la satisfaction relevée (posts publics csat) */
 const sent=D.sentiment||{};
 const negPct=Math.round((sent.negative||0)/Math.max(1,(sent.negative||0)+(sent.positive||0)+(sent.neutral||0))*100);
@@ -149,6 +151,15 @@ csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q">${negPct} % 
   const en=(v.text&&v.text!==t&&t.length>40)?` — <span class="src">EN : ${esc(String(v.text).slice(0,110))}…</span>`:"";
   csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q">« ${esc((cut?"… ":"")+t)} »</p><span class="src">${esc(v.src||"retour client")}${en}</span></div>`);
 });
+/* avis des clients du Genius Bar — Apple Store Confluence */
+if((D.csat_confluence||[]).length){
+  csat.insertAdjacentHTML("beforeend",`<h5 style="margin:18px 0 2px">Chez nous — Apple Store Confluence</h5>`);
+  D.csat_confluence.forEach(v=>{
+    const col=(v.sens==="pos")?"#30d158":"#ff3b30";
+    csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q"><span class="dot2" style="background:${col}"></span>« ${esc(v.text)} »</p><span class="src">Google Maps · ${esc(v.date)}</span></div>`);
+  });
+  csat.insertAdjacentHTML("beforeend",`<p class="src"><a href="https://magasin.tel/f/apple-confluence-6094812/" target="_blank" rel="noopener">Voir tous les avis Google du store</a></p>`);
+}
 
 /* S4 analyse : les 3 blocs si le cron les a poussés */
 const ai=$("#ai");

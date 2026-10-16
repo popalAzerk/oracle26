@@ -112,3 +112,4 @@ footer{border-top:1px solid var(--line);margin:34px 0 20px;padding:14px 0;color:
 .srcn{font-weight:600;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);margin-bottom:4px}
 .srcn .src{text-transform:none;letter-spacing:0;margin-left:4px}
 .trick-en.on{display:block}\n
+.qbox .dot2{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
