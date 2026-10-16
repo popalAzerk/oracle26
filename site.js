@@ -23,7 +23,6 @@ const CAT = {
 const esc = s => String(s??"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 /* header */
-$("#hd-upd").textContent = "MAJ " + (D.updated||"—").split("-").reverse().join("/") + " · " + (D.total??0) + " signaux";
 $("#tot").textContent = D.total ?? 0;
 
 /* KPI : total + 3 composants dominants */
