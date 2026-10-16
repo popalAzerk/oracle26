@@ -58,10 +58,10 @@ Object.keys(SRC).forEach(k=>{if(!allCats.has(k)&&k!=="csat") allCats.set(k,0);})
     <div class="row"><span class="nm">${esc(meta.l)}</span>${n>0?`<span class="pct" style="color:${meta.c}">${pct}&thinsp;%</span>`:""}</div>
     <div class="bar"><i style="background:${meta.c}" data-w="${Math.min(100,pct)}"></i></div>
     <p class="q">${(()=>{const t=exs[0]?exs[0].show:"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return esc((cut?"… ":"")+t);})()}</p>
-    <div class="ft"><a class="more" href="#">▸ En savoir plus</a><span class="n-mod">${n>0?`${n} signal${n>1?"s":""}${Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length?" · "+Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length+" modèle"+(Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length>1?"s":""):""}`:`aucun signal ce jour · verbatims &amp; sources récents ci-dessous`}</span></div>
+    <div class="ft"><a class="more" href="#">▸ En savoir plus</a><span class="n-mod">${n>0?`${n} signal${n>1?"s":""}${Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length?" · "+Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length+" modèle"+(Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length>1?"s":""):""}`:`aucun signal ce jour · retours & sources récents ci-dessous`}</span></div>
     <div class="det">
-      <h5>Verbatims sources</h5>
-      ${exs.slice(1).map(v=>{const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN — ${esc(String(v.orig).slice(0,110))}…</span>`:""}</p>`;}).join("")||"<p class='v'>Verbatim complet ci-dessus.</p>"}
+      <h5>Retours clients</h5>
+      ${exs.slice(1).map(v=>{const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN — ${esc(String(v.orig).slice(0,110))}…</span>`:""}</p>`;}).join("")||"<p class='v'>Retour complet ci-dessus.</p>"}
       ${(()=>{const bySrc={};(SRC[k]||[]).forEach(s=>{(bySrc[s.src]=bySrc[s.src]||[]).push(s);});
         const out=Object.entries(bySrc).map(([sn,lst])=>
           `<div class="srcb"><div class="srcn">${esc(sn)} <span class="src">${lst.length} avis</span></div>`+
@@ -97,7 +97,7 @@ if(ents.length && ents[0][1]/TOT>=0.25){
 const tricks=$("#tricks");
 (function(){
   const items=[];
-  // a) verbatims « méthode/contournement » issus des examples :
+  // a) retours « méthode/contournement » issus des examples :
   Object.entries(D.examples||{}).forEach(([cat,lst])=>(lst||[]).forEach(v=>{
     const t=(v.text_tr||v.text||"").toLowerCase();
     if(/workaround|contournement|astuce|méthode|secret|trick|ruse|magique|coach|forcer|réclamer|échange gratuit|policy|politique/.test(t)||cat==="fraud")
@@ -139,10 +139,16 @@ RATINGS.forEach(r=>{
   const full="★".repeat(Math.round(r.v)), rest="☆".repeat(5-Math.round(r.v));
   csat.insertAdjacentHTML("beforeend",`<div class="rrow"><b>${esc(r.l)}</b><span class="stars">${full}${rest}</span><span class="m mono">${String(r.v).replace(".",",")}/5</span><span class="c">${r.c} avis</span></div>`);
 });
-/* verbatim satisfaction = sentiment négatif moyen du jour */
+/* retours clients sur la satisfaction relevée (posts publics csat) */
 const sent=D.sentiment||{};
 const negPct=Math.round((sent.negative||0)/Math.max(1,(sent.negative||0)+(sent.positive||0)+(sent.neutral||0))*100);
-csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q">« ${negPct} % des signaux de la semaine expriment une frustration explicite. Les verbatims dépliants par composant donnent les mots exacts des clients. »</p><p class="src">— synthèse du pipeline, ${(D.updated||"—")}</p></div>`);
+csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q">${negPct} % des retours de la semaine expriment une frustration explicite — voici ce que les clients relèvent après leur passage.</p></div>`);
+(D.csat_examples||[]).forEach(v=>{
+  const t=v.text_tr||v.text||""; if(!t) return;
+  const cut=/^[a-zà-öø-ÿ]/.test(t.trim());
+  const en=(v.text&&v.text!==t&&t.length>40)?` — <span class="src">EN : ${esc(String(v.text).slice(0,110))}…</span>`:"";
+  csat.insertAdjacentHTML("beforeend",`<div class="qbox"><p class="q">« ${esc((cut?"… ":"")+t)} »</p><span class="src">${esc(v.src||"retour client")}${en}</span></div>`);
+});
 
 /* S4 analyse : les 3 blocs si le cron les a poussés */
 const ai=$("#ai");
@@ -173,7 +179,7 @@ document.querySelectorAll(".card .ft .n-mod").forEach(el=>{
   const k=Object.keys(CAT).find(x=>CAT[x].l===nm.textContent);
   if(k){
     const cnt=D.counts[k]||0;
-    if(cnt===0){ el.textContent="aucun signal ce jour · verbatims & sources récents ci-dessous"; return; }
+    if(cnt===0){ el.textContent="aucun signal ce jour · retours & sources récents ci-dessous"; return; }
     const nm=Object.keys(byCat2[k]||{}).length;
     el.textContent= nm>0 ? `${cnt} signaux · ${nm} modèle${nm>1?"s":""}` : `${cnt} signaux`;
   }
