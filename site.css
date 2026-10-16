@@ -8,7 +8,7 @@
   --c-charge:#0891b2; --c-process:#52525b; --c-warranty:#a16207;
   --c-pricing:#047857; --c-service:#4f46e5; --c-sensory:#be185d;
   --c-emerging:#57534e; --c-network:#0369a1; --c-camera:#b45309;
-  --c-cosmetic:#9d174d; --c-audio:#374151;
+  --c-cosmetic:#9d174d; --c-audio:#374151; --c-buttons:#7c2d12; --c-fraud:#b91c1c;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
@@ -25,6 +25,7 @@ b,strong{font-weight:600}
 .logo span{color:var(--act)}
 /* sections */
 main{max-width:860px;margin:0 auto;padding:0 18px}
+section.s{scroll-margin-top:64px}
 .s{padding:34px 0 10px}
 .s+.s{border-top:1px solid var(--line)}
 .k{color:var(--act);font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
