@@ -9,7 +9,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>🐴 MOB RACER — Proto v0.3 · juice & Nilfisk</title>
+<title>🐴 MOB RACER — Proto v0.4 · arcade</title>
 <style>
   html, body {
     margin: 0; padding: 0; background: #0b0d16;
@@ -1853,14 +1853,14 @@ function ombreEntite(x, y, rx, ry){
 
 
 /* ================================================================
-   v0.3-§9b · MACHINE NILFISK SC250/SC370 top-down (parodie NILFISKY)
+   v0.3-§9b · MACHINE top-down stylisée
    Châssis gris clair + liseré sombre, timon qui PIVOTE (à l'opposé
    du déplacement), bac visible avec liquide qui baisse, badge jaune
-   "★ NILFISKY", brosse rotative (ombre animée sur les bords),
+   plaque générique, brosse rotative (ombre animée sur les bords),
    raclette arrière, roues, squish & stretch, HUD in-game de réservoir.
    Le sprite est pré-rendu 4 orientations sur canvas offscreen.
    ================================================================ */
-const NILFISK_COULS = {
+const MACH_COULS = {
   châssis: "#c9c9c9", châssisClair: "#e2e2e2", châssisFoncé: "#9d9d9d",
   liseré: "#2b2f36",  liseréClair: "#4a5058",
   jaune: "#f2c11d",   jauneFoncé: "#c09213",
@@ -1878,19 +1878,19 @@ function spriteMachineBase(g, teinte, pushed){
   const r = (a,b,w,h,c) => { g.fillStyle = c; g.fillRect(a,b,w,h); };
   /* ── TIMON (tube + manette + console) : pointe vers le HAUT du sprite ── */
   const tx = X - 4, tl = 24;
-  g.fillStyle = NILFISK_COULS.timon;
+  g.fillStyle = MACH_COULS.timon;
   g.fillRect(tx, Y-14-tl, 8, tl);                  /* tube */
-  g.fillStyle = NILFISK_COULS.timonClair;
+  g.fillStyle = MACH_COULS.timonClair;
   g.fillRect(tx+1, Y-14-tl, 2, tl);                /* reflet tube */
   /* console de contrôle sur le timon (petit écran) */
-  g.fillStyle = NILFISK_COULS.noir;
+  g.fillStyle = MACH_COULS.noir;
   g.fillRect(tx-3, Y-14-tl+5, 14, 7);
   g.fillStyle = "#7dff9a";
   g.fillRect(tx-2, Y-14-tl+6, 12, 3);              /* écran LED vert */
-  g.fillStyle = NILFISK_COULS.noir;
+  g.fillStyle = MACH_COULS.noir;
   g.fillRect(tx-2, Y-14-tl+10, 12, 1);             /* séparateur */
   /* manette noire au bout */
-  g.fillStyle = NILFISK_COULS.noir;
+  g.fillStyle = MACH_COULS.noir;
   g.fillRect(tx-2, Y-16-tl, 12, 6);
   g.fillStyle = "#0c0e12";
   g.fillRect(tx, Y-16-tl+1, 8, 3);
@@ -1901,34 +1901,34 @@ function spriteMachineBase(g, teinte, pushed){
   g.fillStyle = "#3d444d";
   g.fillRect(X-12, Y+20, 24, 1);
   /* ── CHÂSSIS : arrondi simulé par rects empilés, liseré sombre ── */
-  r(X-17, Y-11, 34, 28, NILFISK_COULS.liseré);            /* liseré sombre extérieur */
-  r(X-15, Y-9, 30, 24, NILFISK_COULS.châssis);            /* corps gris clair */
-  r(X-15, Y-9, 30, 3, NILFISK_COULS.châssisClair);        /* face éclairée haut */
-  r(X-15, Y+13, 30, 2, NILFISK_COULS.châssisFoncé);       /* face sombre bas */
+  r(X-17, Y-11, 34, 28, MACH_COULS.liseré);            /* liseré sombre extérieur */
+  r(X-15, Y-9, 30, 24, MACH_COULS.châssis);            /* corps gris clair */
+  r(X-15, Y-9, 30, 3, MACH_COULS.châssisClair);        /* face éclairée haut */
+  r(X-15, Y+13, 30, 2, MACH_COULS.châssisFoncé);       /* face sombre bas */
   /* ── ROUES visible sur les côtés (tricycle SC370 : 1 avant + 2 arrière —
         en top-down on voit les 3 pads noirs qui dépassent du liseré) ── */
-  g.fillStyle = NILFISK_COULS.noir;
+  g.fillStyle = MACH_COULS.noir;
   g.fillRect(X-19, Y+8, 4, 8);                    /* roue arrière gauche */
   g.fillRect(X+15, Y+8, 4, 8);                    /* roue arrière droite */
   g.fillRect(X-2, Y-13, 4, 3);                    /* castor avant (sous timon) */
   /* ── BAC "tank-in-tank" VISIBLE dessus : 2 réservoirs ── */
-  r(X-12, Y-6, 24, 15, NILFISK_COULS.liseré);            /* cadre bac */
+  r(X-12, Y-6, 24, 15, MACH_COULS.liseré);            /* cadre bac */
   r(X-12, Y-6, 24, 2, teinte);                           /* bande teinte du joueur */
   r(X-11, Y-5, 22, 13, "#aab4bd");                        /* fond bac */
   /* bac solution (gauche, rempli selon niveau d'eau au blit — ici plein) */
-  r(X-10, Y-4, 9, 11, NILFISK_COULS.eau);
-  r(X-10, Y-4, 9, 3, NILFISK_COULS.eauClair);
+  r(X-10, Y-4, 9, 11, MACH_COULS.eau);
+  r(X-10, Y-4, 9, 3, MACH_COULS.eauClair);
   /* bac récupération (droite) : bord + intérieur plus sombre */
   r(X+1, Y-4, 9, 11, "#7d8791");
   r(X+2, Y-3, 7, 9, "#5d6770");
   /* bouchon-couvercle jaune du tank */
-  r(X-6, Y-7, 5, 3, NILFISK_COULS.jaune);
-  r(X-6, Y-7, 5, 1, NILFISK_COULS.jauneFoncé);
-  /* ── BADGE jaune "★ NILFISKY" sous le bac (parodie, sur châssis) ── */
-  r(X-9, Y+11, 18, 4, NILFISK_COULS.jaune);
-  r(X-9, Y+14, 18, 1, NILFISK_COULS.jauneFoncé);
+  r(X-6, Y-7, 5, 3, MACH_COULS.jaune);
+  r(X-6, Y-7, 5, 1, MACH_COULS.jauneFoncé);
+  /* ── plaque générique sous le bac (AUCUNE marque) ── */
+  r(X-9, Y+11, 18, 4, "#8a8f98");
+  r(X-9, Y+14, 18, 1, MACH_COULS.jauneFoncé);
   /* étoile + 3 pixels de "lettrage" (stylisé, illisible à cette taille : OK) */
-  g.fillStyle = NILFISK_COULS.noir;
+  g.fillStyle = MACH_COULS.noir;
   g.fillRect(X-7, Y+12, 2, 2);
   for (let i=0;i<4;i++) g.fillRect(X-3 + i*4, Y+12, 2, 2);
   /* ── LED d'état par joueur (coin haut-droit) ── */
@@ -1945,7 +1945,7 @@ function spriteMachineBase(g, teinte, pushed){
     g.fillRect(X-9, Y-11, 18, 5);         /* baie vitrée avant */
     g.fillStyle = "#3d4d63";
     g.fillRect(X-8, Y-10, 16, 2);         /* reflet vitre */
-    g.fillStyle = NILFISK_COULS.noir;
+    g.fillStyle = MACH_COULS.noir;
     g.fillRect(X-3, Y-8, 7, 5);           /* volant (moucheté) */
     g.fillStyle = "#20242b";
     g.fillRect(X-3, Y-6, 7, 1);
@@ -2039,7 +2039,7 @@ function dessinerMachine(m){
     const hMax = 11, hL = hMax * lvl;
     ctx.fillStyle = "rgba(20,25,32,.75)";
     ctx.fillRect(x - 10, bacY + hL, 9, hMax - hL + 1);
-    ctx.fillStyle = lvl < 0.15 ? NILFISK_COULS.jauneFoncé : NILFISK_COULS.eau;
+    ctx.fillStyle = lvl < 0.15 ? MACH_COULS.jauneFoncé : MACH_COULS.eau;
     ctx.fillRect(x - 10, bacY, 9, Math.max(1, hL)|0);
     ctx.fillStyle = "rgba(255,255,255,.5)";
     ctx.fillRect(x - 10, bacY, 9, 1);
@@ -2523,7 +2523,7 @@ function banniereTitre(cy){
   ctx.fillStyle = "#2a3550"; ctx.fillRect(x-10, cy-38, w+20, 2);
   ctx.fillStyle = "#2a3550"; ctx.fillRect(x-10, cy+36, w+20, 2);
   pfDraw(cv.width/2, cy - 10, "MOB RACER", "#ffd45a", 4, 0, 1);
-  pfDraw(cv.width/2, cy + 22, "PROTO V0.3 - NILFISK EDITION", "#7dffa0", 2, 0);
+  pfDraw(cv.width/2, cy + 22, "PROTO V0.4 - EDITION ARCADE", "#7dffa0", 2, 0);
   /* la machine traverse la bannière en boucle (ping-pong) */
   const px = x + 30 + (((t*110) % (w - 60)));
   const py = cy + 30;
