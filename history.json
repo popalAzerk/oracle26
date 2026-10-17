@@ -40,5 +40,24 @@
    "sensory": 1,
    "battery": 7
   }
+ },
+ {
+  "date": "2026-10-16",
+  "total": 14,
+  "counts": {
+   "system_bug": 4,
+   "battery": 6,
+   "process": 2,
+   "screen": 2
+  }
+ },
+ {
+  "date": "2026-10-17",
+  "total": 17,
+  "counts": {
+   "system_bug": 8,
+   "battery": 8,
+   "screen": 1
+  }
  }
 ]
