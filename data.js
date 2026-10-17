@@ -1,17 +1,16 @@
 window.PULSE_DATA = {
  "updated": "2026-10-17",
  "period": "échantillon du 17/10/2026 — collecte nocturne (forums, Reddit, Communautés Apple), classification Laya",
- "total": 31,
+ "total": 17,
  "counts": {
-  "battery": 14,
-  "system_bug": 12,
-  "screen": 3,
-  "process": 2
+  "system_bug": 8,
+  "battery": 8,
+  "screen": 1
  },
  "sentiment": {
-  "neutral": 6,
-  "negative": 24,
-  "positive": 1
+  "neutral": 4,
+  "negative": 13,
+  "positive": 0
  },
  "avgConf": 0.774,
  "examples": {
