@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     MOB RACER — PROTO v0.3 (Phase 1) · 2 modes · juice & Nilfisk
+     MOB RACER — PROTO v0.4 · arcade & marmottes
      Jeu 8-bit : des machines à laver le sol s'affrontent.
      Fichier unique, zéro dépendance, tout inline (CSS + JS).
      Canvas 2D · arène 15×13 vue du dessus façon Bomberman.
@@ -38,7 +38,7 @@
 <script>
 "use strict";
 /* ================================================================
-   MOB RACER — PHASE 1 : proto jouable · v0.3 (2 modes · juice & Nilfisk)
+   MOB RACER — PROTO v0.4 : arcade (marmottes, savon, torpille, grand-mère)
    1 machine humaine + 1 IA simple + 2 loutres câlines.
    Boucle requestAnimationFrame, logique à pas fixe (60 Hz).
    ================================================================ */
@@ -1014,7 +1014,7 @@ function tirerTorpille(m){
       const cc = c+dc, ll = l+dl;
       if (cc<1||ll<1||cc>=COLONNES-1||ll>=LIGNES-1) continue;
       if (grille[ll][cc] !== T_SOL) continue;    // la vague ne casse pas les murs
-      if (propre[ll][cc] !== 0){ propre[ll][cc] = 1; casesNettoyees++; }
+      if (propre[ll][cc] === 0){ propre[ll][cc] = 1; casesNettoyees++; }
       eclatCase(cc, ll, "#e8f7ff");
     }
   }
@@ -1652,7 +1652,7 @@ function update(dt){
 
 /* ================================================================
    v0.3-§9a · SOL, SALETÉ, TRACE D'EAU RICHE, LUEURS
-   Palette Nilfisk-esque : le sol compte, la trace scintille.
+   Palette soignée : le sol compte, la trace scintille.
    ================================================================ */
 
 /* sol : lino / carrelage, 2 teintes alternées (damier subtil) + joints fins */
@@ -2645,7 +2645,7 @@ function dessinerChoixMode(){
     } else {
       pfDraw(cx, cy-112, mm.nom, "#8fa0b8", 1, 0);
     }
-    /* MINI ILLUSTRATION = vraie machine Nilfisk pré-rendue (orientation S) */
+    /* MINI ILLUSTRATION = la machine pré-rendue (orientation S) */
     ctx.save();
     ctx.translate(cx, cy-40);
     ctx.scale(1.15, 1.15);
