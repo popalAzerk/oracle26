@@ -113,3 +113,8 @@ footer{border-top:1px solid var(--line);margin:34px 0 20px;padding:14px 0;color:
 .srcn .src{text-transform:none;letter-spacing:0;margin-left:4px}
 .trick-en.on{display:block}\n
 .qbox .dot2{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+/* lecture complète des signalements */
+.det .vfull{color:var(--mut)}
+.det .vmore,.det .vlink{color:var(--act);text-decoration:none;font-size:12px}
+.det .vmore:hover,.det .vlink:hover{text-decoration:underline}

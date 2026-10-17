@@ -18,31 +18,36 @@ window.PULSE_DATA = {
    {
     "text": "iphone wont charge after using blow dryer to dry port. iphone wont charge after using blow dryer to dry port. — i know this was a very stupid idea, so I do not ",
     "text_tr": "iphone ne se charge pas après avoir utilisé le sèche-cheveux sur le port sec. — Je sais que c'était une idée très stupide, donc je ne le fais pas",
-    "src": "reddit.com/r/applehelp"
+    "src": "reddit.com/r/applehelp",
+    "text_full": "iphone wont charge after using blow dryer to dry port.\n\ni know this was a very stupid idea, so I do not need redditors in the comments droning on about this. my iphone got water in it and i thought it would be a bright idea to use a hair dryer to evaporate the water. i left it facing the charging port for 20 minutes, but a little bit away, not directly on it. i tried plugging it in and it will not charge. it will say it is charging then immediately stop. with the magsafe, it keeps starting and stopping charging. i currently have it on a very weak, sl"
    },
    {
     "text": "How common is iPhone overheating when cha… - Apple Community If you are seeing this it is a hardware problem and you should contact Apple support: Click on “Sup",
     "text_tr": "Si vous constatez qu'il s'agit d'un problème matériel et que vous devez contacter le support Apple : Cliquez sur « Sup",
-    "src": "communities.apple.com"
+    "src": "communities.apple.com",
+    "text_full": "How common is iPhone overheating when cha… - Apple Community In summary of this thread so far, Let’s define “overheating”."
    }
   ],
   "battery": [
    {
     "text": "IOS 27 battery drain issue - Apple Community Updated to iOS 27 last night and within 2 hours of waking up my battery is on 81%.",
     "text_tr": "a mis à jour iOS 27 la nuit dernière et dans les 2 heures suivant le réveil, ma batterie est à 81 %.",
-    "src": "communities.apple.com"
+    "src": "communities.apple.com",
+    "text_full": "IOS 27 battery drain issue - Apple Community Updated to iOS 27 last night and within 2 hours of waking up my battery is on 81%."
    },
    {
     "text": "IOS 27 battery drain issue - Apple Community Not only will you see increased battery drain during this time, but also increased heat and you may see some UI lag",
     "text_tr": "Vous constaterez non seulement une augmentation de la vidange de la batterie pendant cette période, mais également une augmentation de la chaleur et un certain décalage de l'interface utilisateur",
-    "src": "communities.apple.com"
+    "src": "communities.apple.com",
+    "text_full": "IOS 27 battery drain issue - Apple Community Not only will you see increased battery drain during this time, but also increased heat and you may see some UI lag"
    }
   ],
   "screen": [
    {
     "text": "Lines on screen - Apple Community jayce186 wrote:My iPhone SE screen all of the sudden starting having lines similar to scan lines running horizontally across t",
     "text_tr": "jayce186 a écrit : L'écran de mon iPhone SE commence soudainement à avoir des lignes similaires aux lignes de balayage s'étendant horizontalement à travers t",
-    "src": "communities.apple.com"
+    "src": "communities.apple.com",
+    "text_full": "Lines on screen - Apple Community jayce186 wrote:My iPhone SE screen all of the sudden starting having lines similar to scan lines running horizontally across t"
    }
   ],
   "process": [
@@ -56,13 +61,15 @@ window.PULSE_DATA = {
     "text": "ULPT: how to get a brand new iPhone for only 29 dollars - make sure you have AppleCare, deliberately break the glass and say it was an accident, then take it in for …",
     "text_tr": "ULPT : comment obtenir un tout nouvel iPhone pour seulement 29 dollars - assurez-vous d'avoir AppleCare, brisez délibérément le verre et dites que c'était un accident, puis emmenez-le pour réparation à l'Apple Store et payez les frais de service de 29 dollars pour une nouvelle unité.",
     "src": "r/UnethicalLifeProTips",
-    "url": "https://www.reddit.com/r/UnethicalLifeProTips/comments/1e37dya/ulpt_how_to_get_a_brand_new_iphone_for_only_29/"
+    "url": "https://www.reddit.com/r/UnethicalLifeProTips/comments/1e37dya/ulpt_how_to_get_a_brand_new_iphone_for_only_29/",
+    "text_full": "ULPT: how to get a brand new iPhone for only 29 dollars - make sure you have AppleCare, deliberately break the glass and say it was an accident, then take it in for repair at the Apple Store and pay the 29 dollar service fee for a new unit."
    },
    {
     "text": "How does one even manage to scratch their camera lens? Bought the 16 Pro Max a month ago and there is already a mark on the lens ring. Apple says scratches are cosme…",
     "text_tr": "Comment arrive-t-on même à rayer l'objectif de son appareil photo ? Acheté le 16 Pro Max il y a un mois et il y a déjà une marque sur la bague de l'objectif. Apple dit que les égratignures sont cosmétiques et non couvertes, je ne les pose que sur une table.",
     "src": "Facebook group users",
-    "url": "https://www.facebook.com/groups/179104269303609/posts/2013863145827703/"
+    "url": "https://www.facebook.com/groups/179104269303609/posts/2013863145827703/",
+    "text_full": "How does one even manage to scratch their camera lens? Bought the 16 Pro Max a month ago and there is already a mark on the lens ring. Apple says scratches are cosmetic and not covered, I only set it down on a table."
    }
   ],
   "charging": [
@@ -70,19 +77,22 @@ window.PULSE_DATA = {
     "text": "Brand new iPhone 16 Pro, 3 charge cycles only. Charged to 85% at midnight, dropped to 75% five hours later with the screen off and no Always-On display. Is this norm…",
     "text_tr": null,
     "src": "r/applehelp",
-    "url": "https://reddit.com/r/applehelp/comments/1l2ttkj/recently_bought_iphone_16_pro_battery_drops_from"
+    "url": "https://reddit.com/r/applehelp/comments/1l2ttkj/recently_bought_iphone_16_pro_battery_drops_from",
+    "text_full": "Brand new iPhone 16 Pro, 3 charge cycles only. Charged to 85% at midnight, dropped to 75% five hours later with the screen off and no Always-On display. Is this normal for a new iPhone or a defect? I am still in the one-month window."
    },
    {
     "text": "My 16 Pro Max: charged 95% every night, disconnected at 7am, and by 11pm I arrive at 20% or less. I talked to support and they say everything is fine according to th…",
     "text_tr": null,
     "src": "discussions.apple.com",
-    "url": "https://discussions.apple.com/thread/255926670"
+    "url": "https://discussions.apple.com/thread/255926670",
+    "text_full": "My 16 Pro Max: charged 95% every night, disconnected at 7am, and by 11pm I arrive at 20% or less. I talked to support and they say everything is fine according to them. It already has 61 charge cycles. I cannot find what drains it."
    },
    {
     "text": "My M1 iPad Pro stopped charging: I spent hours to get a Genius Bar appointment, then waited 30 minutes past my time for the Genius to check the USB port for dust, so…",
     "text_tr": "Mon M1 iPad Pro a cessé de charger : j'ai passé des heures à obtenir un rendez-vous au Genius Bar, puis j'ai attendu 30 minutes pour que le Genius vérifie le port USB pour la poussière, ce que j'avais déjà fait, et la réponse était un remplacement à 800 dollars. Un magasin tiers a fixé le même port pour 200.",
     "src": "r/apple",
-    "url": "https://www.reddit.com/r/apple/comments/115rmyh/genius_bar_is_a_horrible_experience_and_a/"
+    "url": "https://www.reddit.com/r/apple/comments/115rmyh/genius_bar_is_a_horrible_experience_and_a/",
+    "text_full": "My M1 iPad Pro stopped charging: I spent hours to get a Genius Bar appointment, then waited 30 minutes past my time for the Genius to check the USB port for dust, something I had already done, and the answer was a replacement at 800 dollars. A third party shop fixed the same port for 200."
    }
   ],
   "buttons": [
@@ -118,13 +128,15 @@ window.PULSE_DATA = {
     "text": "The iPhone 18 Pro uses the same enclosure material as the 17 Pro and early third party testing shows direct contact and drops leave visible marks on the aluminum ext…",
     "text_tr": "L'iPhone 18 Pro utilise le même matériau de boîtier que le 17 Pro et les premiers tests tiers montrent un contact direct et des gouttes laissent des marques visibles sur l'extérieur en aluminium, en particulier le bord exposé autour de la zone surélevée de la caméra.",
     "src": "ESR blog user quotes",
-    "url": "https://www.esrtech.com/blogs/protective-cases/iphone-17-pro-max-chip-protection"
+    "url": "https://www.esrtech.com/blogs/protective-cases/iphone-17-pro-max-chip-protection",
+    "text_full": "The iPhone 18 Pro uses the same enclosure material as the 17 Pro and early third party testing shows direct contact and drops leave visible marks on the aluminum exterior, especially the exposed edge around the raised camera area."
    },
    {
     "text": "Apple Genius Bar called me a fraud: the device had been opened by a third party shop before I brought it in, and the non-genuine parts voided everything. The Genius …",
     "text_tr": "Apple Genius Bar m'a traité de fraude : l'appareil avait été ouvert par un magasin tiers avant que je ne l'apporte, et les pièces non authentiques annulaient tout. Le Genius a documenté la modification par un tiers et a refusé le service de garantie.",
     "src": "r/Iphonerepair",
-    "url": "https://www.reddit.com/r/Iphonerepair/comments/1unrzjq/question_apple_genius_bar_called_me_a_fraud/"
+    "url": "https://www.reddit.com/r/Iphonerepair/comments/1unrzjq/question_apple_genius_bar_called_me_a_fraud/",
+    "text_full": "Apple Genius Bar called me a fraud: the device had been opened by a third party shop before I brought it in, and the non-genuine parts voided everything. The Genius documented third-party modification and refused warranty service."
    }
   ],
   "network": [
@@ -132,7 +144,8 @@ window.PULSE_DATA = {
     "text": "Since the iOS 26.1 update the Wi-Fi stops working entirely: the phone says connected but there is No Internet Connection under the router name, only forgetting and r…",
     "text_tr": "Depuis la mise à jour iOS 26.1, le Wi-Fi cesse complètement de fonctionner : le téléphone dit connecté mais il n'y a pas de connexion Internet sous le nom du routeur, oubliant seulement et rejoignant le réseau le restaure, jusqu'à la prochaine chute.",
     "src": "OSXDaily user quotes",
-    "url": "https://osxdaily.com/2025/11/18/fix-ios-26-wi-fi-issues-not-working-dropping-slow"
+    "url": "https://osxdaily.com/2025/11/18/fix-ios-26-wi-fi-issues-not-working-dropping-slow",
+    "text_full": "Since the iOS 26.1 update the Wi-Fi stops working entirely: the phone says connected but there is No Internet Connection under the router name, only forgetting and rejoining the network restores it, until the next drop."
    }
   ],
   "camera": [
@@ -140,7 +153,8 @@ window.PULSE_DATA = {
     "text": "The iPhone 17 Pro anodized coating chips away with a pick the hardness of a penny, on sharp corners like the edge of the camera bump the layer flakes away revealing …",
     "text_tr": "Le revêtement anodisé de l'iPhone 17 Pro s'écaille avec un pic de la dureté d'un centime, sur les coins coupants comme le bord de l'appareil photo, la couche s'écaille révélant l'aluminium brillant en dessous. Les propriétaires ne cessent de demander si le cadre est peint.",
     "src": "iFixit teardown scratchgate",
-    "url": "https://www.ifixit.com/News/113388/iphone-17-pro-teardown"
+    "url": "https://www.ifixit.com/News/113388/iphone-17-pro-teardown",
+    "text_full": "The iPhone 17 Pro anodized coating chips away with a pick the hardness of a penny, on sharp corners like the edge of the camera bump the layer flakes away revealing shiny aluminum underneath. Owners keep asking if the frame is painted."
    }
   ]
  },

@@ -50,7 +50,8 @@ Object.keys(SRC).forEach(k=>{if(!allCats.has(k)&&k!=="csat") allCats.set(k,0);})
   const pct = Math.round(n/TOT*100);
   const exs = (D.examples[k]||[]).map(v=>{
     const t=(v&&v.text_tr)||v&&v.text||v; const o=(v&&v.text)?v:{text:v};
-    return {show:t, orig:o.text||v, src:(o.src||"")};
+    const full=(v&&v.text_full)||"";
+    return {show:t, orig:o.text||v, src:(o.src||""), full, url:(v&&v.url)||""};
   });
   const c=document.createElement("div");
   c.className="card";
@@ -61,7 +62,12 @@ Object.keys(SRC).forEach(k=>{if(!allCats.has(k)&&k!=="csat") allCats.set(k,0);})
     <div class="ft"><a class="more" href="#">▸ En savoir plus</a><span class="n-mod">${n>0?`${n} signal${n>1?"s":""}${Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length?" · "+Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length+" modèle"+(Object.keys(((window.PULSE_MC_BY_CAT)||{})[k]||{}).length>1?"s":""):""}`:`aucun signal ce jour · retours & sources récents ci-dessous`}</span></div>
     <div class="det">
       <h5>Retours clients</h5>
-      ${exs.slice(1).map(v=>{const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN — ${esc(String(v.orig).slice(0,110))}…</span>`:""}</p>`;}).join("")||"<p class='v'>Retour complet ci-dessus.</p>"}
+      ${exs.map((v,idx)=>{
+        const t=v.show||"";const cut=/^[a-zà-öø-ÿ]/.test(t.trim());
+        const hasFull=v.full&&v.full.length>t.length+20;
+        const fullHtml=hasFull?`<span class="vfull" id="vf${k}${idx}" style="display:none">${esc(v.full)}</span> <a href="#" class="vmore" data-t="vf${k}${idx}">▸ Lire le signalement</a>`:"";
+        const srcHtml=(!hasFull&&v.url)?` <a class="vlink" href="${esc(v.url)}" target="_blank" rel="noopener">▸ Lire la source</a>`:"";
+        return `<p class="v">${esc((cut?"… ":"")+t)}${v.orig&&v.orig!==v.show?` <span class="src">EN — ${esc(String(v.orig).slice(0,110))}…</span>`:""}${fullHtml}${srcHtml}</p>`;}).join("")||"<p class='v'>Retour complet ci-dessus.</p>"}
       ${(()=>{const bySrc={};(SRC[k]||[]).forEach(s=>{(bySrc[s.src]=bySrc[s.src]||[]).push(s);});
         const out=Object.entries(bySrc).map(([sn,lst])=>
           `<div class="srcb"><div class="srcn">${esc(sn)} <span class="src">${lst.length} avis</span></div>`+
@@ -77,6 +83,13 @@ requestAnimationFrame(()=>setTimeout(()=>{
 
 /* En savoir plus : toggle un seul ouvert à la fois */
 cards.addEventListener("click",e=>{
+  const vm=e.target.closest(".vmore");
+  if(vm){
+    e.preventDefault();
+    const f=document.getElementById(vm.dataset.t);
+    if(f){const on=f.style.display==="none";f.style.display=on?"inline":"none";vm.textContent=on?"▾ Replier le signalement":"▸ Lire le signalement";}
+    return;
+  }
   const a=e.target.closest(".more");
   if(!a) return;
   e.preventDefault();
