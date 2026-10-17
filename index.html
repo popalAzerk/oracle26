@@ -65,8 +65,48 @@ const TRACE_AUTO = 1;                  // v0.2 : trace fine (auto-tracée)
 const PIVOT_COULOIR = 0.35;            // v0.2 : demi-tour en couloir étroit ≈ le temps de
                                        // franchir 1 case — l'inertie auto-tracée tourne mal
 
+/* ================================================================
+   v0.4 · PATCH v0.4 — marmottes statiques, savon, torpille laveuse,
+   détritus, grand-mère, attract mode arcade.
+   ================================================================ */
+/* marmottes : obstacles STATIQUES vivants décoratifs. Elles ne lavent RIEN,
+   ne se déplacent JAMAIS d'elles-mêmes. Percutée → éjectée de 2 cases
+   (« piou ») + machine étourdIE 0,4 s (étoiles), AUCUNE sanction de score. */
+const TEMPS_ETOURDIE = 0.4;            // machine étourdie après choc marmotte
+const EJET_MARMOTTE = 2;               // éjection : 2 cases (rebond comique)
+const MARMOTTES_PAR_SALLE = 3;         // 2 à 4 par salle
+/* savon (bonus au sol) : vitesse ×1,6, 4 s, trace 3 cases MÊME en AUTO,
+   pivot plus lent (l'inertie domine : pas de rotation sur place) */
+const SAVON_VITESSE_MUL = 1.6;         // vitesse pendant la glisse
+const SAVON_DUREE = 4.0;               // durée de l'effet (s)
+const SAVON_TRACE = 3;                 // trace élargie (3 cases) pendant la glisse
+const SAVON_REAPPARITION = 12.0;       // (s) — réapparaît toutes ~12 s
+const SAVON_PIVOT_LENT = 0.45;         // durée (s) du demi-tour pendant la glisse
+/* torpille laveuse : bonus rare (1 par manche) ; 1 tir par manche ;
+   vague 5×5 → nids de détritus déblayés + cases traversées nettoyées */
+const TORPILLE_ZONE = 5;               // zone 5×5 de la vague
+const TORPILLE_CHARGE_AUTO = 3.0;      // tir auto après 3 s de chargement (s)
+/* détritus (taches sombres) : 4-6 nids par manche ;
+   case détritus = nettoie 3× plus lentement au lavage normal ;
+   compte DOUBLE en % de surface une fois nettoyée. */
+const DETRITUS_MIN = 4, DETRITUS_MAX = 6;
+const DETRITUS_COEF = 3.0;             // lavage 3× plus lent
+const DETRITUS_MULT = 2;               // compte double en %
+/* grand-mère : obstacle mobile ULTRA-LENT, infranchissable (bloque) ;
+   toutes les ~20 s lâche une pièce (+1 pt si ramassée) ;
+   2 collisions en 15 s → poing levé + ralenti machine 2 s. */
+const VITESSE_GRAND_MERE = 9;          // px/s (ultra-lent)
+const PIECE_INTERVAL = 20.0;           // (s) elle lâche une pièce
+const PIECE_POINTS = 1;                // +1 pt si ramassée
+const COUPS_GRAND_MERE = 2;            // 2 collisions → colère
+const RALENTI_GRAND_MERE = 2.0;        // 2 s de ralentissement
+const FENETRE_COUPS = 15.0;            // les 2 coups comptent sur cette fenêtre
+/* attract mode arcade */
+const ATTRACT_DEMO_DUREE = 9.0;        // démo auto-jouée 8–10 s (bots en fond)
+const HIGH_SCORE_CLE = "mopracer_highscore";   // HIGH SCORE persisté (localStorage)
+
 /* tuiles */
-const T_SOL = 0, T_FONTAINE = 1, T_MUR = 2;
+const T_SOL = 0, T_FONTAINE = 1, T_MUR = 2, T_DETRITUS = 3;    // v0.4 : détritus
 /* sols */
 const SOL_LINO = 0, SOL_CARRELAGE = 1;
 
@@ -223,7 +263,9 @@ function sonBuzzer(){                                             // buzzer fin 
 }
 function sonKlaxon(){ bip("square", 440, 660, 0.18, 0.13); }      // compte à rebours
 
-/* v0.3 : jingle "case nettoyée" (distinct du jingle loutre) */
+/* v0.3 : jingle "case nettoyée" (distinct du jingle loutre)
+   v0.4 : état ATTRACT MODE (démo auto-jouée sur l'écran titre) */
+let attractMode = false;   // true → le joueur 1 est piloté par le cerveau IA/LAYA
 function sonJingleCase(){
   if (!AC || !sonActif) return;
   bip("square", 660, 880, 0.07, 0.08);
@@ -252,6 +294,32 @@ function sonJingleSelection(modeId){
   }
 }
 
+/* v0.4 : jingle ATTRACT (4 notes 8-bit en boucle discrète) */
+function sonJingleAttract(){
+  if (!AC || !sonActif) return;
+  [523, 659, 784, 659].forEach((f, i) =>
+    setTimeout(() => bip("square", f, f*1.01, 0.14, 0.07), i*180));
+}
+
+/* v0.4 : HIGH SCORE persisté (localStorage — harnais fallback objet mémoire) */
+let highScore = 0;
+const _memoLS = {};
+function lsGet(k){
+  try { return window.localStorage.getItem(k); } catch(e){ return _memoLS[k] !== undefined ? _memoLS[k] : null; }
+}
+function lsSet(k, v){
+  try { window.localStorage.setItem(k, v); } catch(e){ _memoLS[k] = v; }
+}
+function chargerHighScore(){
+  const v = lsGet(HIGH_SCORE_CLE);
+  const n = parseInt(v, 10);
+  highScore = isFinite(n) && n > 0 ? n : 0;
+}
+function enregistrerHighScore(finale){        // finale = cases nettoyées du joueur
+  if (finale > highScore){ highScore = finale; lsSet(HIGH_SCORE_CLE, String(highScore)); }
+}
+chargerHighScore();
+
 /* ---------------------- 3. ENTRÉES CLAVIER ---------------------- */
 const touches = {};
 /* v0.2 : machine à états d'entrée */
@@ -266,7 +334,12 @@ window.addEventListener("keydown", e => {
   if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
   if (e.code === "KeyM") sonActif = !sonActif;
   if (etatEntrees === "titre"){
-    if (!e.repeat){ etatEntrees = "choixMode"; }
+    if (!e.repeat){
+      /* v0.4 : la démo attract est laissée en fond ; on lance la sélection */
+      attractMode = false;                       // stop la pilotage auto du joueur 1
+      etat = "choixMode";                        // directement l'écran de choix
+      etatEntrees = "choixMode";
+    }
     return;
   }
   if (etatEntrees === "choixMode"){
@@ -502,6 +575,12 @@ function creerArene(){
   /* la borne fontaine : 3 cases au centre */
   grille[6][7] = T_FONTAINE;
   fontaines.push({c:7, l:6});
+  /* v0.4 : poids de case (détritus compte double une fois nettoyé) */
+  poids = [];
+  for (let l=0; l<LIGNES; l++){
+    poids[l] = [];
+    for (let c=0; c<COLONNES; c++) poids[l][c] = 1;
+  }
 }
 
 /* panneaux « attention ça glisse » : derrière eux, on dérape */
@@ -531,6 +610,12 @@ function creerMachine(col, ligne, couleur, nom, estIA, mode){
     nettoyees: 0,
     dir: {x:0, y:1},           // direction de la serpillière
     drift: 0,                  // dérive restante sur zone glissante (s)
+    /* v0.4 : états des nouveaux éléments */
+    etourdie: 0,               // (s) étourdie après choc marmotte (0,4 s)
+    savonActif: 0,             // (s) glisse savon restante (4 s)
+    savonInertie: 0,           // 1 → pivot plus lent pendant la glisse
+    torpilleCharger: 0,        // (s) chargement torpille restant (auto-tir à 3 s)
+    ralentiGM: 0,              // (s) ralentissement colère grand-mère (2 s)
     dx: 0, dy: 0,              // direction voulue cette frame (IA)
     cible: null,               // cible IA
   };
@@ -555,6 +640,14 @@ function demarrerManche(){
   creerArene();
   creerPanneaux();
   placerLoutres();
+  /* v0.4 : marmottes (statiques) puis détritus / bonus / grand-mère */
+  placerMarmottes();
+  placerDetritus();
+  placerBonusSavon();
+  placerTorpille();
+  creerGrandMere();
+  pieces.length = 0;
+  vagueTorpille = null;
   /* Machine 1 : le joueur humain (mode choisi à l'écran de sélection).
      Machines 2 et 3 : bots LAYA, un par mode pour comparer en course. */
   joueur = creerMachine(1, 1, "#4fc3f7", "TOI", false, modeJoueur);
@@ -590,12 +683,23 @@ function dansMur(px, py){
 
 /* déplacement fluide avec collisions 4 côtés (séparation des axes)
    v0.2 : vitesse multipliée par le mode (poussé ×0.7, auto ×1.3)
-   v0.2 : auto-tracée = inertie ~80 ms (accélération progressive)          */
+   v0.2 : auto-tracée = inertie ~80 ms (accélération progressive)
+   v0.4 : étourdie (immobile + étoiles), glisse SAVON (×1,6, élargie,
+          pivot lent), colère grand-mère (×0.5 pendant 2 s)          */
 function bougerMachine(m, dx, dy, dt){
   if (m.calin > 0){ m.calin -= dt; return; }         // câlin en cours : immobile
+  if (m.etourdie > 0){                               // v0.4 : marmotte percutée → immobile
+    m.etourdie -= dt;
+    return;                                          // étourdie : AUCUN déplacement
+  }
   const v = (m.estIA ? VITESSE_IA : VITESSE_JOUEUR);
   const modedef = MODES.find(x => x.id === m.mode) || { vitesseMul: 1 };
-  const vCible = v * modedef.vitesseMul;
+  /* v0.4 : la glisse savon ÉLARGIT la vitesse (×1,6) ; colère grand-mère la
+     divise (×0.5, 2 s) — cumulables mais le combo est rare et bref */
+  let mult = modedef.vitesseMul;
+  if (m.savonActif > 0) mult *= SAVON_VITESSE_MUL;
+  if (m.ralentiGM > 0)  mult *= 0.5;
+  const vCible = v * mult;
   const roule = (dx||dy) ? 1 : 0;
   if (m.mode === MODE_AUTO && roule){
     /* inertie : ~80 ms pour monter en vitesse (accélération progressive) */
@@ -608,15 +712,21 @@ function bougerMachine(m, dx, dy, dt){
   const sp = m.vitesseActuelle;
   if (dx||dy){
     const n = Math.hypot(dx,dy)||1;
-    if (m.mode === MODE_PUSHED){
-      /* rotation par pas de 90° : pas de diagonale, axes cardinaux seulement */
-      if (Math.abs(dx) >= Math.abs(dy)){
-        m.dir = {x: Math.sign(dx), y: 0};
+    /* v0.4 : pendant la glisse SAVON, le pivot est PLUS LENT — l'inertie
+       domine : la rotation peut être différée (pas de rotation sur place) */
+    const pivotAutorise = (m.savonActif <= 0);
+    const pivotLent = (m.savonActif > 0 && (m.savonInertie || 0) > 0);
+    if (pivotAutorise || pivotLent){
+      if (m.mode === MODE_PUSHED){
+        /* rotation par pas de 90° : pas de diagonale, axes cardinaux seulement */
+        if (Math.abs(dx) >= Math.abs(dy)){
+          m.dir = {x: Math.sign(dx), y: 0};
+        } else {
+          m.dir = {x: 0, y: Math.sign(dy)};
+        }
       } else {
-        m.dir = {x: 0, y: Math.sign(dy)};
+        m.dir = {x:dx/n, y:dy/n};
       }
-    } else {
-      m.dir = {x:dx/n, y:dy/n};
     }
   }
   const px = m.x + m.dir.x*sp*dt;
@@ -633,47 +743,68 @@ function bougerMachine(m, dx, dy, dt){
 /* v0.2 : trace large du mode POUSSÉ — 3 cases de large, perpendiculaire au
    déplacement (case centrale + 1 de chaque côté). La case centrale nettoie
    normalement ; les 2 latérales nettoient si sol franchissable et pas déjà
-   propre. Chaque case nettoyée rapporte 1 pt. */
+   propre. Chaque case nettoyée rapporte 1 pt.
+   v0.4 : pendant la glisse SAVON la trace est à 3 cases MÊME en AUTO ;
+   case détritus = « raclage » : 3× plus lent (coût eau ×3), compte
+   DOUBLE en % une fois nettoyée (poids 2), +2 pts au compteur.   */
 function nettoyerCase(m){
   const {c,l} = caseDe(m.x, m.y);
   if (c<1||l<1||c>=COLONNES-1||l>=LIGNES-1) return;
   if (grille[l][c] !== T_SOL) return;
-  if (m.mode === MODE_PUSHED){
+  /* v0.4 : glisse SAVON → la fine AUTO s'élargit à 3 cases pendant l'effet */
+  const traceLarge = (m.mode === MODE_PUSHED) || (m.savonActif > 0);
+  /* nettoie une case de terrain standard (1 pt, coût eau normal) */
+  function nettoyerSimple(cc, ll){
+    if (propre[ll][cc] !== 0 || m.reservoir <= 0) return false;
+    propre[ll][cc] = 1;
+    m.nettoyees += poids[ll][cc];                    // détritus = compte double
+    m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
+    eclatCase(cc, ll, "#bfe9ff"); flashBlanc = Math.max(flashBlanc, 0.18);
+    return true;
+  }
+  /* racle un NID DE DÉTRITUS : 3× plus lent, compte double une fois nettoyée */
+  function racleNid(cc, ll){
+    if (propre[ll][cc] !== 0 || m.reservoir < COUT_EAU*DETRITUS_COEF) return false;
+    const idx = detritus.findIndex(d => d.c===cc && d.l===ll);
+    if (idx < 0) return false;
+    detritus.splice(idx, 1);
+    propre[ll][cc] = 1;
+    m.nettoyees += poids[ll][cc];                    // compte double
+    m.reservoir = Math.max(0, m.reservoir - COUT_EAU*DETRITUS_COEF);   // racle : 3× plus lent
+    eclatCase(cc, ll, "#8d6e63");
+    bip("square", 130, 90, 0.18, 0.09);              // RRRRRACLE grave 8-bit
+    if (m === joueur){ addShake(3, 0.15); }
+    return true;
+  }
+  if (traceLarge){
     /* les 3 cases du passage : la centrale + les 2 perpendiculaires */
     const perpendiculaire = Math.abs(m.dir.x) > 0.5
       ? [{dc:0,dl:-1},{dc:0,dl:1}]                    // déplacement horizont. → voisines verticales
       : [{dc:-1,dl:0},{dc:1,dl:0}];                   // déplacement vertical → voisines horizont.
+    let sonsCentraux = false;
     for (const off of [{dc:0,dl:0}, ...perpendiculaire]){
       const cc = c + off.dc, ll = l + off.dl;
       if (cc<1||ll<1||cc>=COLONNES-1||ll>=LIGNES-1) continue;
       if (grille[ll][cc] !== T_SOL || propre[ll][cc] !== 0) continue;
-      if (m.reservoir <= 0) return;
-      propre[ll][cc] = 1;
-      m.nettoyees++;
-      m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
-      eclatCase(cc, ll, "#bfe9ff"); flashBlanc = Math.max(flashBlanc, 0.18);
-      if (off.dc === 0 && off.dl === 0){ sonPlop(); sonJingleCase(); }
-      if (m === joueur) addShake(2, 0.10);
+      const faite = estDetritus(cc, ll) ? racleNid(cc, ll) : nettoyerSimple(cc, ll);
+      if (faite && off.dc === 0 && off.dl === 0){ sonsCentraux = true; }
     }
+    if (sonsCentraux){ sonPlop(); sonJingleCase(); if (m === joueur) addShake(2, 0.10); }
     return;
   }
   /* AUTO-TRACÉE : trace fine, 1 case (case courante + règle carrelage DUO) */
-  if (propre[l][c] !== 0) return;
-  if (m.reservoir <= 0) return;                    // plus d'eau : plus de savon
-  propre[l][c] = 1;
-  m.nettoyees++;
-  m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
-  eclatCase(c, l, "#bfe9ff"); flashBlanc = Math.max(flashBlanc, 0.18);
-  sonPlop(); sonJingleCase();
-  if (m === joueur) addShake(2, 0.10);
+  const faite = estDetritus(c, l) ? racleNid(c, l) : nettoyerSimple(c, l);
+  if (faite){
+    sonPlop(); sonJingleCase();
+    if (m === joueur) addShake(2, 0.10);
+  }
   /* traînée large sur carrelage : la case juste derrière la machine */
   if (solType[l][c] === SOL_CARRELAGE){
     const c2 = c - Math.round(m.dir.x), l2 = l - Math.round(m.dir.y);
     if (c2>=1 && l2>=1 && c2<COLONNES-1 && l2<LIGNES-1 &&
         grille[l2][c2] === T_SOL && propre[l2][c2] === 0){
-      propre[l2][c2] = 1; m.nettoyees++;
-      m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
-      eclatCase(c2, l2, "#a4d8f0");
+      const faite2 = estDetritus(c2, l2) ? racleNid(c2, l2) : nettoyerSimple(c2, l2);
+      if (faite2) eclatCase(c2, l2, "#a4d8f0");
     }
   }
 }
@@ -689,6 +820,366 @@ function dansCouloirEtroit(m){
     return c>0 && c<COLONNES-1 && grille[l][c-1] === T_MUR && grille[l][c+1] === T_MUR;
   }
   return false;
+}
+
+/* ================================================================
+   v0.4-§7bis · NOUVEAUX ÉLÉMENTS DE GAMEPLAY
+   Marmottes (statiques comiques), détritus, SAVON, TORPILLE
+   LAVEUSE, GRAND-MÈRE à pièces jaunes, pièces au sol.
+   ================================================================ */
+let marmottes = [], detritus = [], pieces = [];
+let bonusSavon = null, torpilleBonus = null;
+let torpilleUtilisee = false;           // 1 vague max par manche
+let vagueTorpille = null;               // {cx, cy, t} animation en cours
+/* v0.4 : poids de case (détritus = ×2 en % une fois nettoyée) —
+   reconstruit à chaque creerArene() (une grille par manche) */
+let poids = [];
+
+/* positions fixes des marmottes de la salle (dégagées : jamais sur la
+   fontaine, jamais en couloir d'1 case) */
+const MARMOTTE_SPOTS = [[12,7],[2,7],[13,9]];   // colonne, ligne
+/* 2 spots de SAVON (bonus au sol, réapparaît toutes ~12 s) */
+const SAVON_SPOTS = [[10,5],[3,11]];
+
+/* v0.4 helper : chemin BFS accessible (murs+fontaine = obstacles solides).
+   Retourne true si (tc,tl) joignable depuis (sc,sl) par la grille.  */
+function cheminExiste(sc, sl, tc, tl){
+  if (sc===tc && sl===tl) return true;
+  const vu = Array.from({length:LIGNES}, () => Array(COLONNES).fill(false));
+  const q = [[sc, sl]]; vu[sl][sc] = true;
+  while (q.length){
+    const [c,l] = q.shift();
+    for (const [dc,dl] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const cc=c+dc, ll=l+dl;
+      if (cc<0||ll<0||cc>=COLONNES||ll>=LIGNES) continue;
+      if (vu[ll][cc]) continue;
+      const t = grille[ll][cc];
+      if (t !== T_SOL && t !== T_DETRITUS) continue;    // mur/fontaine = obstacle
+      if (cc===tc && ll===tl) return true;
+      vu[ll][cc]=true; q.push([cc,ll]);
+    }
+  }
+  return false;
+}
+/* v0.4 : la case est-elle dans un couloir d'1 case (2 murs opposés) ? */
+function caseCouloir1(c, l){
+  const mh = c>0 && c<COLONNES-1 && grille[l-1][c] === T_MUR && grille[l+1][c] === T_MUR;
+  const mv = l>0 && l<LIGNES-1 && grille[l][c-1] === T_MUR && grille[l][c+1] === T_MUR;
+  return mh || mv;
+}
+/* v0.4 : la case a-t-elle un voisin walkable (ne jamais enclaver) ? */
+function aVoisinLibre(c, l){
+  for (const [dc,dl] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const cc=c+dc, ll=l+dl;
+    if (cc<0||ll<0||cc>=COLONNES||ll>=LIGNES) continue;
+    if (grille[ll][cc] === T_SOL) return true;
+  }
+  return false;
+}
+
+/* ── MARMOTTES : obstacles STATIQUES comiques. Elles ne lavent RIEN,
+   ne bougent PAS d'elles-mêmes. Animation d'idle uniquement
+   (gonfler les joues, blottir, moustaches). ── */
+function placerMarmottes(){
+  marmottes = [];
+  for (const [c0,l0] of MARMOTTE_SPOTS){
+    let c = c0, l = l0;
+    /* la case doit être LIBRE + jamais sur la fontaine + jamais en couloir
+       1 case + jamais enclavée + toujours RELIÉE au reste de l'arène
+       (garde-fou : le chemin BFS reste possible pour toutes les cibles). */
+    let essais = 0;
+    while (essais++ < 50){
+      if (grille[l][c] === T_SOL &&
+          !caseCouloir1(c, l) && aVoisinLibre(c, l) &&
+          (cheminExiste(1, 1, c, l) || cheminExiste(13, 1, c, l) || cheminExiste(13, 11, c, l) || cheminExiste(1, 11, c, l)) &&
+          !(fontaines.length && c===fontaines[0].c && l===fontaines[0].l)) break;
+      c = 1 + ((Math.random()*(COLONNES-2))|0);
+      l = 1 + ((Math.random()*(LIGNES-2))|0);
+    }
+    if (grille[l][c] === T_SOL && !caseCouloir1(c, l) && !dansMur(c*TUILE+MARGE_X+TUILE/2, l*TUILE+MARGE_Y+TUILE/2)){
+      marmottes.push({
+        c, l,
+        x: c*TUILE + TUILE/2 + MARGE_X,
+        y: l*TUILE + TUILE/2 + MARGE_Y,
+        idle: Math.random()*Math.PI*2,          // phase d'animation
+        joues: 0,                                // 0..1 : gonfler les joues
+        ejection: 0, ejectionDX: 0, ejectionDY: 0,   // éjection en cours (2 cases)
+        blottit: false,
+      });
+    }
+  }
+}
+
+/* ── DÉTRITUS : 4-6 nids par manche (taches sombres) ── */
+function placerDetritus(){
+  detritus = [];
+  let essais = 0;
+  while (detritus.length < DETRITUS_MIN + ((Math.random()*(DETRITUS_MAX-DETRITUS_MIN+1))|0)
+         && essais++ < 80){
+    const c = 1 + ((Math.random()*(COLONNES-2))|0);
+    const l = 1 + ((Math.random()*(LIGNES-2))|0);
+    if (grille[l][c] !== T_SOL) continue;
+    /* jamais sur un nid existant, jamais sur la case fontaine halo */
+    if (detritus.some(d => d.c===c && d.l===l)) continue;
+    detritus.push({ c, l });
+  }
+}
+/* v0.4 : la case (c,l) est-elle un nid de détritus ? */
+function estDetritus(c, l){
+  return detritus.some(d => d.c===c && d.l===l);
+}
+
+/* ── SAVON bonus : vitesse ×1,6 pendant 4 s, traînée d'étincelles
+   savonneuses, la machine glisse ; trace 3 cases MÊME en AUTO ;
+   pivot plus lent pendant la glisse. ── */
+function placerBonusSavon(){
+  const [sc, sl] = SAVON_SPOTS[(Math.random()*SAVON_SPOTS.length)|0];
+  let c = sc, l = sl, essais = 0;
+  while (essais++ < 40){
+    if (grille[l][c] === T_SOL && !marmottes.some(mm => mm.c===c && mm.l===l)) break;
+    c = 1 + ((Math.random()*(COLONNES-2))|0);
+    l = 1 + ((Math.random()*(LIGNES-2))|0);
+  }
+  if (grille[l][c] === T_SOL){         // actif dès le départ
+    bonusSavon = { c, l, x: c*TUILE+TUILE/2+MARGE_X, y: l*TUILE+TUILE/2+MARGE_Y, t: 0 };
+  } else { bonusSavon = null; }
+  bonusSavonTimer = SAVON_REAPPARITION;
+}
+let bonusSavonTimer = SAVON_REAPPARITION;
+/* contact machine ←→ bonus savon : déclenche la glisse 4 s ×1,6 */
+function ramasserSavon(m){
+  if (!bonusSavon || m.savonActif > 0) return;   // pas de savon au sol, ou déjà en glisse
+  if (!estSur(m, bonusSavon.x, bonusSavon.y, 26)) return;
+  m.savonActif = SAVON_DUREE;          // glisse 4 s
+  m.savonInertie = 1;                  // pivot plus lent pendant la glisse
+  bonusSavon = null;                    // ramassé : disparaît
+  bonusSavonTimer = SAVON_REAPPARITION;
+    if (m === joueur){ addShake(2, 0.15); sonDrift(); }
+    for (let i=0;i<10;i++){
+      const a = Math.random()*Math.PI*2;
+      splashDrops.push({x: m.x, y: m.y, vx: Math.cos(a)*80, vy: Math.sin(a)*80, vie: 0.7});
+    }
+    console.log("[v0.4] SAVON ramassé par " + m.nom + " — glisse ×" + SAVON_VITESSE_MUL + " pendant " + SAVON_DUREE + " s");
+}
+function estSur(m, x, y, r){ return Math.hypot(m.x-x, m.y-y) < (r||22); }
+
+/* ── TORPILLE LAVEUSE : bonus rare (1 par manche) ; ramasser =
+   chargement ; déclencher (touche E, ou auto après 3 s) → une vague
+   5×5 qui débarrasse les NIDS DE DÉTRITUS + nettoie les cases
+   traversées. ── */
+function placerTorpille(){
+  torpilleUtilisee = false;
+  vagueTorpille = null;
+  let c = 1 + ((Math.random()*(COLONNES-2))|0);
+  let l = 1 + ((Math.random()*(LIGNES-2))|0);
+  let essais = 0;
+  while (essais++ < 60){
+    if (grille[l][c] === T_SOL) break;       // case libre trouvée
+    c = 1 + ((Math.random()*(COLONNES-2))|0);
+    l = 1 + ((Math.random()*(LIGNES-2))|0);
+  }
+  torpilleBonus = grille[l][c] === T_SOL ? { c, l, x: c*TUILE+TUILE/2+MARGE_X, y: l*TUILE+TUILE/2+MARGE_Y, t:0 } : null;
+}
+function ramasserTorpille(m){
+  if (!torpilleBonus) return;
+  if (estSur(m, torpilleBonus.x, torpilleBonus.y, 26)){
+    m.torpilleCharger = TORPILLE_CHARGE_AUTO;   // chargement 3 s puis tir auto
+    torpilleBonus = null;                        // le bonus est consommé
+    if (m === joueur){ addShake(2, 0.18); }
+    for (let i=0;i<8;i++){
+      const a = Math.random()*Math.PI*2;
+      splashDrops.push({x: m.x, y: m.y, vx: Math.cos(a)*60, vy: Math.sin(a)*60, vie: 0.6});
+    }
+    console.log("[v0.4] TORPILLE LAVEUSE chargée par " + m.nom);
+  }
+}
+/* tir de la vague : tous nids de détritus dans 5×5 SONT SUPPRIMÉS+
+   toutes les cases traversées sont nettoyées. */
+function tirerTorpille(m){
+  if (torpilleUtilisee) return;
+  torpilleUtilisee = true;
+  const {c,l} = caseDe(m.x, m.y);
+  vagueTorpille = { cx: c, cy: l, t: 0 };
+  if (m === joueur){ addShake(6, 0.3); flashBlanc = Math.max(flashBlanc, 0.35); sonDrift(); }
+  const r0 = TORPILLE_ZONE>>1;         // rayon 2 → fenêtre 5×5
+  let casesNettoyees = 0, nidsDeloges = 0;
+  for (const d of detritus.slice()){
+    if (Math.abs(d.c-c) <= r0 && Math.abs(d.l-l) <= r0){
+      detritus.splice(detritus.indexOf(d), 1);
+      nidsDeloges++;
+    }
+  }
+  for (let dl=-r0; dl<=r0; dl++){
+    for (let dc=-r0; dc<=r0; dc++){
+      const cc = c+dc, ll = l+dl;
+      if (cc<1||ll<1||cc>=COLONNES-1||ll>=LIGNES-1) continue;
+      if (grille[ll][cc] !== T_SOL) continue;    // la vague ne casse pas les murs
+      if (propre[ll][cc] !== 0){ propre[ll][cc] = 1; casesNettoyees++; }
+      eclatCase(cc, ll, "#e8f7ff");
+    }
+  }
+  m.torpilleCharger = 0;
+  m.nettoyees += casesNettoyees;           // les cases nettoyées comptent au score
+  console.log("[v0.4] TORPILLE LAVEUSE tirée par " + m.nom +
+    " — zone 5×5 : " + nidsDeloges + " nid(s) déblayé(s), " + casesNettoyees + " case(s) nettoyée(s)");
+}
+
+/* ── GRAND-MÈRE : obstacle mobile ULTRA-LENT, infranchissable.
+   Elle tresse ses pièces jaunes : bulle 8-bit « 1… 2… 3… » au-dessus.
+   Toutes les ~20 s elle lâche une pièce (+1 pt si ramassée).
+   Perdre 2 collisions en 15 s → poing levé + ralentissement 2 s. ── */
+let grandMere = null;
+function creerGrandMere(){
+  /* spawn à une case LIBRE loin de la fontaine, jamais en couloir 1 */
+  let c, l, essais = 0;
+  do {
+    c = 2 + ((Math.random()*(COLONNES-4))|0);
+    l = 2 + ((Math.random()*(LIGNES-4))|0);
+    essais++;
+  } while ((grille[l][c] !== T_SOL || caseCouloir1(c, l) ||
+            marmottes.some(mm => mm.c===c && mm.l===l)) && essais < 80);
+  if (grille[l][c] !== T_SOL){ c = 1; l = 1; }          // garde-fou
+  grandMere = {
+    c, l,
+    x: c*TUILE + TUILE/2 + MARGE_X,
+    y: l*TUILE + TUILE/2 + MARGE_Y,
+    dirX: 1, dirY: 0, tempsDir: 2.0,
+    pieceTimer: PIECE_INTERVAL,          // prochaine pièce lâchée
+    pieces: 0,                            // pièces comptées (bulle « 1… 2… 3… »)
+    coups: 0, fenetreCoups: 0,            // compteur de collisions + fenêtre 15 s
+    colere: 0,                            // temps de colère restant (poing levé)
+    bulle: 0,                             // temps d'affichage du bulle
+    nbPiecesLarguees: 0,                  // stat : nb de pièces lâchées
+  };
+}
+function updateGrandMere(dt){
+  if (!grandMere) return;
+  const gm = grandMere;
+  /* elle tresse ses pièces : compte « 1… 2… 3… » (bulle périodique) */
+  gm.bulle = Math.max(0, gm.bulle - dt);
+  gm.pieces = (gm.pieces + dt/6) % 4;          // elle compte 1, 2, 3 en boucle
+  /* toutes les ~20 s : lâche une pièce (bonus au sol, +1 pt si ramassée) */
+  gm.pieceTimer -= dt;
+  if (gm.pieceTimer <= 0){
+    gm.pieceTimer = PIECE_INTERVAL;
+    gm.nbPiecesLarguees++;
+    pieces.push({ x: gm.x + (Math.random()*20-10), y: gm.y + 18 + (Math.random()*10-5), t: 0 });
+    console.log("[v0.4] pièce lâchée par la grand-mère (total : " + gm.nbPiecesLarguees + ")");
+  }
+  /* déplacement très lent (obstacle mobile mais infranchissable) */
+  gm.tempsDir -= dt;
+  if (gm.tempsDir <= 0){
+    /* elle change rarement de direction, reste ultra-lente */
+    if (Math.random() < 0.5){
+      const d = [[1,0],[-1,0],[0,1],[0,-1]][(Math.random()*4)|0];
+      gm.dirX = d[0]; gm.dirY = d[1];
+    }
+    gm.tempsDir = 2.0 + Math.random()*3.0;
+  }
+  /* fenêtre de colère : les 2 coups comptent sur FENETRE_COUPS s */
+  if (gm.fenetreCoups > 0){
+    gm.fenetreCoups -= dt;
+    if (gm.fenetreCoups <= 0) gm.coups = 0;      // reset après 15 s sans coup
+  }
+  if (gm.colere > 0) gm.colere -= dt;
+}
+
+/* v0.4 : éjecter une marmotte de 2 cases (« piou ») + rebond comique */
+function ejecterMarmotte(marm, dx, dy){
+  /* éjection : 2 cases dans la direction du choc (rebond comique) */
+  marm.ejection = 1;                       // 1 = en cours
+  marm.ejectionDX = dx, marm.ejectionDY = dy;
+  marm.ejectionDist = EJET_MARMOTTE * TUILE;
+  bip("square", 700, 900, 0.25, 0.1);      // « piou » 8-bit
+  eclat(marm.x, marm.y, 6, "#c9a86b");
+  addShake(4, 0.25);
+}
+/* la marmotte glisse sur 2 cases (éjection en cours) */
+function updateMarmotteEjection(mm, dt){
+  if (mm.ejection !== 1) return;
+  let restant = mm.ejectionDist, pas;
+  while (restant > 0){
+    pas = Math.min(8 + dt*8, restant);
+    const nx = mm.x + mm.ejectionDX*pas;
+    const ny = mm.y + mm.ejectionDY*pas;
+    if (dansMur(nx, ny)){ mm.ejection = 2; mm.ejectionDist = 0; return; }   // rebond au mur
+    mm.x = nx; mm.y = ny;
+    mm.ejectionDist -= pas; restant -= pas;
+    if (mm.ejectionDist <= 0){ mm.ejection = 2; mm.ejectionDist = 0; return; }
+  }
+}
+
+/* ── v0.4 : collision MACHINE ↔ MARMOTTE, GRAND-MÈRE, bonus, pièces.
+   Appelée après le déplacement de chaque machine (m, dt). ── */
+function collisionsV04(m, dt){
+  /* timers machine des effets v0.4 */
+  if (m.savonActif > 0)  m.savonActif -= dt;
+  if (m.savonActif <= 0) m.savonInertie = 0;       // pivot normal revient après la glisse
+  if (m.ralentiGM > 0)   m.ralentiGM -= dt;
+  /* torpille chargée : tir AUTO après 3 s (ou E pour le humain) */
+  if (m.torpilleCharger > 0){
+    m.torpilleCharger -= dt;
+    if (m.torpilleCharger <= 0){ m.torpilleCharger = 0; tirerTorpille(m); }
+  }
+  /* BONUS SAVON : contact → glisse */
+  ramasserSavon(m);
+  /* TORPILLE : contact → chargement (le tir part après 3 s, ou touche E) */
+  ramasserTorpille(m);
+  /* ── MARMOTTES : perceuter = éjection « piou » 2 cases + 0,4 s étourdIE,
+        AUCUNE sanction de score ── */
+  for (const marm of marmottes){
+    const d = Math.hypot(marm.x - m.x, marm.y - m.y);
+    if (d < 24 && marm.ejection === 0 && m.etourdie <= 0){
+      const n = Math.max(1e-6, Math.hypot(m.dir.x, m.dir.y) || 1);
+      ejecterMarmotte(marm, m.dir.x/n, m.dir.y/n);
+      m.etourdie = TEMPS_ETOURDIE;                 // 0,4 s : étoiles au-dessus
+      /* l'éjection repousse la marmotte : elle glisse, la machine est libérée */
+    }
+  }
+  /* ── GRAND-MÈRE : infranchissable — la machine rebondit doucement.
+        2 coups en 15 s → poing levé + RALENTI 2 s (gronde 8-bit) ── */
+  if (grandMere){
+    const d = Math.hypot(grandMere.x - m.x, grandMere.y - m.y);
+    if (d < 26){
+      /* repoussée : la machine est renvoyée au bord de la zone */
+      const n = Math.max(1e-6, d);
+      const pushX = (m.x - grandMere.x)/n, pushY = (m.y - grandMere.y)/n;
+      const cibleX = grandMere.x + pushX*26, cibleY = grandMere.y + pushY*26;
+      if (!dansMur(cibleX, cibleY)){ m.x = cibleX; m.y = cibleY; }
+      if ((m._gmCd || 0) <= 0){
+        m._gmCd = 1.0;                             // pas de rafale : 1 comptage/s
+        grandMere.coups++;
+        grandMere.fenetreCoups = FENETRE_COUPS;
+        bip("square", 220, 160, 0.15, 0.10);       // « hm ! » de contestation
+        if (grandMere.coups >= COUPS_GRAND_MERE){
+          grandMere.coups = 0;
+          grandMere.fenetreCoups = 0;
+          grandMere.colere = 2.5;                  // poing levé 2,5 s
+          m.ralentiGM = RALENTI_GRAND_MERE;        // ralentissement 2 s
+          bip("sawtooth", 180, 80, 0.4, 0.14);     // gronde 8-bit grave
+          if (m === joueur){ addShake(5, 0.3); flashBlanc = Math.max(flashBlanc, 0.2); }
+          console.log("[v0.4] la grand-mère lève le poing ! " + m.nom + " ralentie 2 s");
+        }
+      }
+    }
+  }
+  if (m._gmCd > 0) m._gmCd -= dt;
+  /* ── PIÈCES : ramasser = +1 pt (définitif) ── */
+  for (let i=pieces.length-1; i>=0; i--){
+    const pc = pieces[i];
+    if (Math.hypot(pc.x - m.x, pc.y - m.y) < 20){
+      pieces.splice(i, 1);
+      m.nettoyees += PIECE_POINTS;
+      bip("square", 990, 1320, 0.08, 0.10);        // pièce § 8-bit
+      eclat(pc.x, pc.y, 4, "#ffd45a");
+      if (m === joueur) addShake(2, 0.12);
+    }
+  }
+  /* E : tir manuel de la torpille (joueur) */
+  if (m === joueur && m.torpilleCharger > 0 && touches.KeyE){
+    m.torpilleCharger = 0;
+    tirerTorpille(m);
+  }
 }
 
 /* ---------------------- 7. FONTAINE + LOUTRES + IA ---------------------- */
@@ -1056,9 +1547,24 @@ function updateMach(m, dx, dy, dt){
     dx = m.dir.x >= 0.5 ? 1 : m.dir.x <= -0.5 ? -1 : 0;
     dy = m.dir.y >= 0.5 ? 1 : m.dir.y <= -0.5 ? -1 : 0;
   }
+  const avantX = m.x, avantY = m.y;
   bougerMachine(m, dx, dy, dt);
-  nettoyerCase(m);
+  /* v0.4 : déplacements bloqués (étourdie / câlin) → PAS de collision
+     v0.4 (sinon double contact) ; glisse SAVON : étincelles périodiques */
+  const bouge = (m.x !== avantX || m.y !== avantY);
+  if (bouge || m.savonActif > 0){
+    nettoyerCase(m);
+  }
+  if (m.savonActif > 0 && (m.x !== avantX || m.y !== avantY) && Math.random() < 0.55){
+    /* traînée d'étincelles savonneuses : arc-en-ciel de savon */
+    bulles.push({x: m.x + (Math.random()*14-7), y: m.y + (Math.random()*14-7), vie: 0.5+Math.random()*0.4, t: 0});
+    ajouterParticule(m.x + (Math.random()*12-6), m.y + (Math.random()*12-6),
+      (Math.random()*2-1)*30, -20-Math.random()*30, 0.4+Math.random()*0.3,
+      ["#e8f7ff","#bfe9ff","#ffd45a"][(Math.random()*3)|0], 2);
+  }
   updateFontaine(m, dt);
+  /* v0.4 : marmottes / grand-mère / bonus / pièces */
+  collisionsV04(m, dt);
 }
 
 function update(dt){
@@ -1070,11 +1576,18 @@ function update(dt){
   if (touches.ArrowDown  || touches.KeyS) dy =  1;
   if (dx && dy){ dy = 0; }            // pas de diagonale : esprit Bomberman
   const roulait = dx||dy;
-  updateMach(joueur, dx, dy, dt);
-  /* tick de déplacement : léger bleep périodique quand on roule */
-  if (roulait){
-    joueur.tick = (joueur.tick || 0) + dt;
-    if (joueur.tick > 0.16){ sonTick(); joueur.tick = 0; }
+  if (attractMode && laya){
+    /* v0.4 ATTRACT : démo auto-jouée — le joueur 1 est piloté comme les
+       bots (cerveau LAYA/heuristique), l'input clavier est ignoré */
+    updateIA(joueur, dt);
+    updateMach(joueur, joueur.dx, joueur.dy, dt);
+  } else {
+    updateMach(joueur, dx, dy, dt);
+    /* tick de déplacement : léger bleep périodique quand on roule */
+    if (roulait){
+      joueur.tick = (joueur.tick || 0) + dt;
+      if (joueur.tick > 0.16){ sonTick(); joueur.tick = 0; }
+    }
   }
   /* — LAYA BOT BRAIN : ticking du cerveau (décisions toutes les 1,5 s) — */
   if (laya) laya.update(dt);
@@ -1088,18 +1601,52 @@ function update(dt){
   }
   /* loutres */
   for (const o of loutres) updateLoutre(o, dt);
+  /* ── v0.4 : marmottes (idle + éjection en cours), grand-mère, bonus ── */
+  for (const marm of marmottes){
+    marm.idle += dt;
+    updateMarmotteEjection(marm, dt);
+  }
+  updateGrandMere(dt);
+  if (grandMere){
+    /* obstacle mobile ultra-lent : elle déambule aussi lentement qu'elle compte */
+    const nx = grandMere.x + grandMere.dirX*VITESSE_GRAND_MERE*dt;
+    const ny = grandMere.y + grandMere.dirY*VITESSE_GRAND_MERE*dt;
+    if (!dansMur(nx + grandMere.dirX*10, grandMere.y + grandMere.dirY*10)) grandMere.x = nx; else grandMere.tempsDir = 0;
+    if (!dansMur(grandMere.x, ny + grandMere.dirY*10)) grandMere.y = ny; else grandMere.tempsDir = 0;
+  }
+  /* bonus SAVON : réapparaît toutes ~12 s une fois ramassé */
+  bonusSavonTimer -= dt;
+  if (bonusSavonTimer <= 0){
+    if (!bonusSavon) placerBonusSavon();              // réapparition au sol
+    else bonusSavonTimer = 3.0;                       // déjà au sol : re-check plus tard
+  }
+  for (const pc of pieces) pc.t += dt;                // pièces brillantes au sol
+  if (vagueTorpille){
+    vagueTorpille.t += dt;
+    if (vagueTorpille.t > 0.6) vagueTorpille = null;  // fin de l'animation de vague
+  }
   /* panneaux renversés : se remettent debout après 5 s */
   for (const p of panneaux){
     if (p.renverse){ p.timer -= dt; if (p.timer <= 0) p.renverse = false; }
   }
+  /* v0.4 ATTRACT : en démo, les câlins des loutres restent actifs
+     (règle absolue du projet : les loutres gardent leur câlin partout) */
   /* chrono */
   tempsRestant -= dt;
   if (tempsRestant <= 0){
+    /* v0.4 ATTRACT : en démo, PAS d'écran de fin — la boucle « attract »
+       relance un round (sinon la démo gèle pour toujours sur le podium). */
+    if (attractMode){
+      tempsRestant = 0;
+      if (joueur) enregistrerHighScore(joueur.nettoyees);
+      return;                          // la boucle attract voit 0 et relance
+    }
     tempsRestant = 0;
     etat = "fin";
     sonBuzzer(); sonJingleFin();
     finT0 = performance.now(); finPct = pctNettoye();
     lancerConfetti();
+    if (joueur) enregistrerHighScore(joueur.nettoyees);   // v0.4 : HIGH SCORE persisté
   }
 }
 
@@ -1547,7 +2094,225 @@ function dessinerMachine(m){
   }
 }
 
-/* ── loutre top-down améliorée : corps brun, tête, pattes, queue 2 frames ── */
+/* ================================================================
+   v0.4 · SPRITES : MARMOTTE, DÉTRITUS, SAVON, TORPILLE, PIÈCE,
+   GRAND-MÈRE, VAGUE 5×5 — tout dessiné par code (police pixel 5×5)
+   ================================================================ */
+/* marmotte debout : obstacles STATIQUES qui ne lavent RIEN — idle :
+   gonfle les joues, se blottit (bâille), moustaches qui gigotent */
+function dessinerMarmotte(marm){
+  const x = Math.round(marm.x), y = Math.round(marm.y);
+  const t2 = performance.now()/1000;
+  ombreEntite(x, y, 12, 7);
+  const gonfle = marm.joues > 0.5 ? 1 : 0;     // joues gonflées (idle 2 phases)
+  /* corps brown, marmotte debout (obstacle comique) */
+  ctx.fillStyle = "#8d6e3f";                    // corps brun-jaune
+  ctx.fillRect(x-9, y-8, 18, 15);
+  ctx.fillStyle = "#a37d4c";
+  ctx.fillRect(x-8, y-9, 16, 4);                // dos éclairé
+  /* ventre beige */
+  ctx.fillStyle = "#d9b98c";
+  ctx.fillRect(x-5, y-2, 10, 8);
+  /* tête */
+  ctx.fillStyle = "#a37d4c";
+  ctx.fillRect(x-7, y-16, 14, 10);
+  /* ORIELLES : round (petit arrondi 8-bit) */
+  ctx.fillStyle = "#8d6e3f";
+  ctx.fillRect(x-8, y-18, 3, 3);
+  ctx.fillRect(x+6, y-18, 3, 3);
+  /* museau + MOURJES (moustaches qui gigotent : idle) */
+  ctx.fillStyle = "#d9b98c";
+  ctx.fillRect(x-4 + gonfle, y-11, 8 - gonfle, 5);
+  /* JOUES gonflées (idle : gonfler les joues) */
+  ctx.fillStyle = gonfle ? "#b58952" : "#a37d4c";
+  ctx.fillRect(x-8, y-13+gonfle, 4, 4 + gonfle);     // joue gauche
+  ctx.fillRect(x+5, y-13+gonfle, 4, 4 + gonfle);     // joue droite
+  /* moustaches 2 frames */
+  ctx.fillStyle = "#3a2a18";
+  if ((t2*3|0) % 2 === 0){
+    ctx.fillRect(x-11, y-9, 5, 1); ctx.fillRect(x+7, y-9, 5, 1);
+  } else {
+    ctx.fillRect(x-11, y-10, 5, 1); ctx.fillRect(x+7, y-10, 5, 1);
+  }
+  /* yeux noirs, nez */
+  ctx.fillStyle = "#1a1208";
+  ctx.fillRect(x-4, y-14, 2, 2);
+  ctx.fillRect(x+3, y-14, 2, 2);
+  ctx.fillRect(x-1, y-11, 3, 2);              // nez
+  /* pattes avant (posées, immobiles : n'y a AUCUN déplacement) */
+  ctx.fillStyle = "#6d5636";
+  ctx.fillRect(x-8, y+7, 4, 3);
+  ctx.fillRect(x+5, y+7, 4, 3);
+  /* ÉJECTION en cours : étoiles « piou » au-dessus de la marmotte */
+  if (marm.ejection > 0){
+    const b = Math.sin(t2*20)*2;
+    pfDraw(x, y-26+b, "PIOU!", "#ffd45a", 2, 0, 1);
+    for (let i=0;i<3;i++) etoiles.push({ x: x+(Math.random()*20-10), y: y-20,
+      vx: (Math.random()*2-1)*40, vy: -20-Math.random()*30, vie: 0.4 });
+  }
+}
+/* nid de détritus : tache sombre + miettes (la case compte double une fois
+   nettoyée, racle 3× plus lentement au lavage normal) */
+function dessinerDetritus(d){
+  const x = MARGE_X + d.c*TUILE, y = MARGE_Y + d.l*TUILE;
+  const t2 = (performance.now()/600)|0;
+  ctx.fillStyle = "rgba(28,20,10,.78)";
+  ctx.fillRect(x+8, y+10, 28, 26);            // cœur du nid
+  ctx.fillStyle = "rgba(45,32,16,.7)";
+  ctx.fillRect(x+5, y+16, 34, 18);
+  ctx.fillRect(x+12, y+6, 20, 8);
+  /* miettes animées qui fourmillent */
+  ctx.fillStyle = t2 % 2 ? "rgba(90,64,32,.85)" : "rgba(60,44,22,.85)";
+  let h = (d.c*97 ^ d.l*131) >>> 0;
+  const rnd = n => { h = (h*1664525 + 1013904223) >>> 0; return (h % n)/n; };
+  for (let i=0;i<5;i++) ctx.fillRect(x+4+rnd(34), y+4+rnd(34), 3, 3);
+  /* contour miettes brillantes */
+  ctx.fillStyle = "rgba(20,12,4,.5)";
+  ctx.fillRect(x+8, y+34, 26, 3);
+}
+/* SAVON au sol : savonnette rose qui scintille (bonus, réapparaît ~12 s) */
+function dessinerBonusSavon(b){
+  const x = Math.round(b.x), y = Math.round(b.y);
+  const t2 = performance.now()/150;
+  const flott = Math.sin(t2*0.6)*2;
+  /* halo pulsant */
+  const alpha = 0.18 + 0.10*Math.sin(t2*0.8);
+  ctx.fillStyle = "rgba(233,246,252," + alpha.toFixed(2) + ")";
+  ctx.fillRect(x-14, y-14+flott, 28, 28);
+  ombreEntite(x, y+8, 8, 4);
+  /* savonnette : pavé rose + reflet */
+  ctx.fillStyle = "#e255a1";
+  ctx.fillRect(x-8, y-5+flott, 16, 10);
+  ctx.fillStyle = "#f28abf";
+  ctx.fillRect(x-8, y-5+flott, 16, 3);
+  ctx.fillStyle = "#c0397e";
+  ctx.fillRect(x-8, y+3+flott, 16, 2);
+  /* étincelle qui tourne autour */
+  if (((t2/4)|0) % 2 === 0){
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x + 10, y - 9 + flott, 3, 3);
+  }
+  /* petit texte pixel sous l'item */
+  pfDraw(x, y+16, "SAVON", "#e9f6fc", 1, 0);
+}
+/* TORPILLE LAVEUSE au sol : fuseau bleu à rayures jaunes (bonus rare 1/manche) */
+function dessinerTorpille(t){
+  const x = Math.round(t.x), y = Math.round(t.y);
+  const t2 = performance.now()/200;
+  ombreEntite(x, y+8, 10, 4);
+  /* fuseau horizontal à rayures */
+  ctx.fillStyle = "#2f6fd4";
+  ctx.fillRect(x-11, y-5, 22, 10);
+  ctx.fillStyle = "#ffd45a";                  // rayures jaunes
+  for (let i=0;i<3;i++) ctx.fillRect(x-9 + i*7, y-5 + ((t2|0)%2), 3, 10);
+  ctx.fillStyle = "#7ac0ea";
+  ctx.fillRect(x-11, y-5, 22, 2);             // reflet dessus
+  ctx.fillStyle = "#e74c3c";
+  ctx.fillRect(x+11, y-2, 4, 4);              // nez rouge
+  /* bulles qui remontent (c'est une torpille LAVEUSE) */
+  if (Math.random() < 0.3){
+    bulles.push({x: x + 10, y: y - 8, vie: 0.6, t: 0});
+  }
+  pfDraw(x, y+16, "TORPILLE", "#7ac0ea", 1, 0);
+}
+/* PIÈCE jaune brillante laissée par la grand-mère (+1 pt) */
+function dessinerPiece(p){
+  const x = Math.round(p.x), y = Math.round(p.y);
+  const t2 = performance.now()/160;
+  const clignote = (((t2/3)|0) % 2) === 0;
+  ombreEntite(x, y+6, 6, 3);
+  /* pièce ronde 8-bit : jaune + éclat qui tourne */
+  ctx.fillStyle = "#c09213";
+  ctx.fillRect(x-5, y-5, 10, 10);
+  ctx.fillStyle = "#ffd45a";
+  ctx.fillRect(x-4, y-4, 8, 8);
+  ctx.fillStyle = "#fff3b0";
+  ctx.fillRect(x-3, y-4, 5, 3);               // éclat
+  if (clignote){ ctx.fillStyle = "#ffffff"; ctx.fillRect(x+4, y-6, 2, 2); }
+}
+/* GRAND-MÈRE : obstacle mobile ultra-lent, tricote ses pièces jaunes, infranchissable */
+function dessinerGrandMere(){
+  if (!grandMere) return;
+  const gm = grandMere;
+  const x = Math.round(gm.x), y = Math.round(gm.y);
+  const t2 = performance.now()/1000;
+  ombreEntite(x, y, 10, 6);
+  /* longue robe grise */
+  ctx.fillStyle = "#9aa0ad";
+  ctx.fillRect(x-8, y-6, 16, 13);
+  ctx.fillStyle = "#7d8492";
+  ctx.fillRect(x-8, y+5, 16, 2);              // bas de robe sombre
+  /* châle blanc */
+  ctx.fillStyle = "#e8e8e8";
+  ctx.fillRect(x-6, y-10, 12, 6);
+  /* tête + chignon */
+  ctx.fillStyle = "#d9b98c";
+  ctx.fillRect(x-5, y-16, 10, 8);
+  ctx.fillStyle = "#b8b8b8";
+  ctx.fillRect(x-3, y-19, 6, 3);              // cheveux
+  ctx.fillRect(x-2, y-21, 4, 3);              // chignon
+  /* lunettes */
+  ctx.fillStyle = "#2c3e50";
+  ctx.fillRect(x-4, y-13, 3, 3);
+  ctx.fillRect(x+1, y-13, 3, 3);
+  ctx.fillRect(x-1, y-12, 2, 1);
+  /* bras + aiguilles à tricoter qui bougent (elle tricote) */
+  ctx.fillStyle = "#d9b98c";
+  ctx.fillRect(x-10, y-4, 3, 7);
+  ctx.fillRect(x+7, y-4, 3, 7);
+  ctx.strokeStyle = "#ffd45a"; ctx.lineWidth = 1;
+  const tricote = Math.sin(t2*6)*2;
+  ctx.beginPath();
+  ctx.moveTo(x-8, y-2); ctx.lineTo(x-4+tricote, y+4); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x+8, y-2); ctx.lineTo(x+4-tricote, y+4); ctx.stroke();
+  /* pièce jaune en cours de tricotage entre ses mains */
+  ctx.fillStyle = "#ffd45a";
+  ctx.fillRect(x-2, y+1, 4, 4);
+  ctx.fillStyle = "#c09213";
+  ctx.fillRect(x-2, y+3, 4, 2);
+  /* colère : POING LEVÉ + rictus */
+  if (gm.colere > 0){
+    const b = Math.sin(t2*14)*2;
+    ctx.fillStyle = "#d9b98c";
+    ctx.fillRect(x+6, y-22+b, 5, 8);          // poing levé
+    ctx.fillStyle = "#7d8492";
+    ctx.fillRect(x+6, y-15+b, 5, 3);          // manche
+    pfDraw(x, y-30, "GRONDE!", "#e74c3c", 1, 0, 1);
+  }
+  /* BULLE 8-bit « 1… 2… 3… » au-dessus d'elle : elle compte ses pièces */
+  const compteIdx = 1 + (gm.pieces | 0);
+  const bulleTxt = Math.min(3, compteIdx) + "...";
+  const bulleVisible = gm.colere <= 0 && (((t2*0.5)|0) % 3) !== 2;  // visible 2/3 du temps
+  if (bulleVisible){
+    /* bulle blanche à contour noir (façon BD pixel) */
+    const dim = pfSize("N", 1);
+    const bw = 44, bh = 18;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(x-bw/2-1, y-40-1, bw+2, bh+2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x-bw/2, y-40, bw, bh);
+    /* petite patte de bulle vers elle */
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x-2, y-24, 4, 5);
+    pfDraw(x, y-31, bulleTxt, "#2c3e50", 2, 0);
+  }
+}
+/* vague TORPILLE : cercle d'eau qui s'étend (anim 0,6 s) */
+function dessinerVagueTorpille(){
+  if (!vagueTorpille) return;
+  const x = MARGE_X + vagueTorpille.cx*TUILE + TUILE/2;
+  const y = MARGE_Y + vagueTorpille.cy*TUILE + TUILE/2;
+  const p = vagueTorpille.t/0.6;               // 0..1
+  const r = 12 + p*(TORPILLE_ZONE*TUILE/2 + 8);
+  ctx.strokeStyle = "rgba(122,192,234," + (1-p).toFixed(2) + ")";
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = "rgba(232,247,252," + (1-p).toFixed(2) + ")";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, r*0.7, 0, Math.PI*2); ctx.stroke();
+}
+/* loutre top-down améliorée : corps brun, tête, pattes, queue 2 frames */
 function dessinerLoutre(o){
   const x = Math.round(o.x), y = Math.round(o.y);
   const g = o.dirX < 0;                    /* regarde à gauche ? */
@@ -1623,12 +2388,28 @@ function compterSolNettoyable(){
     if (grille[l][c] === T_SOL) n++;
   return n;
 }
-function pctNettoye(){
+/* v0.4 : surface pondérée — une case détritus nettoyée compte DOUBLE (spé) */
+function compterSolPondere(){
+  if (!poids || poids.length !== LIGNES) return compterSolNettoyable();   // boot : grille pas encore prête
   let n = 0;
   for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++)
-    if (grille[l][c] === T_SOL && propre[l][c] === 1) n++;
-  const tot = compterSolNettoyable();
-  return tot ? Math.round(100*n/tot) : 0;
+    if (grille[l][c] === T_SOL) n += (poids[l][c] || 1);
+  return n;
+}
+function pctNettoye(){
+  if (!poids || poids.length !== LIGNES) {
+    /* fallback simple avant la construction des poids (boot attract) */
+    let n0 = 0;
+    for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++)
+      if (grille[l][c] === T_SOL && propre[l][c] === 1) n0++;
+    const tot0 = compterSolNettoyable();
+    return tot0 ? Math.round(100*n0/tot0) : 0;
+  }
+  let n = 0;
+  for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++)
+    if (grille[l][c] === T_SOL && propre[l][c] === 1) n += (poids[l][c] || 1);
+  const tot = compterSolPondere();
+  return tot ? Math.min(100, Math.round(100*n/tot)) : 0;
 }
 let scoreAff = 0;        /* compteur ease-out pour le % nettoyé affiché */
 function dessinerHUD(){
@@ -1710,6 +2491,19 @@ function dessinerHUD(){
   if (layaHorsLigne){
     pfDraw(MARGE_X + 10, cv.height - 30, "LAYA HORS LIGNE - IA LOCALE", "#e8a33d", 2, 1);
   }
+  /* ── v0.4 : bandeau d'état GLISSE SAVON + TORPILLE chargée ── */
+  if (joueur.savonActif > 0){
+    const sc2 = ((performance.now()/180)|0)%2;
+    pfDraw(MARGE_X + 10, cv.height - 66, "GLISSE SAVON X1.6 - " +
+      (joueur.savonActif).toFixed(1) + " S", sc2 ? "#e9f6fc" : "#bfe9ff", 2, 1);
+  }
+  if (joueur.torpilleCharger > 0){
+    pfDraw(MARGE_X + 10, cv.height - 88, "TORPILLE ! E POUR TIRER " +
+      Math.ceil(joueur.torpilleCharger) + " S", "#ff7043", 2, 1);
+  }
+  if (joueur.etourdie > 0){
+    pfDraw(MARGE_X + 10, cv.height - 110, "ETOURDIE !", "#ffd45a", 2, 1);
+  }
   /* mode sans score (titre) : rien */
 }
 
@@ -1751,22 +2545,81 @@ function spriteTitre(){
   return SPR_MACHINE[clefT][1];
 }
 
-/* ── écran TITRE ── */
+/* ── écran TITRE v0.4 : ATTRACT MODE BORNE D'ARCADE ──
+   - bordure rayures diagonales rouges/jaunes façon borne 80s (cachée
+     par le voile quand l'arène de démo est visible) ;
+   - « MOB RACER » lettres géantes pixel CLIGNOTANTES 2 couleurs alternées ;
+   - sous-titre défilant, HIGH SCORE persistant, « 1 Joueur / Bots Laya » ;
+   - DÉMO AUTO-JOUÉE en fond : les bots jouent seuls (caméra sur eux), 8-10 s ;
+   - « INSERT COIN » et « PRESS START » clignotants 1 Hz ;
+   - jingle attract 4 notes 8-bit en boucle discrète.          */
+let attractTimer = 0, attractJingleT = 0, attractPartie = 0;
+function dessinerBordureArcade(){
+  /* bordure rayures diagonales rouge/jaune (bandes 8 px autour du canvas,
+     façon cabine d'arcade. Dessinée par répétition de parallélogrammes. */
+  const bh = 10;                               // épaisseur du ruban
+  for (let i=0; i<cv.width; i+=14){
+    const rouge = (((i/14)|0) % 2) === 0;
+    ctx.fillStyle = rouge ? "#e74c3c" : "#ffd45a";
+    /* bande du haut et du bas : trapèzes inclinés = rayures diagonales */
+    ctx.beginPath();
+    ctx.moveTo(i, 0); ctx.lineTo(i+14, 0);
+    ctx.lineTo(i+14-bh, bh); ctx.lineTo(i-bh, bh); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(i, cv.height); ctx.lineTo(i+14, cv.height);
+    ctx.lineTo(i+14-bh, cv.height-bh); ctx.lineTo(i-bh, cv.height-bh); ctx.closePath(); ctx.fill();
+  }
+  for (let i=0; i<cv.height; i+=14){
+    const rouge = (((i/14)|0) % 2) === 0;
+    ctx.fillStyle = rouge ? "#e74c3c" : "#ffd45a";
+    ctx.beginPath();
+    ctx.moveTo(0, i); ctx.lineTo(0, i+14);
+    ctx.lineTo(bh, i+14-bh); ctx.lineTo(bh, i-bh); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cv.width, i); ctx.lineTo(cv.width, i+14);
+    ctx.lineTo(cv.width-bh, i+14-bh); ctx.lineTo(cv.width-bh, i-bh); ctx.closePath(); ctx.fill();
+  }
+}
 function ecranTitre(){
-  ctx.fillStyle = "rgba(6,9,20,.88)";
+  const t = performance.now()/1000;
+  /* 1) ARÈNE DE DÉMO en fond : les bots jouent seuls, caméra les suit */
+  ctx.save();
+  /* la démo tourne derrière : l'arène + machines sont dessinées par dessiner()
+     AVANT l'appel à ecranTitre() — on ne dessine ici qu'un voile assombri */
+  ctx.fillStyle = "rgba(6,9,20,.45)";
   ctx.fillRect(0, 0, cv.width, cv.height);
-  banniereTitre(180);
+  ctx.restore();
+  /* 2) BORDURE rayures diagonales (borne 80s) */
+  dessinerBordureArcade();
+  /* 3) BANDEAU « MOB RACER » lettres géantes CLIGNOTANTES 2 couleurs */
+  const clignoteTitre = ((t*2)|0) % 2 === 0;
+  const coulTitre = clignoteTitre ? "#ffd45a" : "#e74c3c";
+  const outline = clignoteTitre ? "#2a3550" : "#ffffff";
+  pfDraw(cv.width/2, 120, "MOB RACER", coulTitre, 7, 0, 1);
+  /* 4) sous-titre DÉFILANT (marquee gauche → droite) */
+  const sousTitre = "DES MACHINES QUI TRACENT DU PROPRE - LOUTRES MIGNONNES - GRAND-MERE RANCUNIERE";
+  const stW = pfSize(sousTitre, 2).w;
+  const sx = cv.width + 20 - ((t*70) % (stW + cv.width + 40));
+  pfDraw(sx, 172, sousTitre, "#7ac0ea", 2, 1);
+  /* 5) HIGH SCORE persisté (localStorage) */
+  pfDraw(cv.width/2, 208, "HIGH SCORE " + highScore, "#ffd45a", 2, 0, 1);
+  /* 6) instructions discret */
   const lignes = [
-    "FLECHES / WASD : BOUGER - M : SON",
-    "UNE CASE = UNE FOIS. CHRONO 75 S.",
-    "RECHARGE A LA FONTAINE. CALINE LES LOUTRES !",
-    "COULOIRS ETROITS : LA POUSSÉE Y EST REINE",
+    "1 JOUEUR / BOTS LAYA",
+    "FLECHES : BOUGER - E : TORPILLE - M : SON",
+    "SAVON = GLISSE X1.6 - TORPILLE = ANTI-DETRITUS",
+    "MEFIE-TOI DES MARMOTTES ET DE LA GRAND-MERE !",
   ];
-  lignes.forEach((t,i)=> pfDraw(cv.width/2, 264 + i*26, t, "#cfe3ff", 2, 0));
-  const pulse = ((performance.now()/450)|0)%2;
-  pfDraw(cv.width/2, 404, "APPUYE SUR UNE TOUCHE POUR LANCER",
-    pulse ? "#7dffa0" : "#3fa95c", 2, 0);
-  if (etatEntrees === "choixMode") { /* transition gérée par la boucle */ }
+  lignes.forEach((tt,i)=> pfDraw(cv.width/2, 246 + i*24, tt, "#cfe3ff", 2, 0));
+  /* 7) « INSERT COIN » + « PRESS START » clignotants 1 Hz */
+  const pulse1Hz = ((t*1)|0) % 2 === 0;
+  if (pulse1Hz){
+    pfDraw(cv.width/2, 372, "INSERT COIN", "#7dffa0", 3, 0, 1);
+    pfDraw(cv.width/2, 412, "PRESS START (ENTREE)", "#ffffff", 2, 0, 1);
+  }
+  /* 8) jingle ATTRACT : 4 notes 8-bit, en boucle discrète (~6 s) */
+  attractJingleT += 1/60;
+  if (attractJingleT >= 6.0){ attractJingleT = 0; sonJingleAttract(); }
 }
 
 /* ── écran CHOIX DE MODE : 2 cartes avec vraies mini-illustrations ── */
@@ -1943,13 +2796,23 @@ function dessiner(){
     }
   }
   for (const p of panneaux) dessinerPanneau(p);
+  /* v0.4 : détritus, bonus au sol, pièces éparpillées */
+  for (const d of detritus) dessinerDetritus(d);
+  if (bonusSavon) dessinerBonusSavon(bonusSavon);
+  if (torpilleBonus) dessinerTorpille(torpilleBonus);
+  for (const pc of pieces) dessinerPiece(pc);
 
   /* entités triées par y */
-  const ents = [...loutres, joueur, ia, ...(bot2?[bot2]:[])].sort((a,b)=>a.y-b.y);
+  const ents = [...loutres, ...marmottes, joueur, ia, ...(bot2?[bot2]:[])].sort((a,b)=>a.y-b.y);
   for (const e of ents){
     if (e === joueur || e === ia) dessinerMachine(e);
-    else dessinerLoutre(e);
+    else if (loutres.indexOf(e) >= 0) dessinerLoutre(e);
+    else dessinerMarmotte(e);
   }
+  /* grand-mère (au-dessus de tout : elle est GRANDE) */
+  dessinerGrandMere();
+  /* v0.4 : animation de la vague torpille en cours */
+  dessinerVagueTorpille();
 
   /* v0.3 : particules de juice (savon, gouttes, étoiles, flash) */
   drParticules();
@@ -1959,7 +2822,7 @@ function dessiner(){
 
   dessinerHUD();
 
-  if (etat === "titre"){
+  if (etat === "titre" || etat === "attract"){
     ecranTitre();
   } else if (etat === "choixMode"){
     dessinerChoixMode();
@@ -2005,6 +2868,33 @@ function boucle(temps){
   } else if (etat === "fin"){
     /* v0.2 : R = retour à l'écran de choix de mode (nouveau choix avant rejouer) */
     if (etatEntrees === "choixMode") etat = "choixMode";
+  } else if (etat === "attract"){
+    /* v0.4 ATTRACT MODE : démo auto-jouée (les bots jouent seuls, l'input
+       du joueur 1 est piloté par le cerveau LAYA/heuristique). La démo
+       dure 8-10 s puis la partie se termine — on relance un round. */
+    accum += dt;
+    while (accum >= CADRE){
+      update(CADRE);
+      accum -= CADRE;
+      if (etat !== "attract") { accum = 0; break; }
+    }
+    attractTimer -= dt;
+    if (attractTimer <= 0){                    // cycle démo terminé → nouvelle démo
+      attractPartie++;
+      demarrerManche();
+      etat = "attract";
+      tempsRestant = ATTRACT_DEMO_DUREE;       // la démo dure 8-10 s
+    }
+  }
+  if (etat === "attract" && tempsRestant <= 0){
+    /* round de démo épuisé : HIGH SCORE, puis relance d'un nouveau round */
+    if (joueur) enregistrerHighScore(joueur.nettoyees);
+    attractPartie++;
+    demarrerManche();
+    etat = "attract";
+    tempsRestant = ATTRACT_DEMO_DUREE;
+    dernierT = temps;                          // resync horloge
+    accum = 0;
   }
 
   /* v0.3 : maj des particules/shake/confetti à chaque frame affichée */
@@ -2018,6 +2908,8 @@ function boucle(temps){
 creerArene();
 creerPanneaux();
 placerLoutres();
+placerMarmottes();
+placerDetritus();
 /* v0.2 : les machines ne sont créées qu'au lancement de la manche (le mode
    du joueur est choisi à l'écran de sélection). On crée des stubs pour que
    dessiner() fonctionne avant la première manche. */
@@ -2026,6 +2918,14 @@ ia     = creerMachine(13, 11, "#ff7043", "MOPZILLA", true, MODE_PUSHED);
 bot2   = creerMachine(13, 1, "#66bb6a", "PROPRETAIN", true, MODE_AUTO);
 BOTS.push(ia, bot2);
 laya = new BotBrain();
+/* v0.4 ATTRACT MODE : au démarrage on lance une DÉMO AUTO-JOUÉE —
+   la salle est peuplée (marmottes, détritus, bonus, grand-mère), les
+   3 machines pilotées par le cerveau LAYA/heuristique, caméra en fond. */
+demarrerManche();
+etat = "attract";
+tempsRestant = ATTRACT_DEMO_DUREE;               // 8-10 s de démo par cycle
+attractTimer = ATTRACT_DEMO_DUREE;
+attractMode = true;
 requestAnimationFrame(boucle);
 </script>
 </body>
