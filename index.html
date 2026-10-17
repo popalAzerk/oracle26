@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     MOB RACER — PROTO v0.2 (Phase 1) · 2 modes de machine
+     MOB RACER — PROTO v0.3 (Phase 1) · 2 modes · juice & Nilfisk
      Jeu 8-bit : des machines à laver le sol s'affrontent.
      Fichier unique, zéro dépendance, tout inline (CSS + JS).
      Canvas 2D · arène 15×13 vue du dessus façon Bomberman.
@@ -9,7 +9,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>🐴 MOB RACER — Proto v0.2 · 2 modes</title>
+<title>🐴 MOB RACER — Proto v0.3 · juice & Nilfisk</title>
 <style>
   html, body {
     margin: 0; padding: 0; background: #0b0d16;
@@ -38,7 +38,7 @@
 <script>
 "use strict";
 /* ================================================================
-   MOB RACER — PHASE 1 : proto jouable · v0.2 (2 modes POUSSÉE/AUTO-TRACÉE)
+   MOB RACER — PHASE 1 : proto jouable · v0.3 (2 modes · juice & Nilfisk)
    1 machine humaine + 1 IA simple + 2 loutres câlines.
    Boucle requestAnimationFrame, logique à pas fixe (60 Hz).
    ================================================================ */
@@ -83,6 +83,95 @@ const MODES = [
   },
 ];
 const DEFAUT_MODE = MODE_AUTO;    // v0.1 ≈ auto-tracée : choix par défaut
+
+/* ================================================================
+   v0.3-§1 · PIXEL FONT 5×5 (HUD + titres, dessinée par code)
+   Chaque glyphe = 5 mots de 5 bits (bit 4 = colonne gauche).
+   Les accents français sont rendus sans accent volontairement.
+   ================================================================ */
+const PF = {
+  A:[14,17,31,17,17], B:[30,17,30,17,30], C:[31,1,1,1,31],
+  D:[30,17,17,17,30], E:[31,1,30,1,31], F:[31,1,30,1,1],
+  G:[31,1,13,17,31], H:[17,17,31,17,17], I:[31,4,4,4,31],
+  J:[15,2,2,2,30], K:[17,18,28,18,17], L:[17,17,17,17,31],
+  M:[17,27,21,17,17], N:[17,25,21,19,17], O:[14,17,17,17,14],
+  P:[30,17,30,1,1], Q:[14,17,21,18,13], R:[30,17,30,18,17],
+  S:[29,1,14,16,29], T:[31,4,4,4,4], U:[17,17,17,17,14],
+  V:[17,17,17,10,4], W:[17,17,21,27,17], X:[17,10,4,10,17],
+  Y:[17,10,4,4,4], Z:[31,2,4,8,31],
+  "0":[14,17,21,19,14], "1":[4,12,4,4,14], "2":[30,1,14,16,31],
+  "3":[30,1,14,1,30], "4":[17,17,31,1,1], "5":[31,16,30,1,30],
+  "6":[14,16,30,17,14], "7":[31,2,4,8,8], "8":[14,17,14,17,14],
+  "9":[14,17,15,1,14],
+  "?":[14,17,2,0,4], "!":[4,4,4,0,4], ".":[0,0,0,0,4],
+  ",":[0,0,0,4,8], ":":[0,4,0,4,0], "-":[0,0,31,0,0],
+  "%":[19,9,6,25,19], "/":[1,2,4,8,16], "·":[0,0,4,0,0],
+  /* % lisible : rond O-O diagonale */
+  "★":[4,31,27,27,10], "©":[14,17,23,21,14],
+  "È":[14,17,31,1,30], "É":[2,4,30,1,31], "Ê":[4,10,31,1,30],
+  "À":[2,4,0,31,17], "Ç":[16,8,31,1,31], "Ô":[4,10,14,17,14],
+  "Û":[4,10,17,17,14], "Î":[31,4,4,4,4], "ÔÙ":[0,0,0,0,0],
+  "Ù":[4,10,17,17,14], "Œ":[14,21,21,21,14], "'":[4,4,0,0,0],
+  "(":[2,4,4,4,2], ")":[8,4,4,4,8], "+":[0,4,14,4,0],
+};
+const PF_W = 5, PF_H = 5, PF_SP = 1;
+/* normalise : accentué → lettre de base (les digrammes type OE restent) */
+function pfNorm(ch){
+  if (PF[ch]) return ch;
+  const base = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  return PF[base] ? base : null;
+}
+/* largeur/hauteur en UNITÉS (1 unité = 1 px à k=1) d'un texte */
+function pfSize(s, k){
+  k = k || 2;
+  let maxCols = 0, nLines = 1, cur = 0;
+  for (const ch of String(s)){
+    if (ch === "\n"){ maxCols = Math.max(maxCols, cur); cur = 0; nLines++; }
+    else if (ch === " ") cur += 3;          /* espace = largeur 3 unités */
+    else cur += PF_W + PF_SP;               /* glyphe + interlettre : 6 unités */
+  }
+  maxCols = Math.max(maxCols, cur);
+  return { w: Math.max(0, maxCols - PF_SP), h: nLines*(PF_H+PF_SP) - PF_SP, k };
+}
+/* dessine le texte pixel ; anchor : 0 = centré, 1 = aligné gauche ;
+   outline : contour noir dessiné derrière (offsets 8 directions) ;
+   alpha optionnel. Retourne {w,h} en pixels. */
+function pfDraw(x, y, s, coul, k, anchor, outline, alpha){
+  k = k || 2;
+  const dim = pfSize(s, k);
+  /* ancre : 1 = aligné gauche (x = début), 0 = centré, 2 = aligné droite (x = fin) */
+  let sx = anchor === 0 ? x - dim.w*k/2 : anchor === 2 ? x - dim.w*k : x;
+  sx = Math.round(sx);
+  const sy = Math.round(y - dim.h*k/2);
+  const oldA = ctx.globalAlpha;
+  if (alpha !== undefined) ctx.globalAlpha = oldA * alpha;
+  const lignes = String(s).split("\n");
+  const pass = outline ? ["#000", coul] : [coul];
+  for (let pi=0; pi<pass.length; pi++){
+    ctx.fillStyle = pass[pi];
+    const offs = outline && pi === 0
+      ? [[-k,0],[k,0],[0,-k],[0,k],[-k,-k],[k,k],[-k,k],[k,-k]] : [[0,0]];
+    for (const off of offs){
+      let li = 0;
+      for (const ln of lignes){
+        let col = 0;
+        for (const ch of ln){
+          if (ch === " "){ col += 3; continue; }
+          const g = PF[pfNorm(ch)];   // caractère inconnu → espace de la largeur glyphe
+          if (g){
+            for (let r=0; r<5; r++) for (let b=0; b<5; b++)
+              if (g[r] & (1<<(4-b)))
+                ctx.fillRect(sx + off[0] + (col+b)*k, sy + off[1] + (li*(PF_H+PF_SP)+r)*k, k, k);
+          }
+          col += PF_W + PF_SP;
+        }
+        li++;
+      }
+    }
+  }
+  ctx.globalAlpha = oldA;
+  return { w: dim.w*k, h: dim.h*k };
+}
 
 /* ---------------------- 2. CANVAS + AUDIO ---------------------- */
 const cv = document.getElementById("jeu");
@@ -133,6 +222,22 @@ function sonBuzzer(){                                             // buzzer fin 
   for (let i=0;i<3;i++) setTimeout(()=>bip("sawtooth", 150, 110, 0.3, 0.15), i*220);
 }
 function sonKlaxon(){ bip("square", 440, 660, 0.18, 0.13); }      // compte à rebours
+
+/* v0.3 : jingle "case nettoyée" (distinct du jingle loutre) */
+function sonJingleCase(){
+  if (!AC || !sonActif) return;
+  bip("square", 660, 880, 0.07, 0.08);
+}
+/* v0.3 : jingle écran de fin (4 notes descendantes) */
+function sonJingleFin(){
+  if (!AC || !sonActif) return;
+  [784, 659, 523, 392].forEach((f, i) => setTimeout(() => bip("triangle", f, f*0.99, 0.22, 0.12), i*140));
+}
+/* v0.3 : bruit de dérapage (zone glissante) */
+function sonDrift(){
+  if (!AC || !sonActif) return;
+  bip("sawtooth", 300, 120, 0.5, 0.10);
+}
 
 /* v0.2 : jingle différent à la sélection de chaque mode */
 function sonJingleSelection(modeId){
@@ -194,6 +299,158 @@ window.addEventListener("keydown", e => {
   }
 });
 window.addEventListener("keyup", e => { touches[e.code] = false; });
+
+/* ================================================================
+   v0.3-§6.5 · PARTICULES 8-BIT + SHAKE + juice
+   ================================================================ */
+const PARTS = [];        // particules actives
+let shake = { t:0, mag:0, x:0, y:0 };        // screen shake global
+let flashBlanc = 0;      // flash blanc plein écran (collision)
+const gouttes = [];      // {x,y,vy,vie}   fontaine
+const bulles = [];       // {x,y,vy,vie,t} bulles de savon
+const etoiles = [];      // {x,y,vx,vy,vie} câlin loutre
+const splashDrops = [];  // {x,y,vx,vy,vie} éclaboussures
+const confetti = [];     // {x,y,vx,vy,coul,rot,vr,vie} écran de fin
+
+function addShake(mag, dur){
+  shake.t = Math.max(shake.t, dur || 0.14);
+  shake.mag = Math.max(shake.mag, mag);
+}
+function upShake(dt){
+  if (shake.t > 0){
+    shake.t -= dt;
+    const decay = Math.max(0, shake.t/0.14);
+    shake.x = (Math.random()*2-1) * shake.mag * decay;
+    shake.y = (Math.random()*2-1) * shake.mag * decay;
+    if (shake.t <= 0){ shake.x = 0; shake.y = 0; shake.mag = 0; }
+  } else { shake.x = 0; shake.y = 0; }
+}
+function ajouterParticule(x, y, vx, vy, vie, coul, taille){
+  PARTS.push({x, y, vx, vy, vie, vie0: vie, coul, taille: taille||3});
+}
+/* éclat de savon : petites particules blanches/cyan */
+function eclat(x, y, n, baseCoul){
+  for (let i=0; i<n; i++){
+    const a = Math.random()*Math.PI*2, sp = 30+Math.random()*70;
+    ajouterParticule(x, y, Math.cos(a)*sp, Math.sin(a)*sp, 0.3+Math.random()*0.25,
+      baseCoul || "#bfe9ff", 2+((Math.random()*2)|0)*2);
+  }
+}
+function eclatCase(c, l, coul){
+  eclat(MARGE_X + c*TUILE + TUILE/2, MARGE_Y + l*TUILE + TUILE/2, 5, coul);
+}
+function upParticules(dt){
+  for (let i=PARTS.length-1; i>=0; i--){
+    const p = PARTS[i];
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    p.vy += 60*dt;
+    p.vie -= dt;
+    if (p.vie <= 0) PARTS.splice(i,1);
+  }
+  /* gouttes de fontaine : tombent puis disparaissent */
+  for (let i=gouttes.length-1; i>=0; i--){
+    const g = gouttes[i];
+    g.y += g.vy*dt; g.vie -= dt;
+    if (g.vie <= 0) gouttes.splice(i,1);
+  }
+  /* bulles de savon : montent doucement, clignotent avant de pop */
+  for (let i=bulles.length-1; i>=0; i--){
+    const b = bulles[i];
+    b.x += Math.sin((b.t += dt)*3)*8*dt;
+    b.y -= 10*dt;
+    b.vie -= dt;
+    if (b.vie <= 0) bulles.splice(i,1);
+  }
+  /* étoiles de câlin : s'éloignent du point d'origine */
+  for (let i=etoiles.length-1; i>=0; i--){
+    const e = etoiles[i];
+    e.x += e.vx*dt; e.y += e.vy*dt;
+    e.vie -= dt;
+    if (e.vie <= 0) etoiles.splice(i,1);
+  }
+  for (let i=splashDrops.length-1; i>=0; i--){
+    const d = splashDrops[i];
+    d.x += d.vx*dt; d.y += d.vy*dt;
+    d.vy += 180*dt;           // gravité forte : arc vite retombé
+    d.vie -= dt;
+    if (d.vie <= 0) splashDrops.splice(i,1);
+  }
+  if (flashBlanc > 0) flashBlanc = Math.max(0, flashBlanc - dt*8);
+}
+function drParticules(){
+  for (const p of PARTS){
+    const a = p.vie/p.vie0;
+    ctx.globalAlpha = a < 0.3 ? 0.25 : 1;
+    ctx.fillStyle = p.coul;
+    ctx.fillRect(p.x|0, p.y|0, p.taille, p.taille);
+  }
+  ctx.globalAlpha = 1;
+  for (const g of gouttes){
+    ctx.globalAlpha = Math.max(0, Math.min(1, g.vie*4));
+    ctx.fillStyle = "#9fd8ff";
+    ctx.fillRect(g.x|0, g.y|0, 2, 4);
+  }
+  for (const b of bulles){
+    const clignote = b.vie < 0.25 && ((b.vie*20)|0)%2 === 0;   // clignote avant disparaître
+    if (clignote) continue;
+    ctx.globalAlpha = Math.max(0.25, Math.min(1, b.vie*2));
+    ctx.fillStyle = "#e8f7ff";
+    ctx.fillRect(b.x|0, b.y|0, 3, 3);
+    ctx.fillStyle = "#9fd8ff";
+    ctx.fillRect((b.x+2)|0, b.y|0, 1, 1);
+    ctx.fillRect(b.x|0, (b.y+2)|0, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+  for (const e of etoiles){
+    ctx.globalAlpha = Math.max(0, Math.min(1, e.vie*2));
+    pfDraw(e.x, e.y, "★", "#ffd45a", 2);
+  }
+  ctx.globalAlpha = 1;
+  for (const d of splashDrops){
+    ctx.globalAlpha = Math.max(0, Math.min(1, d.vie*3));
+    ctx.fillStyle = "#8fd0f5";
+    ctx.fillRect(d.x|0, d.y|0, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+  if (flashBlanc > 0){
+    ctx.fillStyle = "rgba(255,255,255," + Math.min(0.55, flashBlanc) + ")";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+  }
+}
+/* confetti 8-bit pour l'écran de fin */
+function lancerConfetti(){
+  confetti.length = 0;
+  const couls = ["#ffd45a","#4fc3f7","#7dffa0","#e255a1","#ff7043","#ffffff"];
+  for (let i=0; i<70; i++){
+    confetti.push({
+      x: Math.random()*cv.width, y: -20 - Math.random()*300,
+      vx: (Math.random()*2-1)*30, vy: 60+Math.random()*90,
+      coul: couls[(Math.random()*couls.length)|0],
+      rot: Math.random()*Math.PI*2, vr: (Math.random()*2-1)*6,
+      vie: 6 + Math.random()*6,
+      forme: (Math.random()*3)|0,     // 0 carré, 1 rectangle, 2 barre
+    });
+  }
+}
+function upConfetti(dt){
+  for (const c of confetti){
+    c.x += c.vx*dt; c.y += c.vy*dt;
+    c.rot += c.vr*dt;
+    if (c.y > cv.height + 20) c.y = -20;
+  }
+}
+function dessinerConfetti(){
+  for (const c of confetti){
+    ctx.save();
+    ctx.translate(c.x|0, c.y|0);
+    ctx.rotate(Math.round(c.rot / (Math.PI/4)) * (Math.PI/4));     // rotation snap 45° : 8-bit
+    ctx.fillStyle = c.coul;
+    if (c.forme === 0) ctx.fillRect(-3, -3, 6, 6);
+    else if (c.forme === 1) ctx.fillRect(-2, -5, 4, 10);
+    else ctx.fillRect(-6, -1, 12, 2);
+    ctx.restore();
+  }
+}
 
 /* ---------------------- 4. ARÈNE 15×13 ---------------------- */
 /* Grille façon Bomberman : murs indestructibles en bordure + quelques
@@ -308,6 +565,11 @@ function demarrerManche(){
   if (!laya) laya = new BotBrain();     // (ré)initialise le cerveau LAYA à chaque manche
   tempsRestant = CHRONO_MANCHE;
   etat = "compte"; compte = 3.99;
+  /* v0.3 : reset juice (particules, shake, flash, score affiché) */
+  PARTS.length = 0; gouttes.length = 0; bulles.length = 0;
+  etoiles.length = 0; splashDrops.length = 0; confetti.length = 0;
+  shake.t = 0; shake.x = 0; shake.y = 0; shake.mag = 0;
+  flashBlanc = 0; scoreAff = 0;
   dernierGlou = 0;
   console.log("[v0.2] manche démarrée — joueur : " + modeJoueur + " · bot1 : " + MODE_PUSHED + " · bot2 : " + MODE_AUTO);
 }
@@ -389,7 +651,9 @@ function nettoyerCase(m){
       propre[ll][cc] = 1;
       m.nettoyees++;
       m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
-      if (off.dc === 0 && off.dl === 0) sonPlop();
+      eclatCase(cc, ll, "#bfe9ff"); flashBlanc = Math.max(flashBlanc, 0.18);
+      if (off.dc === 0 && off.dl === 0){ sonPlop(); sonJingleCase(); }
+      if (m === joueur) addShake(2, 0.10);
     }
     return;
   }
@@ -399,7 +663,9 @@ function nettoyerCase(m){
   propre[l][c] = 1;
   m.nettoyees++;
   m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
-  sonPlop();
+  eclatCase(c, l, "#bfe9ff"); flashBlanc = Math.max(flashBlanc, 0.18);
+  sonPlop(); sonJingleCase();
+  if (m === joueur) addShake(2, 0.10);
   /* traînée large sur carrelage : la case juste derrière la machine */
   if (solType[l][c] === SOL_CARRELAGE){
     const c2 = c - Math.round(m.dir.x), l2 = l - Math.round(m.dir.y);
@@ -407,6 +673,7 @@ function nettoyerCase(m){
         grille[l2][c2] === T_SOL && propre[l2][c2] === 0){
       propre[l2][c2] = 1; m.nettoyees++;
       m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
+      eclatCase(c2, l2, "#a4d8f0");
     }
   }
 }
@@ -437,11 +704,18 @@ function updateFontaine(m, dt){
   if (surFontaine && m.reservoir < RESERVOIR_MAX && m.calin <= 0){
     const avant = m.rechargeTimer;
     m.rechargeTimer += dt;
+    /* v0.3 : particules d'eau quand la borne coule (glouglou VISUEL) */
+    if (Math.random() < 0.25){
+      const fx = MARGE_X + fontaines[0].c*TUILE + TUILE/2 + (Math.random()*16-8);
+      const fy = MARGE_Y + fontaines[0].l*TUILE + 26;
+      gouttes.push({x: fx, y: fy, vy: 60 + Math.random()*30, vie: 0.45});
+    }
     if ((avant|0) !== (m.rechargeTimer|0) || (avant === 0)) sonGlou();
     if (m.rechargeTimer >= RECHARGE_FONTAINE){
       m.reservoir = RESERVOIR_MAX;
       m.rechargeTimer = 0;
       bip("sine", 700, 900, 0.2, 0.12);         // "plein !"
+      if (m === joueur){ flashBlanc = Math.max(flashBlanc, 0.3); addShake(2, 0.12); eclat(m.x, m.y-10, 8, "#7ac0ea"); }
     }
   } else {
     m.rechargeTimer = 0;
@@ -477,6 +751,12 @@ function updateLoutre(o, dt){
       o.calin = DUREE_CALIN;
       if (joueur.coeurs < COEURS_MAX) joueur.coeurs++;
       sonCalin();
+      addShake(4, 0.22); flashBlanc = Math.max(flashBlanc, 0.35);
+      for (let i=0;i<6;i++){
+        const a = Math.random()*Math.PI*2;
+        etoiles.push({x: o.x + Math.cos(a)*8, y: o.y + Math.sin(a)*6,
+          vx: Math.cos(a)*35, vy: Math.sin(a)*30 - 15, vie: 0.9});
+      }
     }
   }
 }
@@ -494,6 +774,9 @@ function appliquerDrift(m, dt){
       /* le panneau se fait renverser : la zone reste glissante 5 s */
       p.renverse = true; p.timer = 5.0;
       m.drift = 1.5;          // 1,5 s de drift non maîtrisable
+      if (m === joueur){ addShake(3, 0.2); sonDrift(); }
+      for (let i=0;i<8;i++) splashDrops.push({x: m.x, y: m.y,
+        vx: (Math.random()*2-1)*60, vy: (Math.random()*2-1)*60, vie: 0.6});
     }
   }
   if (m.drift > 0) m.drift -= dt;
@@ -789,24 +1072,38 @@ function update(dt){
   if (tempsRestant <= 0){
     tempsRestant = 0;
     etat = "fin";
-    sonBuzzer();
+    sonBuzzer(); sonJingleFin();
+    finT0 = performance.now(); finPct = pctNettoye();
+    lancerConfetti();
   }
 }
 
-/* ---------------------- 9. SPRITES PIXEL (dessinés par code) ---------------------- */
+/* ================================================================
+   v0.3-§9a · SOL, SALETÉ, TRACE D'EAU RICHE, LUEURS
+   Palette Nilfisk-esque : le sol compte, la trace scintille.
+   ================================================================ */
+
+/* sol : lino / carrelage, 2 teintes alternées (damier subtil) + joints fins */
 function dessinerSol(x, y, c, l){
   const dam = (c + l) % 2 === 0;
   const type = solType[l][c];
-  if (type === SOL_CARRELAGE){
-    ctx.fillStyle = dam ? "#7d8ba0" : "#8b99ad";
-  } else {
-    ctx.fillStyle = dam ? "#c8a878" : "#bd9c6e";
-  }
+  let base;
+  if (type === SOL_CARRELAGE) base = dam ? "#7d8ba0" : "#8b99ad";
+  else                        base = dam ? "#c8a878" : "#bd9c6e";
+  ctx.fillStyle = base;
   ctx.fillRect(x, y, TUILE, TUILE);
-  ctx.strokeStyle = "rgba(0,0,0,.07)";
-  ctx.strokeRect(x+.5, y+.5, TUILE-1, TUILE-1);
+  /* joints fins (lignes 1 px) */
+  ctx.fillStyle = type === SOL_CARRELAGE ? "rgba(20,26,40,.25)" : "rgba(70,50,30,.18)";
+  ctx.fillRect(x, y, TUILE, 1);
+  ctx.fillRect(x, y, 1, TUILE);
+  /* variation déterministe subtile (2-3 reflets/pores) */
+  let h = (c*73856093 ^ l*19349663) >>> 0;
+  const rnd = n => { h = (h*1664525 + 1013904223) >>> 0; return (h % n)/n; };
+  ctx.fillStyle = "rgba(255,255,255,.045)";
+  for (let i=0; i<3; i++) ctx.fillRect(x + 3 + ((rnd(38)|0)), y + 3 + ((rnd(38)|0)), 4, 4);
+  ctx.fillStyle = "rgba(0,0,0,.05)";
+  for (let i=0; i<2; i++) ctx.fillRect(x + 2 + ((rnd(38)|0)), y + 2 + ((rnd(38)|0)), 4, 4);
 }
-
 /* tache de saleté pseudo-aléatoire (déterministe par case) */
 function tacheSale(c, l, x, y){
   let h = (c*73856093 ^ l*19349663) >>> 0;
@@ -816,172 +1113,442 @@ function tacheSale(c, l, x, y){
   ctx.fillRect(x + 22 + rnd(12), y + 24 + rnd(10), 6, 4);
   ctx.fillStyle = "rgba(60,38,20,.4)";
   ctx.fillRect(x + 12 + rnd(18), y + 26 + rnd(8), 5, 4);
+  /* coulure sombre au centre */
+  ctx.fillStyle = "rgba(50,30,12,.35)";
+  ctx.fillRect(x + 16 + rnd(8), y + 12 + rnd(14), 3, 3);
 }
 
-/* traînée propre : voile clair + reflet scintillant */
-function dessinerTrainee(c, l, x, y){
-  ctx.fillStyle = "rgba(245,252,255,.55)";
+/* trace d'eau riche : voile dégradé bleu clair → transparent vers le bord,
+   reflets scintillants 2 tons NES (alternance 250 ms), bord sombre fin */
+function dessinerTrainee(c, l, x, y, coulJoueur){
+  const t2 = (performance.now()/250)|0;
+  /* voile humide : dégradé radial simulé (carré central + anneau clair) */
+  ctx.fillStyle = "rgba(40,90,150,.30)";        // liseré de transition (bord sombre)
   ctx.fillRect(x, y, TUILE, TUILE);
-  const sc = 0.5 + 0.5*Math.sin(performance.now()/300 + (c*13+l*7));
-  ctx.fillStyle = "rgba(255,255,255," + (0.3 + sc*0.4) + ")";
-  ctx.fillRect(x+6, y+6, 10, 3);
-  ctx.fillRect(x+24, y+28, 8, 3);
-}
-
-/* mur : empilement de chaises / distributeur, style Bomberman */
-function dessinerMur(x, y){
-  ctx.fillStyle = "#5b6377";
-  ctx.fillRect(x, y, TUILE, TUILE);
-  ctx.fillStyle = "#4a5164";
+  ctx.fillStyle = "rgba(80,150,220,.30)";       // bord humide
+  ctx.fillRect(x+1, y+1, TUILE-2, TUILE-2);
+  ctx.fillStyle = "rgba(110,180,235,.38)";      // zone centrale mouillée
   ctx.fillRect(x+2, y+2, TUILE-4, TUILE-4);
-  /* deux chaises empilées */
-  for (let i=0;i<2;i++){
-    const cx = x+6, cy = y+5+i*18;
-    ctx.fillStyle = "#8a7a54";
-    ctx.fillRect(cx, cy, 18, 12);           // assise/dossier
-    ctx.fillStyle = "#6e6042";
-    ctx.fillRect(cx, cy+12, 18, 3);         // pied
-    ctx.fillStyle = "#a3956b";
-    ctx.fillRect(cx+2, cy+2, 14, 5);        // reflet
+  ctx.fillStyle = "rgba(150,205,245,.30)";      // noyau
+  ctx.fillRect(x+6, y+6, TUILE-12, TUILE-12);
+  /* reflet scintillant : alternance de 2 tons façon palette NES */
+  let hh = (c*40503 + l*73856093) >>> 0;
+  const phase = ((t2 + c*2 + l*3) % 4), v1 = hh % 22, v2 = (hh>>3) % 22;
+  ctx.fillStyle = phase < 2 ? "rgba(235,250,255,.85)" : "rgba(190,225,250,.85)";
+  if (phase < 2){
+    ctx.fillRect(x+6 + v1, y+6 + v2, 12, 2);
+    ctx.fillRect(x+26 - v1/2, y+30 - v2/2, 8, 2);
+  } else {
+    ctx.fillRect(x+8 - v2/2, y+28, 10, 2);
+    ctx.fillRect(x+28 + v1/2, y+8 + v2, 8, 2);
+  }
+  /* reflet secondaire, ton opposé */
+  ctx.fillStyle = phase < 2 ? "rgba(190,225,250,.5)" : "rgba(235,250,255,.5)";
+  ctx.fillRect(x+30, y+22, 5, 2);
+  /* bulles résiduelles sur la case : 1-2 pixels qui clignotent */
+  let h = (c*2654435761 ^ l*40503) >>> 0;
+  const rnd = n => { h = (h*1664525 + 1013904223) >>> 0; return (h % n)/n; };
+  for (let i=0; i<2; i++){
+    const bx = x + 4 + rnd(TUILE-8), by = y + 4 + rnd(TUILE-8);
+    if (((t2/2 + i + c + l)|0) % 3 !== 0) continue;   // 1 frame sur 3 environ
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    ctx.fillRect(bx|0, by|0, 2, 2);
   }
 }
 
-/* borne fontaine : case rouge au robinet bleu */
+/* zone propre = reflet de lumière animé 2 frames (brillance du sol cire) */
+function dessinerBrillanceSol(x, y, c, l){
+  const t2 = (performance.now()/500)|0;
+  const f = (t2 + c) % 2;
+  ctx.fillStyle = "rgba(255,255,255," + (f ? ".10" : ".18") + ")";
+  /* reflet en forme d'éclair (2 rects en diagonale) */
+  ctx.fillRect(x+8 + f*3, y+10, 5, 3);
+  ctx.fillRect(x+11 + f*3, y+13, 4, 2);
+  ctx.fillRect(x+24, y+28 - f*2, 6, 3);
+}
+
+/* mur : empilement de chaises / distributeur, relief 3D pixel :
+   bord supérieur clair, face avant sombre (effet hauteur) */
+function dessinerMur(x, y){
+  /* relief : la bande basse est la "face" verticale du mur (plus sombre) */
+  ctx.fillStyle = "#3d4456";
+  ctx.fillRect(x, y+9, TUILE, TUILE-9);            // face avant (ombre)
+  ctx.fillStyle = "#5b6377";
+  ctx.fillRect(x, y, TUILE, TUILE-9);              // dessus
+  ctx.fillStyle = "#6d7790";
+  ctx.fillRect(x+2, y+2, TUILE-4, 6);              // liseré éclairé
+  /* deux chaises empilées sur le dessus */
+  for (let i=0;i<2;i++){
+    const cx = x+6, cy = y+5+i*15;
+    ctx.fillStyle = "#8a7a54";
+    ctx.fillRect(cx, cy, 18, 10);
+    ctx.fillStyle = "#6e6042";
+    ctx.fillRect(cx, cy+10, 18, 2);
+    ctx.fillStyle = "#a3956b";
+    ctx.fillRect(cx+2, cy+2, 14, 4);
+  }
+  /* ombre portée au pied du mur (sur la case en dessous, dessinée ici : bas) */
+  ctx.fillStyle = "rgba(0,0,0,.18)";
+  ctx.fillRect(x+4, y+TUILE-3, TUILE-8, 3);
+}
+
+/* borne fontaine : robinet + bassin, eau animée, gouttes quand recharge */
 function dessinerFontaine(x, y){
+  const t2 = performance.now()/300;
+  /* socle pierre */
   ctx.fillStyle = "#29304a";
   ctx.fillRect(x, y, TUILE, TUILE);
+  ctx.fillStyle = "#39415f";
+  ctx.fillRect(x+3, y+3, TUILE-6, TUILE-6);
+  /* bassin (anneau + eau qui ondule légèrement) */
+  ctx.fillStyle = "#5d6880";
+  ctx.fillRect(x+7, y+22, TUILE-14, 16);
+  ctx.fillStyle = "#2c6c9e";
+  ctx.fillRect(x+9, y+24 + ((t2|0)%2), TUILE-18, 10);
+  ctx.fillStyle = "#4fa3d8";
+  ctx.fillRect(x+11, y+25 + ((t2|0)%2), TUILE-22, 6);
+  /* borne (colonne centrale) avec face claire */
   ctx.fillStyle = "#c0392b";
-  ctx.fillRect(x+4, y+4, TUILE-8, TUILE-8);
+  ctx.fillRect(x+14, y+8, 16, 16);
   ctx.fillStyle = "#e74c3c";
-  ctx.fillRect(x+7, y+7, TUILE-14, TUILE-14);
-  /* robinet + goutte */
+  ctx.fillRect(x+15, y+9, 14, 6);
+  /* robinet + jet */
   ctx.fillStyle = "#3498db";
-  ctx.fillRect(x+TUILE/2-3, y+10, 6, 10);
+  ctx.fillRect(x+19, y+20, 6, 5);
   ctx.fillStyle = "#bfe3ff";
-  ctx.fillRect(x+TUILE/2-2, y+21, 4, 5);
-  /* pulsation : halo quand la recharge est utile */
-  const p = 0.25 + 0.15*Math.sin(performance.now()/400);
+  ctx.fillRect(x+20 + ((t2|0)%3 === 0 ? 1 : 0), y+25, 3, 4);
+  /* halo pulsant (aiguille vers la recharge) */
+  const p = 0.22 + 0.14*Math.sin(performance.now()/400);
   ctx.strokeStyle = "rgba(80,180,255," + p + ")";
   ctx.lineWidth = 2;
   ctx.strokeRect(x+2, y+2, TUILE-4, TUILE-4);
 }
 
-/* panneau « ATTENTION ÇA GLISSE » : triangle rouge/blanc, se renverse */
+/* panneau « attention ça glisse » : poteau + triangle jaune,
+   bonhomme qui glisse, légère oscillation ; se renverse */
 function dessinerPanneau(p){
   const x = MARGE_X + p.c*TUILE, y = MARGE_Y + p.l*TUILE;
+  const cx = x+TUILE/2, cy = y+TUILE/2;
   ctx.save();
-  if (p.renverse){
-    ctx.translate(x+TUILE/2, y+TUILE/2); ctx.rotate(-Math.PI/2.2);
-    ctx.translate(-(x+TUILE/2), -(y+TUILE/2));
+  /* oscillation subtile quand debout (le vent du nettoyage) */
+  if (!p.renverse){
+    const ang = Math.sin(performance.now()/600)*0.06;
+    ctx.translate(cx, y+TUILE-6);
+    ctx.rotate(ang);
+    ctx.translate(-cx, -(y+TUILE-6));
+  } else {
+    ctx.translate(cx, cy);
+    ctx.rotate(-Math.PI/2.2);
+    ctx.translate(-cx, -cy);
   }
+  /* ombre du poteau */
+  ctx.fillStyle = "rgba(0,0,0,.2)";
+  ctx.fillRect(cx+2, y+TUILE-9, 12, 3);
+  /* poteau */
+  ctx.fillStyle = "#8a8f98";
+  ctx.fillRect(cx-2, y+TUILE-12, 4, 12);
+  ctx.fillStyle = "#a9aeb8";
+  ctx.fillRect(cx-2, y+TUILE-12, 2, 12);
+  /* panneau triangulaire jaune, bord rouge */
   ctx.fillStyle = "#f1c40f";
   ctx.strokeStyle = "#c0392b"; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(x+TUILE/2, y+6);
-  ctx.lineTo(x+TUILE-5, y+TUILE-9);
-  ctx.lineTo(x+5, y+TUILE-9);
+  ctx.moveTo(cx, y+5);
+  ctx.lineTo(x+TUILE-5, y+TUILE-11);
+  ctx.lineTo(x+5, y+TUILE-11);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  /* bonhomme qui glisse */
+  /* bonhomme qui glisse (pixel) */
   ctx.fillStyle = "#2c3e50";
-  ctx.fillRect(x+TUILE/2-9, y+14, 5, 5);            // tête
-  ctx.fillRect(x+TUILE/2-6, y+19, 12, 3);           // corps penché
-  ctx.fillRect(x+TUILE/2+6, y+21, 5, 2);            // bras tendu
-  ctx.fillRect(x+TUILE/2-12, y+23, 6, 2);           // jambes glissantes
+  ctx.fillRect(cx-9, y+14, 5, 5);            // tête
+  ctx.fillRect(cx-6, y+19, 12, 3);           // corps penché
+  ctx.fillRect(cx+6, y+21, 5, 2);            // bras tendu
+  ctx.fillRect(cx-12, y+23, 6, 2);           // jambes glissantes
+  /* petites « lignes de glisse » derrière lui */
+  ctx.fillStyle = "#2c3e50";
+  ctx.fillRect(cx-16, y+24, 3, 1);
+  ctx.fillRect(cx-15, y+26, 2, 1);
   ctx.restore();
 }
 
-/* la machine à laver : sprite pixel, serpillière derrière, jauge d'eau
-   v0.2 : le sprite change selon le mode (poussé = manche + large,
-   auto-tracé = volant + profil d'autolaveuse) */
-function dessinerMachine(m){
-  const x = m.x, y = m.y;
-  ctx.fillStyle = "rgba(0,0,0,.25)";
-  ctx.fillRect(x-13, y+11, 26, 5);
-  const pushed = (m.mode === MODE_PUSHED);
-  /* serpillière qui traîne derrière (poussé : plus large, manche visible) */
-  const mx = x - m.dir.x*17, my = y - m.dir.y*17;
-  ctx.strokeStyle = "#bfa77a"; ctx.lineWidth = pushed ? 3 : 2;
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(mx, my); ctx.stroke();
-  ctx.fillStyle = "#e8dcc0";
-  ctx.fillRect(mx-4, my-3, 8, 6);
-  /* corps */
-  ctx.fillStyle = "#37474f";
-  ctx.fillRect(x-13, y-11, 26, 22);
-  ctx.fillStyle = m.couleur;
-  ctx.fillRect(x-11, y-9, 22, 18);
+/* ombre portée elliptique semi-transparente sous une entité */
+function ombreEntite(x, y, rx, ry){
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + (ry||8), rx, (ry||8)/2, 0, 0, Math.PI*2);
+  ctx.fill();
+}
+
+
+
+/* ================================================================
+   v0.3-§9b · MACHINE NILFISK SC250/SC370 top-down (parodie NILFISKY)
+   Châssis gris clair + liseré sombre, timon qui PIVOTE (à l'opposé
+   du déplacement), bac visible avec liquide qui baisse, badge jaune
+   "★ NILFISKY", brosse rotative (ombre animée sur les bords),
+   raclette arrière, roues, squish & stretch, HUD in-game de réservoir.
+   Le sprite est pré-rendu 4 orientations sur canvas offscreen.
+   ================================================================ */
+const NILFISK_COULS = {
+  châssis: "#c9c9c9", châssisClair: "#e2e2e2", châssisFoncé: "#9d9d9d",
+  liseré: "#2b2f36",  liseréClair: "#4a5058",
+  jaune: "#f2c11d",   jauneFoncé: "#c09213",
+  noir: "#171a20",    timon: "#5d6670", timonClair: "#818a94",
+  eau: "#2f8fd4",     eauClair: "#7ac0ea", savon: "#e9f6fc",
+  teinte: "#4fc3f7",  /* teinte par joueur (liseré LED) */
+};
+const SPR_MACHINE = [];   /* cache des sprites pré-rendus par teinte+orientation */
+function clefSprite(m){ return m.couleur + "|" + (m.mode === MODE_PUSHED ? "P" : "A"); }
+
+/* dessine LA machine dans g (un canvas 92×92, centre 46,46) pointant vers le BAS ;
+   les autres orientations seront obtenues par rotation au blit. */
+function spriteMachineBase(g, teinte, pushed){
+  const X = 46, Y = 52;     /* centre du châssis dans le sprite (timon au-dessus) */
+  const r = (a,b,w,h,c) => { g.fillStyle = c; g.fillRect(a,b,w,h); };
+  /* ── TIMON (tube + manette + console) : pointe vers le HAUT du sprite ── */
+  const tx = X - 4, tl = 24;
+  g.fillStyle = NILFISK_COULS.timon;
+  g.fillRect(tx, Y-14-tl, 8, tl);                  /* tube */
+  g.fillStyle = NILFISK_COULS.timonClair;
+  g.fillRect(tx+1, Y-14-tl, 2, tl);                /* reflet tube */
+  /* console de contrôle sur le timon (petit écran) */
+  g.fillStyle = NILFISK_COULS.noir;
+  g.fillRect(tx-3, Y-14-tl+5, 14, 7);
+  g.fillStyle = "#7dff9a";
+  g.fillRect(tx-2, Y-14-tl+6, 12, 3);              /* écran LED vert */
+  g.fillStyle = NILFISK_COULS.noir;
+  g.fillRect(tx-2, Y-14-tl+10, 12, 1);             /* séparateur */
+  /* manette noire au bout */
+  g.fillStyle = NILFISK_COULS.noir;
+  g.fillRect(tx-2, Y-16-tl, 12, 6);
+  g.fillStyle = "#0c0e12";
+  g.fillRect(tx, Y-16-tl+1, 8, 3);
+  /* ── RACLETTE (squeegee) à l'arrière = BAS du sprite (sous le châssis,
+        dépasse légèrement : barre grise + liseré caoutchouc) ── */
+  g.fillStyle = "#6d7680";
+  g.fillRect(X-12, Y+17, 24, 3);
+  g.fillStyle = "#3d444d";
+  g.fillRect(X-12, Y+20, 24, 1);
+  /* ── CHÂSSIS : arrondi simulé par rects empilés, liseré sombre ── */
+  r(X-17, Y-11, 34, 28, NILFISK_COULS.liseré);            /* liseré sombre extérieur */
+  r(X-15, Y-9, 30, 24, NILFISK_COULS.châssis);            /* corps gris clair */
+  r(X-15, Y-9, 30, 3, NILFISK_COULS.châssisClair);        /* face éclairée haut */
+  r(X-15, Y+13, 30, 2, NILFISK_COULS.châssisFoncé);       /* face sombre bas */
+  /* ── ROUES visible sur les côtés (tricycle SC370 : 1 avant + 2 arrière —
+        en top-down on voit les 3 pads noirs qui dépassent du liseré) ── */
+  g.fillStyle = NILFISK_COULS.noir;
+  g.fillRect(X-19, Y+8, 4, 8);                    /* roue arrière gauche */
+  g.fillRect(X+15, Y+8, 4, 8);                    /* roue arrière droite */
+  g.fillRect(X-2, Y-13, 4, 3);                    /* castor avant (sous timon) */
+  /* ── BAC "tank-in-tank" VISIBLE dessus : 2 réservoirs ── */
+  r(X-12, Y-6, 24, 15, NILFISK_COULS.liseré);            /* cadre bac */
+  r(X-12, Y-6, 24, 2, teinte);                           /* bande teinte du joueur */
+  r(X-11, Y-5, 22, 13, "#aab4bd");                        /* fond bac */
+  /* bac solution (gauche, rempli selon niveau d'eau au blit — ici plein) */
+  r(X-10, Y-4, 9, 11, NILFISK_COULS.eau);
+  r(X-10, Y-4, 9, 3, NILFISK_COULS.eauClair);
+  /* bac récupération (droite) : bord + intérieur plus sombre */
+  r(X+1, Y-4, 9, 11, "#7d8791");
+  r(X+2, Y-3, 7, 9, "#5d6770");
+  /* bouchon-couvercle jaune du tank */
+  r(X-6, Y-7, 5, 3, NILFISK_COULS.jaune);
+  r(X-6, Y-7, 5, 1, NILFISK_COULS.jauneFoncé);
+  /* ── BADGE jaune "★ NILFISKY" sous le bac (parodie, sur châssis) ── */
+  r(X-9, Y+11, 18, 4, NILFISK_COULS.jaune);
+  r(X-9, Y+14, 18, 1, NILFISK_COULS.jauneFoncé);
+  /* étoile + 3 pixels de "lettrage" (stylisé, illisible à cette taille : OK) */
+  g.fillStyle = NILFISK_COULS.noir;
+  g.fillRect(X-7, Y+12, 2, 2);
+  for (let i=0;i<4;i++) g.fillRect(X-3 + i*4, Y+12, 2, 2);
+  /* ── LED d'état par joueur (coin haut-droit) ── */
+  r(X+10, Y-7, 3, 3, teinte);
+  /* ── DIFFÉRENCES PAR MODE ── */
   if (pushed){
-    /* MODE POUSSÉ : grande manche oblique + tampon large */
-    ctx.fillStyle = "#8d6e4a";
-    ctx.fillRect(x-2, y-9, 3, 12);                 // manche
-    ctx.fillStyle = "#e8dcc0";
-    ctx.fillRect(x-6, y+2, 12, 6);                 // tampon large
-    ctx.fillStyle = "#0d1117";
-    ctx.fillRect(x-9, y-7, 6, 6);                  // mini console
+    /* POUSSÉE : la machine est un "chariot poussé" — châssis plus large,
+       tampon central visible au sol (frottement large 3 cases) */
+    r(X-6, Y+15, 12, 4, "#e8dcc0");       /* tampon serpillière sous raclette */
+    r(X-6, Y+18, 12, 1, "#c9bda0");
   } else {
-    /* MODE AUTO-TRACÉ : cabine de conduite + roue avant */
-    ctx.fillStyle = "#0d1117";
-    ctx.fillRect(x-9, y-7, 10, 8);                 // écran/pare-brise
-    ctx.fillStyle = "#15181f";
-    ctx.fillRect(x+2, y-5, 7, 7);                  // roue de conduite
+    /* AUTO-TRACÉE : cockpit vitré à l'avant + volant visible par-dessus */
+    g.fillStyle = "#0d1117";
+    g.fillRect(X-9, Y-11, 18, 5);         /* baie vitrée avant */
+    g.fillStyle = "#3d4d63";
+    g.fillRect(X-8, Y-10, 16, 2);         /* reflet vitre */
+    g.fillStyle = NILFISK_COULS.noir;
+    g.fillRect(X-3, Y-8, 7, 5);           /* volant (moucheté) */
+    g.fillStyle = "#20242b";
+    g.fillRect(X-3, Y-6, 7, 1);
   }
-  ctx.fillStyle = "#7dff9a";                 // LED
-  if (m.reservoir > 0) ctx.fillRect(x-8+((performance.now()/300|0)%4)*2, y-6, 2, 2);
-  /* roues */
-  ctx.fillStyle = "#15181f";
-  ctx.fillRect(x-13, y+8, 7, 6);
-  ctx.fillRect(x+6, y+8, 7, 6);
-  /* jauge d'eau */
+  /* ── BROSSE cylindrique : en top-down elle est SOUS la machine ;
+        on dessine ses poils qui dépassent des 2 côtés (avant) ── */
+  g.fillStyle = "#b8873a";
+  g.fillRect(X-14, Y+14, 6, 3);          /* touffe brosse gauche dépassant */
+  g.fillRect(X+8, Y+14, 6, 3);           /* touffe brosse droite */
+}
+
+/* pré-rend 4 orientations pour une teinte ; renvoie [canvas bas, gauche, haut, droite] */
+function prerenderMachine(teinte, pushed){
+  const base = document.createElement("canvas");
+  base.width = 92; base.height = 92;
+  spriteMachineBase(base.getContext("2d"), teinte, pushed);
+  const out = [];
+  /* dir (0,1)=S/bas → angle 0 · (−1,0)=O/gauche · (0,−1)=N/haut · (1,0)=E/droite */
+  const angles = [0, -Math.PI/2, Math.PI, Math.PI/2];
+  for (const a of angles){
+    const c2 = document.createElement("canvas");
+    c2.width = 92; c2.height = 92;
+    const g2 = c2.getContext("2d");
+    g2.imageSmoothingEnabled = false;
+    g2.translate(46, 46);
+    g2.rotate(a);
+    g2.drawImage(base, -46, -46);
+    out.push(c2);
+  }
+  return out;
+}
+function spriteMachine(m){
+  const clef = clefSprite(m);
+  if (!SPR_MACHINE[clef]) SPR_MACHINE[clef] = prerenderMachine(m.couleur, m.mode === MODE_PUSHED);
+  const idx = m.dir.y > 0.5 ? 0 : m.dir.x < -0.5 ? 1 : m.dir.y < -0.5 ? 2 : 3;
+  return SPR_MACHINE[clef][idx];
+}
+
+/* ── DESSIN COMPLET DE LA MACHINE (ombre, brosse vue de dessus, sprite,
+      niveau d'eau dans le bac, cœurs, recharges, câlin, drift) ── */
+function dessinerMachine(m){
+  const x = Math.round(m.x), y = Math.round(m.y);
+  const pushing = m.vitesseActuelle > 1;
+  /* squish & stretch : scaleY quand on accélère, scaleX quand on démarre */
+  let sx = 1, sy = 1;
+  if (pushing && m.mode === MODE_AUTO){ sy = 1.06; sx = 0.96; }
+  else if (pushing){ sy = 0.95; sx = 1.05; }
+  /* ombre portée */
+  ombreEntite(x, y, 15, 9);
+  /* ── trace d'eau en arc derrière la machine (particules continues) ── */
+  if (pushing && m.reservoir > 0 && Math.random() < 0.35){
+    const bx = x - m.dir.x*18 + (Math.random()*10-5);
+    const by = y - m.dir.y*18 + (Math.random()*10-5);
+    bulles.push({x: bx, y: by, vie: 0.6 + Math.random()*0.4, t: 0});
+  }
+  /* ── BROSSE ROTATIVE : 3 frames d'ombre rotative sur les bords ── */
+  const fr = (performance.now()/90)|0;
+  const bx0 = x - m.dir.x*14, by0 = y - m.dir.y*14;   /* centre brosse (avant?) —
+     en fait la brosse est SOUS le châssis : on la dessine comme une bande
+     qui dépasse de part et d'autre, animée de gauche à droite */
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  if (m.dir.x !== 0){       /* déplacement horizontal : brosse verticale sous châssis */
+    const oy = (fr%3) - 1;
+    ctx.fillRect(bx0-2, y-13+oy, 3, 4);
+    ctx.fillRect(bx0-1, y-4, 3, 8);
+    ctx.fillRect(bx0-2, y+5-oy, 3, 4);
+  } else {                  /* déplacement vertical : brosse horizontale */
+    const ox = (fr%3) - 1;
+    ctx.fillRect(x-14+ox, by0-2, 4, 3);
+    ctx.fillRect(x-6, by0-1, 8, 3);
+    ctx.fillRect(x+6-ox, by0-2, 4, 3);
+  }
+  /* poils clairs de la brosse qui scintillent (frame sur 2) */
+  if (fr % 2 === 0){
+    ctx.fillStyle = "rgba(255,220,140,.7)";
+    ctx.fillRect(bx0-1, by0-1, 2, 2);
+  }
+  /* ── SPRITE ── */
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sx, sy);
+  ctx.drawImage(spriteMachine(m), -46, -46 - (m.mode === MODE_PUSHED ? 0 : 0));
+  ctx.restore();
+  /* ── NIVEAU D'EAU IN-GAME : le liquide du bac solution BAISSANT ── */
+  const lvl = m.reservoir / RESERVOIR_MAX;
+  /* jauge IN-GAME : le liquide du bac solution BAISSANT — dessinée quand le
+     sprite pointe vers le bas ; la barre sous la machine reste la jauge
+     gameplay fiable toutes orientations. */
+  if (lvl < 0.999 && m.dir.y > 0.5){
+    const bacY = y - 4;
+    const hMax = 11, hL = hMax * lvl;
+    ctx.fillStyle = "rgba(20,25,32,.75)";
+    ctx.fillRect(x - 10, bacY + hL, 9, hMax - hL + 1);
+    ctx.fillStyle = lvl < 0.15 ? NILFISK_COULS.jauneFoncé : NILFISK_COULS.eau;
+    ctx.fillRect(x - 10, bacY, 9, Math.max(1, hL)|0);
+    ctx.fillStyle = "rgba(255,255,255,.5)";
+    ctx.fillRect(x - 10, bacY, 9, 1);
+  }
+  /* barre fine d'état sous la machine (complète le bac) */
   ctx.fillStyle = "#10202c";
-  ctx.fillRect(x-11, y+3, 22, 4);
+  ctx.fillRect(x-11, y+19, 22, 3);
   ctx.fillStyle = m.reservoir < 0.15 ? "#e74c3c" : "#3fa9f5";
-  ctx.fillRect(x-11, y+3, 22*m.reservoir/RESERVOIR_MAX, 4);
-  /* cœurs de loutre au-dessus */
-  for (let i=0;i<m.coeurs;i++) dessinerCoeur(x-11+i*9, y-21, 3);
-  /* barre de recharge au-dessus de la machine */
+  ctx.fillRect(x-11, y+19, (22*lvl)|0, 3);
+  /* LED d'état clignotante si réservoir bas */
+  if (lvl < 0.15 && ((performance.now()/250)|0)%2 === 0){
+    ctx.fillStyle = "#ff4444";
+    ctx.fillRect(x+10, y-7, 3, 3);
+  }
+  /* ── nom de la machine au-dessus (identité lisible) ── */
+  pfDraw(x, y-32, m.nom, m.couleur, 2, 0, 1);
+  /* ── cœurs de loutre au-dessus ── */
+  for (let i=0;i<m.coeurs;i++) dessinerCoeur(x-11+i*9, y-24, 3);
+  /* barre de recharge au-dessus */
   if (m.rechargeTimer > 0){
     ctx.fillStyle = "#10202c";
-    ctx.fillRect(x-12, y-16, 24, 5);
+    ctx.fillRect(x-12, y-18, 24, 5);
     ctx.fillStyle = "#3fa9f5";
-    ctx.fillRect(x-11, y-15, 22*(m.rechargeTimer/RECHARGE_FONTAINE), 3);
+    ctx.fillRect(x-11, y-17, (22*(m.rechargeTimer/RECHARGE_FONTAINE))|0, 3);
+    /* gouttes au-dessus (recharge = la fontaine coule) */
+    if (Math.random() < 0.3) gouttes.push({x: x + Math.random()*20 - 10, y: y-22, vy: 40, vie: 0.5});
   }
-  /* bulles de câlin */
+  /* indicateur de malus couloir étroit (pictogramme alerte) */
+  if (m.maneuvreCouloir > 0 && ((performance.now()/180)|0)%2 === 0){
+    pfDraw(x, y-30, "!", "#e8a33d", 2);
+  }
+  /* ── CÂLIN : halo + gros cœur + particules ── */
   if (m.calin > 0){
     const b = Math.sin(performance.now()/110)*3;
-    dessinerCoeur(x-5, y-30+b, 5);
-    ctx.fillStyle = "rgba(255,255,255,.1)";
-    ctx.fillRect(x-16, y-14, 32, 28);
+    ctx.fillStyle = "rgba(255,120,180,.12)";
+    ctx.fillRect(x-18, y-16, 36, 32);
+    dessinerCoeur(x-6, y-32+b, 6);
+    if (Math.random() < 0.25){
+      const a = Math.random()*Math.PI*2;
+      etoiles.push({x: x+Math.cos(a)*10, y: y-10+Math.sin(a)*8, vx: Math.cos(a)*25, vy: Math.sin(a)*25-10, vie: 0.7});
+    }
+  }
+  /* flèches d'orientation du déplacement quand drift (glisse) */
+  if (m.drift > 0 && ((performance.now()/120)|0)%2 === 0){
+    ctx.fillStyle = "rgba(255,255,255,.7)";
+    const ax = x + m.dir.x*20, ay = y + m.dir.y*20;
+    pfDraw(ax, ay, ">", "#ffffff", 1);
+  }
+  /* badge du mode sous la machine (humain : "P" poussé / "A" auto) */
+  if (m === joueur && etat === "course"){
+    pfDraw(x, y+30, m.mode === MODE_PUSHED ? "P" : "A", "#ffffff", 1, 0, 1);
   }
 }
 
-/* cœur pixel 8-bit */
-function dessinerCoeur(x, y, s){
-  ctx.fillStyle = "#e255a1";
-  ctx.fillRect(x, y, s*2, s);
-  ctx.fillRect(x - s, y + s, s*4, s);
-  ctx.fillRect(x, y + s*2, s*2, s);
-  ctx.fillRect(x + s - s/2, y + s*3, s, s);
-  ctx.fillStyle = "#ffd0ea";               // reflet
-  ctx.fillRect(x, y, s, s - s/2);
-}
-
-/* la loutre : corps brun, ventre beige, museau, queue */
+/* ── loutre top-down améliorée : corps brun, tête, pattes, queue 2 frames ── */
 function dessinerLoutre(o){
   const x = Math.round(o.x), y = Math.round(o.y);
-  const g = o.dirX < 0;                    // regarde à gauche ?
-  ctx.fillStyle = "rgba(0,0,0,.2)";
-  ctx.fillRect(x-11, y+9, 22, 4);
-  /* queue */
+  const g = o.dirX < 0;                    /* regarde à gauche ? */
+  const t2 = (performance.now()/280)|0;
+  ombreEntite(x, y, 11, 7);
+  /* queue qui remue : 2 frames */
   ctx.fillStyle = "#5d4028";
-  ctx.fillRect(g ? x+10 : x-14, y+4, 4, 3);
+  if (t2 % 2 === 0) ctx.fillRect(g ? x+10 : x-14, y+4, 4, 3);
+  else ctx.fillRect(g ? x+10 : x-14, y+3, 4, 4);
+  /* pattes (derrière le corps, visibles sur les côtés) */
+  ctx.fillStyle = "#4e351f";
+  ctx.fillRect(x-9, y+5, 3, 4);
+  ctx.fillRect(x+6, y+5, 3, 4);
   /* corps */
   ctx.fillStyle = "#6d4c2f";
   ctx.fillRect(x-11, y-3, 22, 11);
-  /* ventre */
+  /* ventre beige */
   ctx.fillStyle = "#c9a86b";
   ctx.fillRect(g ? x-8 : x-4, y+2, 10, 5);
   /* tête */
   ctx.fillStyle = "#6d4c2f";
   ctx.fillRect(x-6, y-10, 12, 8);
+  /* oreilles minuscules */
+  ctx.fillStyle = "#5d4028";
+  ctx.fillRect(x-6, y-11, 2, 2);
+  ctx.fillRect(x+4, y-11, 2, 2);
   /* museau + moustaches */
   ctx.fillStyle = "#c9a86b";
   ctx.fillRect(g ? x-6 : x+2, y-6, 4, 4);
@@ -992,18 +1559,39 @@ function dessinerLoutre(o){
   ctx.fillStyle = "#1a1208";
   ctx.fillRect(g ? x-5 : x+2, y-9, 2, 2);
   ctx.fillRect(x, y-7, 2, 2);
-  /* petites pattes */
-  ctx.fillStyle = "#5d4028";
-  ctx.fillRect(x-8, y+7, 4, 3);
-  ctx.fillRect(x+4, y+7, 4, 3);
-  /* cœur quand elle a fini un câlin tout frais */
+  /* petit reflet dos */
+  ctx.fillStyle = "#7d5a39";
+  ctx.fillRect(x-9, y-2, 18, 1);
+  /* câlin en cours : cœur + étoiles */
   if (o.calin > 0){
     const b = Math.sin(performance.now()/120)*3;
     dessinerCoeur(x-4, y-22+b, 4);
+    if (Math.random() < 0.3){
+      const a = Math.random()*Math.PI*2;
+      etoiles.push({x: x+Math.cos(a)*12, y: y-8+Math.sin(a)*8, vx: Math.cos(a)*30, vy: Math.sin(a)*30-15, vie: 0.8});
+    }
   }
 }
 
-/* ---------------------- 10. HUD ---------------------- */
+/* cœur pixel 8-bit (contour noir pour ressortir sur fond sombre) */
+function dessinerCoeur(x, y, s){
+  ctx.fillStyle = "#171a20";
+  ctx.fillRect(x - s - 1, y - 1, s*4 + 2, s*2 + 2);
+  ctx.fillRect(x - 1, y + s*2 - 1, s*2 + 2, s + 2);
+  ctx.fillStyle = "#e255a1";
+  ctx.fillRect(x, y, s*2, s);
+  ctx.fillRect(x - s, y + s, s*4, s);
+  ctx.fillRect(x, y + s*2, s*2, s);
+  ctx.fillRect(x + s - s/2, y + s*3, s, s);
+  ctx.fillStyle = "#ffd0ea";
+  ctx.fillRect(x, y, s, s - s/2);
+}
+
+/* ================================================================
+   v0.3-§10 · HUD PIXEL (police par code, icônes custom, barre stylisée)
+   ================================================================ */
+
+/* surface nettoyable / % nettoyé (logique v0.2 inchangée) */
 function compterSolNettoyable(){
   let n = 0;
   for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++)
@@ -1017,67 +1605,278 @@ function pctNettoye(){
   const tot = compterSolNettoyable();
   return tot ? Math.round(100*n/tot) : 0;
 }
-
+let scoreAff = 0;        /* compteur ease-out pour le % nettoyé affiché */
 function dessinerHUD(){
-  ctx.textBaseline = "top";
-  ctx.font = "bold 15px monospace";
-  /* % nettoyé (joueur) */
+  /* fond de bandeau HUD opaque pour lisibilité, avec liseré inférieur */
+  ctx.fillStyle = "rgba(10,14,26,.85)";
+  ctx.fillRect(0, 0, cv.width, MARGE_Y);
+  ctx.fillStyle = "#2a3550";
+  ctx.fillRect(0, MARGE_Y-1, cv.width, 1);
+
+  /* ── TOI : % nettoyé avec compteur qui défile (ease-out) ── */
   const pct = pctNettoye();
-  ctx.fillStyle = "#8fa0b8";
-  ctx.fillText("TOI", MARGE_X, 6);
-  ctx.fillStyle = "#4fc3f7";
-  ctx.fillText(pct + " %", MARGE_X + 40, 6);
-  /* IA */
-  /* IA (proto : score IA estimé sur ses cases frottées) */
-  ctx.fillStyle = "#8fa0b8";
-  ctx.fillText("MOPZILLA", 120, 6);
-  ctx.fillStyle = "#ff7043";
-  ctx.fillText(Math.round(100 * ia.nettoyees / Math.max(1, compterSolNettoyable())) + " %", 196, 6);
-  /* chrono (gros, au centre) */
-  ctx.fillStyle = tempsRestant < 10 ? "#e74c3c" : "#ffd45a";
-  ctx.font = "bold 22px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText(Math.ceil(tempsRestant) + " s", cv.width/2, 4);
-  ctx.textAlign = "left";
-  /* réservoir */
-  ctx.font = "bold 15px monospace";
-  ctx.fillStyle = "#8fa0b8";
-  ctx.fillText("EAU", 470, 6);
-  ctx.fillStyle = "#10202c";
-  ctx.fillRect(502, 9, 80, 11);
-  ctx.fillStyle = joueur.reservoir < 0.15 ? "#e74c3c" : "#3fa9f5";
-  ctx.fillRect(503, 10, 78*joueur.reservoir/RESERVOIR_MAX, 9);
-  /* cœurs de loutre */
+  scoreAff += (pct - scoreAff) * 0.12;
+  if (Math.abs(pct - scoreAff) < 0.6) scoreAff = pct;
+  const aff = Math.round(scoreAff);
+  pfDraw(MARGE_X, 13, "TOI", "#8fa0b8", 2, 1);
+  pfDraw(MARGE_X + 46, 13, aff + " %", "#4fc3f7", 2, 1);
+
+  /* ── MOPZILLA ── */
+  pfDraw(150, 13, "MOPZILLA", "#8fa0b8", 2, 1);
+  pfDraw(254, 13, Math.round(100 * ia.nettoyees / Math.max(1, compterSolNettoyable())) + "%", "#ff7043", 2, 1);
+
+  /* ── chrono (gros, au centre) : icône pixel + chiffres pixel ── */
+  const tc = Math.ceil(tempsRestant);
+  pfDraw(cv.width/2 - 34, 13, "T", tempsRestant < 10 ? "#e74c3c" : "#ffd45a", 2);
+  pfDraw(cv.width/2 + 4, 13, tc + " S", tempsRestant < 10 ? (tc%2 ? "#e74c3c" : "#ff8a8a") : "#ffd45a", 2);
+
+  /* ── EAU : icône goutte pixel + barre réservoir stylisée ── */
+  const bx = 470, by = 6;
+  /* icône goutte (pixel, 7×9) */
+  ctx.fillStyle = "#3fa9f5";
+  ctx.fillRect(bx+6, by+1, 3, 2);
+  ctx.fillRect(bx+4, by+3, 7, 3);
+  ctx.fillRect(bx+3, by+6, 9, 3);
+  ctx.fillRect(bx+5, by+9, 5, 2);
+  ctx.fillStyle = "#bfe9ff";
+  ctx.fillRect(bx+6, by+3, 2, 2);
+  /* cadre + barre, avec bords arrondis simulés */
+  ctx.fillStyle = "#0b1522";
+  ctx.fillRect(bx+15, by+2, 84, 12);
+  ctx.fillStyle = "#22354e";
+  ctx.fillRect(bx+16, by+3, 82, 10);
+  const lr = (80 * joueur.reservoir/RESERVOIR_MAX)|0;
+  const colEau = joueur.reservoir < 0.15
+    ? (((performance.now()/250)|0)%2 ? "#e74c3c" : "#8c2b25")
+    : "#3fa9f5";
+  if (lr > 0){
+    ctx.fillStyle = colEau;
+    ctx.fillRect(bx+17, by+4, lr, 8);
+    /* reflet sur le liquide */
+    ctx.fillStyle = "rgba(255,255,255,.45)";
+    ctx.fillRect(bx+17, by+4, lr, 2);
+  }
+  /* graduation du cadre */
+  ctx.fillStyle = "#3d5878";
+  for (let g=1; g<4; g++) ctx.fillRect(bx+17 + g*20, by+4, 1, 8);
+
+  /* ── cœurs de loutre (3 max) ── */
   for (let i=0;i<COEURS_MAX;i++){
     const plein = i < joueur.coeurs;
-    ctx.globalAlpha = plein ? 1 : 0.2;
-    dessinerCoeur(600 + i*18, 8, 3);
+    ctx.globalAlpha = plein ? 1 : 0.3;
+    dessinerCoeur(600 + i*20, 8, 3.5);
     ctx.globalAlpha = 1;
   }
-  /* v0.2 : badge du mode courant + malus couloir étroit visible */
+
+  /* ── badge du mode courant (bandeau bas-droit) ── */
   const mdj = MODES.find(x => x.id === joueur.mode) || MODES[1];
-  ctx.font = "bold 12px monospace";
-  ctx.fillStyle = "#ffd45a";
-  ctx.fillText(mdj.hud, MARGE_X, cv.height - 18);
-  /* v0.2 : malus de manœuvre en couloir étroit (auto-tracée) — visible en course */
+  pfDraw(cv.width - 8, cv.height - 24, joueur.mode === MODE_PUSHED ? "POUSSÉE·LARGE" : "AUTO·VITESSE", "#ffd45a", 2, 2, 1);
+
+  /* ── malus couloir étroit (visible en course, texte pixel) ── */
   if (joueur.mode === MODE_AUTO){
     const malus = Math.max(joueur.maneuvreCouloir || 0, joueur.dansCouloir ? PIVOT_COULOIR : 0);
     if (malus > 0){
-      ctx.fillStyle = malus >= PIVOT_COULOIR ? "#e8a33d" : "#7dffa0";
-      ctx.fillText("MANŒUVRE COULOIR ÉTROIT — demi-tour coûte cher !", MARGE_X, cv.height - 34);
+      pfDraw(MARGE_X + 10, cv.height - 52, "DEMI-TOUR COUTE CHERE !",
+        malus >= PIVOT_COULOIR ? "#e8a33d" : "#7dffa0", 2, 1);
     }
   }
-  ctx.font = "bold 15px monospace";
-  /* badge discret si le service LAYA est injoignable */
+
+  /* ── badge discret Laya hors ligne ── */
   if (layaHorsLigne){
-    ctx.font = "11px monospace";
-    ctx.fillStyle = "#e8a33d";
-    ctx.fillText("Laya hors ligne — IA locale", 645, 12);
-    ctx.font = "bold 15px monospace";
+    pfDraw(MARGE_X + 10, cv.height - 30, "LAYA HORS LIGNE - IA LOCALE", "#e8a33d", 2, 1);
   }
+  /* mode sans score (titre) : rien */
 }
 
-/* ---------------------- 11. ÉCRANS ---------------------- */
+/* bandeau sous le canvas pour l'aide clavier (DOM, inchangé v0.2) */
+
+/* ================================================================
+   v0.3-§11 · ÉCRANS : titre animé, choix de mode illustré, compte,
+   fin avec podium + confetti — texte pixel, bannière animée.
+   ================================================================ */
+/* bannière pixel "MOB RACER" avec machine qui traverse l'écran */
+function banniereTitre(cy){
+  const t = performance.now()/1000;
+  /* châssis de la bannière */
+  const w = 420, x = cv.width/2 - w/2;
+  ctx.fillStyle = "rgba(8,12,24,.85)";
+  ctx.fillRect(x-10, cy-38, w+20, 76);
+  ctx.fillStyle = "#2a3550"; ctx.fillRect(x-10, cy-38, w+20, 2);
+  ctx.fillStyle = "#2a3550"; ctx.fillRect(x-10, cy+36, w+20, 2);
+  pfDraw(cv.width/2, cy - 10, "MOB RACER", "#ffd45a", 4, 0, 1);
+  pfDraw(cv.width/2, cy + 22, "PROTO V0.3 - NILFISK EDITION", "#7dffa0", 2, 0);
+  /* la machine traverse la bannière en boucle (ping-pong) */
+  const px = x + 30 + (((t*110) % (w - 60)));
+  const py = cy + 30;
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.scale(0.55, 0.55);
+  ctx.rotate(Math.sin(t*2)*0.08);
+  ctx.drawImage(spriteTitre(), -46, -46);   /* orientation gauche */
+  ctx.restore();
+  /* gouttes derrière la machine en marche */
+  if (Math.random() < 0.2){
+    bulles.push({x: px + 12, y: py + 4, vie: 0.5, t: 0});
+  }
+}
+/* sprite titre pré-rendu à la demande (orientation gauche = [1]) */
+function spriteTitre(){
+  const clefT = "#4fc3f7|A";
+  if (!SPR_MACHINE[clefT]) SPR_MACHINE[clefT] = prerenderMachine("#4fc3f7", false);
+  return SPR_MACHINE[clefT][1];
+}
+
+/* ── écran TITRE ── */
+function ecranTitre(){
+  ctx.fillStyle = "rgba(6,9,20,.88)";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  banniereTitre(180);
+  const lignes = [
+    "FLECHES / WASD : BOUGER - M : SON",
+    "UNE CASE = UNE FOIS. CHRONO 75 S.",
+    "RECHARGE A LA FONTAINE. CALINE LES LOUTRES !",
+    "COULOIRS ETROITS : LA POUSSÉE Y EST REINE",
+  ];
+  lignes.forEach((t,i)=> pfDraw(cv.width/2, 264 + i*26, t, "#cfe3ff", 2, 0));
+  const pulse = ((performance.now()/450)|0)%2;
+  pfDraw(cv.width/2, 404, "APPUYE SUR UNE TOUCHE POUR LANCER",
+    pulse ? "#7dffa0" : "#3fa95c", 2, 0);
+  if (etatEntrees === "choixMode") { /* transition gérée par la boucle */ }
+}
+
+/* ── écran CHOIX DE MODE : 2 cartes avec vraies mini-illustrations ── */
+function dessinerChoixMode(){
+  ctx.fillStyle = "rgba(6,9,20,.9)";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.textAlign = "center";
+  pfDraw(cv.width/2, 70, "CHOISIS TON MODE", "#ffd45a", 3, 0, 1);
+  pfDraw(cv.width/2, 106, "DEUX FAMILLES - DEUX STYLES DE JEU", "#8fa0b8", 1, 0);
+  const cxG = cv.width/2, ecart = 240;
+  MODES.forEach((mm, i)=>{
+    const sel = (i === selMode);
+    const cx = cxG + (i===0 ? -ecart/2 : ecart/2);
+    const cy = 272, w = 210, h = 260;
+    /* carte : fond + bord ; sélection = bord cyan animé */
+    ctx.fillStyle = sel ? "rgba(80,150,255,.25)" : "rgba(40,52,80,.45)";
+    ctx.fillRect(cx-w/2, cy-h/2, w, h);
+    ctx.strokeStyle = sel ? ( ((performance.now()/300)|0)%2 ? "#4fc3f7" : "#9fdcff" ) : "#3a4a6c";
+    ctx.lineWidth = sel ? 3 : 1;
+    ctx.strokeRect(cx-w/2, cy-h/2, w, h);
+    if (sel){
+      pfDraw(cx, cy-112, "> SELECTIONNE <", "#7dffa0", 1, 0);
+    } else {
+      pfDraw(cx, cy-112, mm.nom, "#8fa0b8", 1, 0);
+    }
+    /* MINI ILLUSTRATION = vraie machine Nilfisk pré-rendue (orientation S) */
+    ctx.save();
+    ctx.translate(cx, cy-40);
+    ctx.scale(1.15, 1.15);
+    const teinteI = i === 0 ? "#ff7043" : "#4fc3f7";
+    const clefCache = teinteI + "|" + (mm.id === MODE_PUSHED ? "P" : "A");
+    if (!SPR_MACHINE[clefCache]) SPR_MACHINE[clefCache] = prerenderMachine(teinteI, mm.id === MODE_PUSHED);
+    ctx.drawImage(SPR_MACHINE[clefCache][0], -46, -46);
+    ctx.restore();
+    /* reflet d'eau sous l'illustration */
+    ctx.fillStyle = "rgba(63,169,245,.35)";
+    ctx.fillRect(cx-30, cy+16, 60, 5);
+    /* nom + description */
+    pfDraw(cx, cy+46, mm.nom, sel ? "#ffd45a" : "#8fa0b8", 2, 0);
+    const dLines = mm.desc.toUpperCase().split("—");
+    dLines.forEach((d, k)=> pfDraw(cx, cy+74 + k*16, d.trim(), sel ? "#cfe3ff" : "#5d6f8c", 1, 0));
+    /* stats mini-pixels : vitesse (3 carrés) / largeur */
+    const nbV = mm.id === MODE_PUSHED ? 2 : 4;
+    const nbL = mm.id === MODE_PUSHED ? 3 : 1;
+    for (let s2=0; s2<4; s2++){
+      ctx.fillStyle = s2 < nbV ? "#7dffa0" : "#2e3a52";
+      ctx.fillRect(cx-32 + s2*10, cy+108, 8, 4);
+    }
+    for (let s2=0; s2<3; s2++){
+      ctx.fillStyle = s2 < nbL ? (nbL === 3 ? "#ffd45a" : "#4fc3f7") : "#2e3a52";
+      ctx.fillRect(cx+4 + s2*10, cy+108, 8, 4);
+    }
+    pfDraw(cx-36, cy+124, "VITESSE", "#5d6f8c", 1, 1);
+    pfDraw(cx+2, cy+124, "LARGEUR", "#5d6f8c", 1, 1);
+  });
+  pfDraw(cv.width/2, 454, "FLECHES : CHANGER - ENTREE : VALIDER", "#8fa0b8", 2, 0);
+  pfDraw(cv.width/2, 480, "LA SALLE COMPTE DES COULOIRS ETROITS : LA POUSSÉE Y EST REINE", "#e8a33d", 1, 0);
+  pfDraw(cv.width/2, 502, "2 BOTS TE REJOIGNENT : UN POUSSÉ ET UN AUTO-TRACÉ", "#6d7a99", 1, 0);
+  ctx.textAlign = "left";
+}
+
+/* ── écran COMPTE À REBOURS : chiffres pixel qui pulsent ── */
+function dessinerCompte(){
+  ctx.fillStyle = "rgba(6,9,20,.5)";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  const n = Math.ceil(compte);
+  const k = 12;
+  pfDraw(cv.width/2, 280, String(n), "#ffffff", k, 0, 1);
+  pfDraw(cv.width/2, 360, "PREPARE TON RESERVOIR !", "#ffd45a", 1, 0);
+}
+
+/* ── écran FIN : podium + confetti + résultats pixel ── */
+function dessinerFin(){
+  const fade = Math.min(1, (performance.now() - finT0)/600);
+  ctx.fillStyle = "rgba(6,9,20," + (0.9*fade) + ")";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  dessinerConfetti();
+  pfDraw(cv.width/2, 90, "MANCHE TERMINEE !", "#ffd45a", 3, 0, 1);
+  /* PODIUM : classement par cases nettoyées (TOI + bots) */
+  const scores = [
+    { nom: "TOI",        cases: joueur.nettoyees, coul: "#4fc3f7", mode: joueur.mode },
+    { nom: "MOPZILLA",   cases: ia.nettoyees,     coul: "#ff7043", mode: ia.mode },
+    { nom: "PROPRETAIN", cases: bot2.nettoyees,   coul: "#66bb6a", mode: bot2.mode },
+  ];
+  scores.sort((a,b)=> b.cases - a.cases);
+  const podium = [
+    { h: 56, x: cv.width/2,      c: "#ffd45a" },
+    { h: 38, x: cv.width/2-130,  c: "#8fa0b8" },
+    { h: 22, x: cv.width/2+130,  c: "#c77b3f" },
+  ];
+  const baseY = 300;
+  podium.forEach((p, i)=>{
+    /* marche du podium en 3D pixel : face claire + face sombre */
+    const w = 96;
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x - w/2, baseY - p.h, w, p.h);
+    ctx.fillStyle = "rgba(255,255,255,.28)";
+    ctx.fillRect(p.x - w/2, baseY - p.h, w, 4);
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.fillRect(p.x - w/2, baseY - 6, w, 6);
+    /* numéro (1/2/3) sur le bloc */
+    pfDraw(p.x, baseY - p.h/2, String(i+1), "#1a1e2c", 2, 0);
+    /* machine gagnante miniature sur la 1re marche, danse (rotation) */
+    const sc = scores[i];
+    ctx.save();
+    ctx.translate(p.x, baseY - p.h - 30);
+    const teinte = sc.coul;
+    const clefC = teinte + "|" + (sc.mode === MODE_PUSHED ? "P" : "A");
+    if (!SPR_MACHINE[clefC]) SPR_MACHINE[clefC] = prerenderMachine(teinte, sc.mode === MODE_PUSHED);
+    const t2 = performance.now()/1000;
+    if (i === 0){ ctx.rotate(Math.sin(t2*6)*0.12); ctx.scale(0.6 + Math.sin(t2*3)*0.05, 0.6); }
+    else ctx.scale(0.5, 0.5);
+    ctx.drawImage(SPR_MACHINE[clefC][0], -46, -46);
+    ctx.restore();
+    /* nom + score */
+    pfDraw(p.x, baseY - p.h - 66, sc.nom, sc.coul, 1, 0);
+    pfDraw(p.x, baseY - p.h - 52, sc.cases + " CASES", "#cfe3ff", 1, 0);
+  });
+  /* ligne du sol du podium */
+  ctx.fillStyle = "#2a3550";
+  ctx.fillRect(podium[1].x - 96/2 - 40, baseY + 2, 2*(96+130), 3);
+  /* SURFACE + cœurs, avec compteur ease-out */
+  const lignes = [
+    "SURFACE NETTOYEE : " + finPct + " %",
+    "COEURS DE LOUTRE : " + (joueur ? joueur.coeurs : 0) + " / " + COEURS_MAX,
+    "LES SPECS VIVENT, LES LOUTRES AUSSI.",
+  ];
+  lignes.forEach((t,i)=> pfDraw(cv.width/2, 338 + i*26, t, "#cfe3ff", 2, 0));
+  const pulse = ((performance.now()/450)|0)%2;
+  pfDraw(cv.width/2, 448, "ENTREE : REJOUER - R : CHOISIR UN AUTRE MODE",
+    pulse ? "#7dffa0" : "#3fa95c", 2, 0);
+}
+let finT0 = 0, finPct = 0;
+
+/* écran générique (fallback éventuel) */
 function ecranTexte(titre, lignes, sousTitre, couleur){
   ctx.fillStyle = "rgba(6,9,20,.88)";
   ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1096,80 +1895,14 @@ function ecranTexte(titre, lignes, sousTitre, couleur){
   ctx.textAlign = "left";
 }
 
-/* v0.2 : écran de choix de mode — 2 cartes, sélection flèches + Entrée */
-function dessinerChoixMode(){
-  ctx.fillStyle = "rgba(6,9,20,.9)";
-  ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#ffd45a";
-  ctx.font = "bold 34px monospace";
-  ctx.fillText("CHOISIS TON MODE", cv.width/2, 120);
-  const cxG = cv.width/2, ecart = 200;
-  MODES.forEach((m, i)=>{
-    const sel = (i === selMode);
-    const cx = cxG + (i===0 ? -ecart/2 : ecart/2);
-    const cy = 280, w = 180, h = 200;
-    /* carte */
-    ctx.fillStyle = sel ? "rgba(80,150,255,.25)" : "rgba(40,52,80,.45)";
-    ctx.fillRect(cx-w/2, cy-h/2, w, h);
-    ctx.strokeStyle = sel ? "#4fc3f7" : "#3a4a6c";
-    ctx.lineWidth = sel ? 3 : 1;
-    ctx.strokeRect(cx-w/2, cy-h/2, w, h);
-    /* icône pixel dessinée par code */
-    dessinerIconeMode(cx, cy-30, m.id);
-    /* nom + description */
-    ctx.font = "bold 18px monospace";
-    ctx.fillStyle = sel ? "#ffd45a" : "#8fa0b8";
-    ctx.fillText(m.nom, cx, cy+45);
-    ctx.font = "11px monospace";
-    ctx.fillStyle = sel ? "#cfe3ff" : "#5d6f8c";
-    ctx.fillText(m.desc, cx, cy+70);
-    /* badge sélection */
-    if (sel){
-      ctx.font = "12px monospace";
-      ctx.fillStyle = "#7dffa0";
-      ctx.fillText("▶ SÉLECTIONNÉ ◀", cx, cy-105);
-    }
-  });
-  ctx.font = "14px monospace";
-  ctx.fillStyle = "#8fa0b8";
-  ctx.fillText("← / → : changer de mode   ·   ENTRÉE : valider", cv.width/2, 470);
-  /* v0.2 (équilibrage José) : ligne d'aide sur les couloirs étroits */
-  ctx.font = "bold 12px monospace";
-  ctx.fillStyle = "#e8a33d";
-  ctx.fillText("La salle compte des couloirs étroits : la poussée y est reine", cv.width/2, 493);
-  ctx.font = "12px monospace";
-  ctx.fillStyle = "#6d7a99";
-  ctx.fillText("2 bots te rejoignent : un POUSSÉ et un AUTO-TRACÉ", cv.width/2, 512);
-  ctx.textAlign = "left";
-}
-
-/* icônes pixel des 2 modes (dessinées par code) : serpillière poussée vs autolaveuse */
-function dessinerIconeMode(cx, cy, modeId){
-  const p = (px, py, s, coul) => { ctx.fillStyle = coul; ctx.fillRect(cx+px, cy+py, s, s); };
-  if (modeId === MODE_PUSHED){
-    /* serpillière à plat poussée : manche oblique + tampon large */
-    p(-14,  16, 5, "#8d6e4a");  p(-9,  8, 5, "#8d6e4a");
-    p(-4,   0, 5, "#8d6e4a");   p(1,  -8, 5, "#8d6e4a");
-    p(6, -16, 5, "#8d6e4a");
-    p(-18, 18, 9, "#e8dcc0");   p(-26, 18, 9, "#d9cbaa");
-    p(-14, 22, 18, "#f5ead6");
-  } else {
-    /* autolaveuse : caisse + volant + jet arrière */
-    p(-16, -12, 22, 13, "#37474f");
-    p(-16, -12, 22, 9, "#4fc3f7");                 // cabine/feu
-    p(-16, 2, 26, 9, "#37474f");                   // basse caisse
-    p(-14, 14, 8, 5, "#15181f");                   // roues
-    p(4, 14, 8, 5, "#15181f");
-    p(8, -2, 6, 6, "#0d1117");                     // volant
-    p(20, 6, 10, 4, "#bfe3ff");                    // jet d'eau derrière
-  }
-}
-
 /* ---------------------- 12. RENDU PRINCIPAL ---------------------- */
 function dessiner(){
   ctx.fillStyle = "#0b0d16";
   ctx.fillRect(0, 0, cv.width, cv.height);
+
+  /* v0.3 : screen shake — le monde tremble, pas le HUD (ctx.save/restore) */
+  ctx.save();
+  ctx.translate(Math.round(shake.x), Math.round(shake.y));
 
   /* tuiles : sol, saleté, traînée, murs, fontaine */
   for (let l=0;l<LIGNES;l++){
@@ -1181,6 +1914,7 @@ function dessiner(){
       if (t === T_FONTAINE){ dessinerFontaine(x, y); continue; }
       if (propre[l][c] === 1) dessinerTrainee(c, l, x, y);
       else tacheSale(c, l, x, y);
+      if (propre[l][c] === 1) dessinerBrillanceSol(x, y, c, l);
     }
   }
   for (const p of panneaux) dessinerPanneau(p);
@@ -1192,41 +1926,29 @@ function dessiner(){
     else dessinerLoutre(e);
   }
 
+  /* v0.3 : particules de juice (savon, gouttes, étoiles, flash) */
+  drParticules();
+
+  /* fin du monde secoué */
+  ctx.restore();
+
   dessinerHUD();
 
   if (etat === "titre"){
-    ecranTexte("🐴 MOB RACER — PROTO v0.2", [
-      "Trace propre, recharge l'eau, câline les loutres.",
-      "Une case ne se nettoie qu'UNE seule fois.",
-      "Chrono 75 s. Le carrelage glisse : traînée double !",
-      "Flèches / WASD : bouger · M : son"
-    ], "APPUYE SUR UNE TOUCHE POUR LANCER");
+    ecranTitre();
   } else if (etat === "choixMode"){
     dessinerChoixMode();
   } else if (etat === "compte"){
-    ctx.fillStyle = "rgba(6,9,20,.5)";
-    ctx.fillRect(0, 0, cv.width, cv.height);
-    ctx.textAlign = "center";
-    ctx.font = "bold 84px monospace";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(String(Math.ceil(compte)), cv.width/2, 280);
-    ctx.textAlign = "left";
+    dessinerCompte();
   } else if (etat === "fin"){
-    /* v0.2 : le score des 3 machines affiche leur mode (comparaison styles) */
-    const nomMode = id => { const mm = MODES.find(x => x.id === id); return mm ? mm.nom : "?"; };
-    ecranTexte("MANCHE TERMINÉE !", [
-      "Surface nettoyée : " + pctNettoye() + " %",
-      "TOI (" + nomMode(joueur.mode) + ") : " + (joueur ? joueur.nettoyees : 0) + " cases",
-      "MOPZILLA (" + nomMode(ia.mode) + ") : " + (ia ? ia.nettoyees : 0) + " cases · PROPRETAIN (" + nomMode(bot2.mode) + ") : " + (bot2 ? bot2.nettoyees : 0) + " cases",
-      "Cœurs de loutre : " + (joueur ? joueur.coeurs : 0) + " / 3",
-      "Les specs vivent, les loutres aussi."
-    ], "R : REJOUER");
+    dessinerFin();
   }
 }
 
 /* ---------------------- 13. BOUCLE requestAnimationFrame ---------------------- */
 /* Logique à pas fixe 60 Hz, affichage vsync : le proto tourne à 60 fps. */
 let dernierT = performance.now(), accum = 0;
+/* le screen shake et les particules vivent à l'affichage, hors logique fixe */
 
 function boucle(temps){
   requestAnimationFrame(boucle);
@@ -1260,6 +1982,10 @@ function boucle(temps){
     if (etatEntrees === "choixMode") etat = "choixMode";
   }
 
+  /* v0.3 : maj des particules/shake/confetti à chaque frame affichée */
+  upShake(dt);
+  upParticules(dt);
+  upConfetti(dt);
   dessiner();
 }
 
