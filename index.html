@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     MOB RACER — PROTO v0.1 (Phase 1)
+     MOB RACER — PROTO v0.2 (Phase 1) · 2 modes de machine
      Jeu 8-bit : des machines à laver le sol s'affrontent.
      Fichier unique, zéro dépendance, tout inline (CSS + JS).
      Canvas 2D · arène 15×13 vue du dessus façon Bomberman.
@@ -9,7 +9,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>🐴 MOB RACER — Proto v0.1</title>
+<title>🐴 MOB RACER — Proto v0.2 · 2 modes</title>
 <style>
   html, body {
     margin: 0; padding: 0; background: #0b0d16;
@@ -38,7 +38,7 @@
 <script>
 "use strict";
 /* ================================================================
-   MOB RACER — PHASE 1 : proto jouable
+   MOB RACER — PHASE 1 : proto jouable · v0.2 (2 modes POUSSÉE/AUTO-TRACÉE)
    1 machine humaine + 1 IA simple + 2 loutres câlines.
    Boucle requestAnimationFrame, logique à pas fixe (60 Hz).
    ================================================================ */
@@ -58,12 +58,31 @@ const RESERVOIR_MAX = 1.0;
 const VITESSE_JOUEUR = 110;            // px/s
 const VITESSE_IA = 84;                 // px/s
 const VITESSE_LOUTRE = 26;             // les loutres flânent
-const CADRE = 1/60;                    // pas logique fixe
+const CADRE = 1/60;
+const ACCEL_AUTO = 80/1000;            // v0.2 : inertie auto-tracée ~80 ms pour atteindre la pleine vitesse
+const TRACE_PUSHED = 3;                // v0.2 : trace 3 cases de large (mode poussé)
+const TRACE_AUTO = 1;                  // v0.2 : trace fine (auto-tracée)
+const PIVOT_COULOIR = 0.35;            // v0.2 : demi-tour en couloir étroit ≈ le temps de
+                                       // franchir 1 case — l'inertie auto-tracée tourne mal
 
 /* tuiles */
 const T_SOL = 0, T_FONTAINE = 1, T_MUR = 2;
 /* sols */
 const SOL_LINO = 0, SOL_CARRELAGE = 1;
+
+/* v0.2 — les 2 familles de machines (décisions José 17/10) */
+const MODE_PUSHED = "pushed", MODE_AUTO = "autotracked";
+const MODES = [
+  {
+    id: MODE_PUSHED, nom: "POUSSÉE", desc: "Lente mais large — 3 cases au passage",
+    vitesseMul: 0.7, hud: "MODE POUSSÉE — trace large",
+  },
+  {
+    id: MODE_AUTO, nom: "AUTO-TRACÉE", desc: "Rapide et précise — 1 case, drift",
+    vitesseMul: 1.3, hud: "MODE AUTO-TRACÉE — vitesse",
+  },
+];
+const DEFAUT_MODE = MODE_AUTO;    // v0.1 ≈ auto-tracée : choix par défaut
 
 /* ---------------------- 2. CANVAS + AUDIO ---------------------- */
 const cv = document.getElementById("jeu");
@@ -115,12 +134,64 @@ function sonBuzzer(){                                             // buzzer fin 
 }
 function sonKlaxon(){ bip("square", 440, 660, 0.18, 0.13); }      // compte à rebours
 
+/* v0.2 : jingle différent à la sélection de chaque mode */
+function sonJingleSelection(modeId){
+  if (!AC || !sonActif) return;
+  const notes = (modeId === MODE_PUSHED)
+    ? [[262, 0.12], [196, 0.12], [165, 0.22], [262, 0.30]]        // grave, sérieux, "gros moteur"
+    : [[392, 0.10], [523, 0.10], [659, 0.12], [880, 0.30]];       // aigu, vif, "autolaveuse"
+  let t = 0;
+  for (const [f, d] of notes){
+    setTimeout(()=>bip("square", f, f*0.99, d, 0.12), t*1000);
+    t += d*0.9;
+  }
+}
+
 /* ---------------------- 3. ENTRÉES CLAVIER ---------------------- */
 const touches = {};
+/* v0.2 : machine à états d'entrée */
+//  "titre"        : n'importe quelle touche → écran de choix de mode
+//  "choixMode"    : flèches gauche/droite = sélection, Entrée = valider
+//  "course"/"compte"/"fin" : touches de jeu (v0.1)
+let etatEntrees = "titre";
+let modeJoueur = DEFAUT_MODE;          // mode de la machine HUMAINE (choix à l'écran)
+let selMode = 0;                       // 0 = POUSSÉE, 1 = AUTO-TRACÉE
 window.addEventListener("keydown", e => {
   touches[e.code] = true;
   if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
   if (e.code === "KeyM") sonActif = !sonActif;
+  if (etatEntrees === "titre"){
+    if (!e.repeat){ etatEntrees = "choixMode"; }
+    return;
+  }
+  if (etatEntrees === "choixMode"){
+    if (e.code === "ArrowLeft" && !e.repeat){
+      selMode = (selMode + MODES.length - 1) % MODES.length;
+      sonJingleSelection(MODES[selMode].id);
+    } else if (e.code === "ArrowRight" && !e.repeat){
+      selMode = (selMode + 1) % MODES.length;
+      sonJingleSelection(MODES[selMode].id);
+    } else if (e.code === "Enter" || e.code === "NumpadEnter"){
+      modeJoueur = MODES[selMode].id;
+      etatEntrees = "course";
+      demarrerManche();
+    }
+    return;
+  }
+});
+/* v0.2 : les 2 boutons de fin de manche —
+   Entrée = rejouer le MÊME mode · R = retour à l'écran de choix de mode
+   (l'écran de choix est réactivé : etatEntrees redevient « choixMode ») */
+window.addEventListener("keydown", e => {
+  if (etat === "fin" && !e.repeat){
+    if (e.code === "KeyR"){
+      const i = MODES.findIndex(m => m.id === modeJoueur);
+      selMode = i >= 0 ? i : 0;               // carte du mode courant pré-sélectionnée
+      etat = "choixMode";
+      etatEntrees = "choixMode";
+    }
+    if (e.code === "Enter" || e.code === "NumpadEnter") demarrerManche();   // même mode
+  }
 });
 window.addEventListener("keyup", e => { touches[e.code] = false; });
 
@@ -147,8 +218,29 @@ function creerArene(){
       propre[l][c] = 0;      // 0 = sale
     }
   }
-  /* quelques murs indestructibles (empilements de chaises) */
-  const murs = [[3,3],[6,3],[9,3],[3,6],[11,6],[4,9],[8,9],[11,9],[7,5]];
+  /* quelques murs indestructibles (empilements de chaises) —
+     v0.2 (équilibrage José) : l'arène contient des couloirs étroits et des
+     recoins où la poussée est mécaniquement meilleure :
+     - COULOIR ÉTROIT horizontal au-dessus de la fontaine : passage d'1 case
+       (l=5, c=4..10), plafonné par des rangées de murs (l=4 et l=6) ;
+     - 2e COULOIR ÉTROIT vertical bas-centre : passage d'1 case (c=9, l=9..11)
+       entre la poche et la colonne de murs c=10 (dead-end : demi-tour !) ;
+     - RECOIN poche 3×3 bas-gauche (c=5..7, l=9..11) : la poussée la raclare
+       en UN seul passage de 3 cases de large, l'auto-tracée doit y revenir ;
+     - RECOIN poche 3×2 haut-droit (c=10..12, l=2..3), plafonnée au nord. */
+  const murs = [
+    /* couloir étroit au-dessus de la fontaine */
+    [4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],
+    [4,6],[5,6],[6,6],[8,6],[9,6],[10,6],
+    /* 2e couloir étroit vertical (dead-end) + est de la poche */
+    [10,9],[10,10],[10,11],
+    /* poche 3×3 bas-gauche */
+    [4,9],[4,10],[4,11],[8,9],[8,10],[8,11],
+    /* poche 3×2 haut-droit */
+    [9,2],[10,1],[11,1],[12,1],
+    /* obstacles isolés d'origine conservés */
+    [3,3],[9,3],[3,6],[11,6],[11,9],
+  ];
   for (const [c,l] of murs) grille[l][c] = T_MUR;
   /* la borne fontaine : 3 cases au centre */
   grille[6][7] = T_FONTAINE;
@@ -165,15 +257,20 @@ function creerPanneaux(){
 }
 
 /* ---------------------- 5. ENTITÉS ---------------------- */
-function creerMachine(col, ligne, couleur, nom, estIA){
+function creerMachine(col, ligne, couleur, nom, estIA, mode){
   return {
     x: col*TUILE + TUILE/2 + MARGE_X,
     y: ligne*TUILE + TUILE/2 + MARGE_Y,
-    couleur, nom, estIA,
+    couleur, nom, estIA, mode,          // mode : "pushed" | "autotracked"
+    traceLargeur: mode === MODE_PUSHED ? TRACE_PUSHED : TRACE_AUTO,  // v0.2
+    accelTimer: 0,                      // v0.2 : inertie auto-tracée (progression 0→1)
+    vitesseActuelle: 0,                 // v0.2
     reservoir: RESERVOIR_MAX,
     rechargeTimer: 0,          // progression de la recharge (0..3 s)
     coeurs: 0,                 // Cœurs de Loutre
     calin: 0,                  // Immobilisé : en plein câlin
+    dansCouloir: false,        // v0.2 : présent dans un couloir étroit (auto-tracée)
+    maneuvreCouloir: 0,        // v0.2 : malus de manœuvre visible (deuxième-tour coûteux)
     nettoyees: 0,
     dir: {x:0, y:1},           // direction de la serpillière
     drift: 0,                  // dérive restante sur zone glissante (s)
@@ -201,16 +298,18 @@ function demarrerManche(){
   creerArene();
   creerPanneaux();
   placerLoutres();
-  /* Machine 1 : le joueur humain. Machines 2 et 3 : bots pilotés par LAYA. */
-  joueur = creerMachine(1, 1, "#4fc3f7", "TOI", false);
-  ia     = creerMachine(13, 11, "#ff7043", "MOPZILLA", true);
-  bot2   = creerMachine(13, 1, "#66bb6a", "PROPRETAIN", true);
+  /* Machine 1 : le joueur humain (mode choisi à l'écran de sélection).
+     Machines 2 et 3 : bots LAYA, un par mode pour comparer en course. */
+  joueur = creerMachine(1, 1, "#4fc3f7", "TOI", false, modeJoueur);
+  ia     = creerMachine(13, 11, "#ff7043", "MOPZILLA", true, MODE_PUSHED);   // bot poussé
+  bot2   = creerMachine(13, 1, "#66bb6a", "PROPRETAIN", true, MODE_AUTO);    // bot auto-tracé
   BOTS.length = 0;
   BOTS.push(ia, bot2);
   if (!laya) laya = new BotBrain();     // (ré)initialise le cerveau LAYA à chaque manche
   tempsRestant = CHRONO_MANCHE;
   etat = "compte"; compte = 3.99;
   dernierGlou = 0;
+  console.log("[v0.2] manche démarrée — joueur : " + modeJoueur + " · bot1 : " + MODE_PUSHED + " · bot2 : " + MODE_AUTO);
 }
 
 /* ---------------------- 6. PHYSIQUE + NETTOYAGE ---------------------- */
@@ -227,14 +326,36 @@ function dansMur(px, py){
   return grille[l][c] !== T_SOL;
 }
 
-/* déplacement fluide avec collisions 4 côtés (séparation des axes) */
+/* déplacement fluide avec collisions 4 côtés (séparation des axes)
+   v0.2 : vitesse multipliée par le mode (poussé ×0.7, auto ×1.3)
+   v0.2 : auto-tracée = inertie ~80 ms (accélération progressive)          */
 function bougerMachine(m, dx, dy, dt){
   if (m.calin > 0){ m.calin -= dt; return; }         // câlin en cours : immobile
   const v = (m.estIA ? VITESSE_IA : VITESSE_JOUEUR);
-  const sp = (dx||dy) ? v : 0;
+  const modedef = MODES.find(x => x.id === m.mode) || { vitesseMul: 1 };
+  const vCible = v * modedef.vitesseMul;
+  const roule = (dx||dy) ? 1 : 0;
+  if (m.mode === MODE_AUTO && roule){
+    /* inertie : ~80 ms pour monter en vitesse (accélération progressive) */
+    m.accelTimer = Math.min(1, m.accelTimer + dt/ACCEL_AUTO);
+  } else {
+    m.accelTimer = roule ? m.accelTimer : 0;         // arrêt : remise à zéro
+  }
+  const facteur = (m.mode === MODE_AUTO) ? (0.25 + 0.75*m.accelTimer) : 1;
+  m.vitesseActuelle = vCible * facteur * roule;
+  const sp = m.vitesseActuelle;
   if (dx||dy){
     const n = Math.hypot(dx,dy)||1;
-    m.dir = {x:dx/n, y:dy/n};
+    if (m.mode === MODE_PUSHED){
+      /* rotation par pas de 90° : pas de diagonale, axes cardinaux seulement */
+      if (Math.abs(dx) >= Math.abs(dy)){
+        m.dir = {x: Math.sign(dx), y: 0};
+      } else {
+        m.dir = {x: 0, y: Math.sign(dy)};
+      }
+    } else {
+      m.dir = {x:dx/n, y:dy/n};
+    }
   }
   const px = m.x + m.dir.x*sp*dt;
   const py = m.y + m.dir.y*sp*dt;
@@ -247,12 +368,34 @@ function bougerMachine(m, dx, dy, dt){
   }
 }
 
+/* v0.2 : trace large du mode POUSSÉ — 3 cases de large, perpendiculaire au
+   déplacement (case centrale + 1 de chaque côté). La case centrale nettoie
+   normalement ; les 2 latérales nettoient si sol franchissable et pas déjà
+   propre. Chaque case nettoyée rapporte 1 pt. */
 function nettoyerCase(m){
   const {c,l} = caseDe(m.x, m.y);
   if (c<1||l<1||c>=COLONNES-1||l>=LIGNES-1) return;
-  if (grille[l][c] !== T_SOL || propre[l][c] !== 0) return;
+  if (grille[l][c] !== T_SOL) return;
+  if (m.mode === MODE_PUSHED){
+    /* les 3 cases du passage : la centrale + les 2 perpendiculaires */
+    const perpendiculaire = Math.abs(m.dir.x) > 0.5
+      ? [{dc:0,dl:-1},{dc:0,dl:1}]                    // déplacement horizont. → voisines verticales
+      : [{dc:-1,dl:0},{dc:1,dl:0}];                   // déplacement vertical → voisines horizont.
+    for (const off of [{dc:0,dl:0}, ...perpendiculaire]){
+      const cc = c + off.dc, ll = l + off.dl;
+      if (cc<1||ll<1||cc>=COLONNES-1||ll>=LIGNES-1) continue;
+      if (grille[ll][cc] !== T_SOL || propre[ll][cc] !== 0) continue;
+      if (m.reservoir <= 0) return;
+      propre[ll][cc] = 1;
+      m.nettoyees++;
+      m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
+      if (off.dc === 0 && off.dl === 0) sonPlop();
+    }
+    return;
+  }
+  /* AUTO-TRACÉE : trace fine, 1 case (case courante + règle carrelage DUO) */
+  if (propre[l][c] !== 0) return;
   if (m.reservoir <= 0) return;                    // plus d'eau : plus de savon
-  /* le carrelage (sol glissant) nettoie DUO : la case + la voisine derrière */
   propre[l][c] = 1;
   m.nettoyees++;
   m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
@@ -266,6 +409,19 @@ function nettoyerCase(m){
       m.reservoir = Math.max(0, m.reservoir - COUT_EAU);
     }
   }
+}
+
+/* détecte si la machine est dans un couloir d'1 case de large
+   (mur des deux côtés, perpendiculairement à sa direction) */
+function dansCouloirEtroit(m){
+  const {c,l} = caseDe(m.x, m.y);
+  if (m.dir.x !== 0){        // se déplace horizontalement : murs au N et au S ?
+    return l>0 && l<LIGNES-1 && grille[l-1][c] === T_MUR && grille[l+1][c] === T_MUR;
+  }
+  if (m.dir.y !== 0){        // verticalement : murs à l'E et à l'O ?
+    return c>0 && c<COLONNES-1 && grille[l][c-1] === T_MUR && grille[l][c+1] === T_MUR;
+  }
+  return false;
 }
 
 /* ---------------------- 7. FONTAINE + LOUTRES + IA ---------------------- */
@@ -325,8 +481,13 @@ function updateLoutre(o, dt){
   }
 }
 
-/* dérive sur la case du panneau « attention ça glisse » : glisse ~1,5 s */
+/* dérive sur la case du panneau « attention ça glisse » : glisse ~1,5 s
+   v0.2 : le mode POUSSÉE ne dérape PAS (serpillière à plat, bien appuyée) */
 function appliquerDrift(m, dt){
+  if (m.mode === MODE_PUSHED){
+    if (m.drift > 0) m.drift = 0;
+    return;
+  }
   const {c,l} = caseDe(m.x, m.y);
   for (const p of panneaux){
     if (p.c === c && p.l === l && !p.renverse){
@@ -336,6 +497,18 @@ function appliquerDrift(m, dt){
     }
   }
   if (m.drift > 0) m.drift -= dt;
+  /* v0.2 (équilibrage José) : dans un couloir d'1 case, l'inertie de
+     l'auto-tracée tourne MAL — le demi-tour coûte une case de manœuvre.
+     Visible via m.maneuvreCouloir (s) qui sert au HUD et au sprite. */
+  if (m.mode === MODE_AUTO && dansCouloirEtroit(m)){
+    if (!m.dansCouloir){                       // on vient d'entrer dans le couloir
+      m.dansCouloir = true;
+      m.maneuvreCouloir = PIVOT_COULOIR;       // malus de manœuvre (demi-tour coûteux)
+      console.log("[v0.2] " + m.nom + " entre dans un couloir étroit — manœuvre visible");
+    }
+  } else {
+    m.dansCouloir = false;
+  }
 }
 
 /* ================================================================
@@ -367,6 +540,8 @@ class BotBrain {
       near_otters: nbLoutresProches(bot),
       rank: rangBot(bot),
       in_drift_zone: this.zoneDrift(bot),
+      mode: bot.mode,           // v0.2 : "pushed" | "autotracked" — le serveur l'ignore,
+                                // le champ est prévu pour l'équilibrage futur
     };
   }
   zoneDrift(bot){
@@ -565,6 +740,8 @@ function updateIA(m, dt){
 /* ---------------------- 8. MISE À JOUR ---------------------- */
 function updateMach(m, dx, dy, dt){
   appliquerDrift(m, dt);
+  /* v0.2 : le malus de manœuvre (couloir étroit) se résorbe avec le temps */
+  if (m.maneuvreCouloir > 0) m.maneuvreCouloir = Math.max(0, m.maneuvreCouloir - dt);
   /* pendant le drift (1,5 s), zone « non maîtrisable » : l'input est ignoré,
      la machine garde son élan dans la direction où elle filait */
   if (m.drift > 0){
@@ -713,14 +890,17 @@ function dessinerPanneau(p){
   ctx.restore();
 }
 
-/* la machine à laver : sprite pixel, serpillière derrière, jauge d'eau */
+/* la machine à laver : sprite pixel, serpillière derrière, jauge d'eau
+   v0.2 : le sprite change selon le mode (poussé = manche + large,
+   auto-tracé = volant + profil d'autolaveuse) */
 function dessinerMachine(m){
   const x = m.x, y = m.y;
   ctx.fillStyle = "rgba(0,0,0,.25)";
   ctx.fillRect(x-13, y+11, 26, 5);
-  /* serpillière qui traîne derrière */
+  const pushed = (m.mode === MODE_PUSHED);
+  /* serpillière qui traîne derrière (poussé : plus large, manche visible) */
   const mx = x - m.dir.x*17, my = y - m.dir.y*17;
-  ctx.strokeStyle = "#bfa77a"; ctx.lineWidth = 2;
+  ctx.strokeStyle = "#bfa77a"; ctx.lineWidth = pushed ? 3 : 2;
   ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(mx, my); ctx.stroke();
   ctx.fillStyle = "#e8dcc0";
   ctx.fillRect(mx-4, my-3, 8, 6);
@@ -729,8 +909,21 @@ function dessinerMachine(m){
   ctx.fillRect(x-13, y-11, 26, 22);
   ctx.fillStyle = m.couleur;
   ctx.fillRect(x-11, y-9, 22, 18);
-  ctx.fillStyle = "#0d1117";                 // écran de contrôle
-  ctx.fillRect(x-9, y-7, 10, 8);
+  if (pushed){
+    /* MODE POUSSÉ : grande manche oblique + tampon large */
+    ctx.fillStyle = "#8d6e4a";
+    ctx.fillRect(x-2, y-9, 3, 12);                 // manche
+    ctx.fillStyle = "#e8dcc0";
+    ctx.fillRect(x-6, y+2, 12, 6);                 // tampon large
+    ctx.fillStyle = "#0d1117";
+    ctx.fillRect(x-9, y-7, 6, 6);                  // mini console
+  } else {
+    /* MODE AUTO-TRACÉ : cabine de conduite + roue avant */
+    ctx.fillStyle = "#0d1117";
+    ctx.fillRect(x-9, y-7, 10, 8);                 // écran/pare-brise
+    ctx.fillStyle = "#15181f";
+    ctx.fillRect(x+2, y-5, 7, 7);                  // roue de conduite
+  }
   ctx.fillStyle = "#7dff9a";                 // LED
   if (m.reservoir > 0) ctx.fillRect(x-8+((performance.now()/300|0)%4)*2, y-6, 2, 2);
   /* roues */
@@ -861,6 +1054,20 @@ function dessinerHUD(){
     dessinerCoeur(600 + i*18, 8, 3);
     ctx.globalAlpha = 1;
   }
+  /* v0.2 : badge du mode courant + malus couloir étroit visible */
+  const mdj = MODES.find(x => x.id === joueur.mode) || MODES[1];
+  ctx.font = "bold 12px monospace";
+  ctx.fillStyle = "#ffd45a";
+  ctx.fillText(mdj.hud, MARGE_X, cv.height - 18);
+  /* v0.2 : malus de manœuvre en couloir étroit (auto-tracée) — visible en course */
+  if (joueur.mode === MODE_AUTO){
+    const malus = Math.max(joueur.maneuvreCouloir || 0, joueur.dansCouloir ? PIVOT_COULOIR : 0);
+    if (malus > 0){
+      ctx.fillStyle = malus >= PIVOT_COULOIR ? "#e8a33d" : "#7dffa0";
+      ctx.fillText("MANŒUVRE COULOIR ÉTROIT — demi-tour coûte cher !", MARGE_X, cv.height - 34);
+    }
+  }
+  ctx.font = "bold 15px monospace";
   /* badge discret si le service LAYA est injoignable */
   if (layaHorsLigne){
     ctx.font = "11px monospace";
@@ -887,6 +1094,76 @@ function ecranTexte(titre, lignes, sousTitre, couleur){
     ctx.fillText(sousTitre, cv.width/2, 265 + lignes.length*24 + 14);
   }
   ctx.textAlign = "left";
+}
+
+/* v0.2 : écran de choix de mode — 2 cartes, sélection flèches + Entrée */
+function dessinerChoixMode(){
+  ctx.fillStyle = "rgba(6,9,20,.9)";
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffd45a";
+  ctx.font = "bold 34px monospace";
+  ctx.fillText("CHOISIS TON MODE", cv.width/2, 120);
+  const cxG = cv.width/2, ecart = 200;
+  MODES.forEach((m, i)=>{
+    const sel = (i === selMode);
+    const cx = cxG + (i===0 ? -ecart/2 : ecart/2);
+    const cy = 280, w = 180, h = 200;
+    /* carte */
+    ctx.fillStyle = sel ? "rgba(80,150,255,.25)" : "rgba(40,52,80,.45)";
+    ctx.fillRect(cx-w/2, cy-h/2, w, h);
+    ctx.strokeStyle = sel ? "#4fc3f7" : "#3a4a6c";
+    ctx.lineWidth = sel ? 3 : 1;
+    ctx.strokeRect(cx-w/2, cy-h/2, w, h);
+    /* icône pixel dessinée par code */
+    dessinerIconeMode(cx, cy-30, m.id);
+    /* nom + description */
+    ctx.font = "bold 18px monospace";
+    ctx.fillStyle = sel ? "#ffd45a" : "#8fa0b8";
+    ctx.fillText(m.nom, cx, cy+45);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = sel ? "#cfe3ff" : "#5d6f8c";
+    ctx.fillText(m.desc, cx, cy+70);
+    /* badge sélection */
+    if (sel){
+      ctx.font = "12px monospace";
+      ctx.fillStyle = "#7dffa0";
+      ctx.fillText("▶ SÉLECTIONNÉ ◀", cx, cy-105);
+    }
+  });
+  ctx.font = "14px monospace";
+  ctx.fillStyle = "#8fa0b8";
+  ctx.fillText("← / → : changer de mode   ·   ENTRÉE : valider", cv.width/2, 470);
+  /* v0.2 (équilibrage José) : ligne d'aide sur les couloirs étroits */
+  ctx.font = "bold 12px monospace";
+  ctx.fillStyle = "#e8a33d";
+  ctx.fillText("La salle compte des couloirs étroits : la poussée y est reine", cv.width/2, 493);
+  ctx.font = "12px monospace";
+  ctx.fillStyle = "#6d7a99";
+  ctx.fillText("2 bots te rejoignent : un POUSSÉ et un AUTO-TRACÉ", cv.width/2, 512);
+  ctx.textAlign = "left";
+}
+
+/* icônes pixel des 2 modes (dessinées par code) : serpillière poussée vs autolaveuse */
+function dessinerIconeMode(cx, cy, modeId){
+  const p = (px, py, s, coul) => { ctx.fillStyle = coul; ctx.fillRect(cx+px, cy+py, s, s); };
+  if (modeId === MODE_PUSHED){
+    /* serpillière à plat poussée : manche oblique + tampon large */
+    p(-14,  16, 5, "#8d6e4a");  p(-9,  8, 5, "#8d6e4a");
+    p(-4,   0, 5, "#8d6e4a");   p(1,  -8, 5, "#8d6e4a");
+    p(6, -16, 5, "#8d6e4a");
+    p(-18, 18, 9, "#e8dcc0");   p(-26, 18, 9, "#d9cbaa");
+    p(-14, 22, 18, "#f5ead6");
+  } else {
+    /* autolaveuse : caisse + volant + jet arrière */
+    p(-16, -12, 22, 13, "#37474f");
+    p(-16, -12, 22, 9, "#4fc3f7");                 // cabine/feu
+    p(-16, 2, 26, 9, "#37474f");                   // basse caisse
+    p(-14, 14, 8, 5, "#15181f");                   // roues
+    p(4, 14, 8, 5, "#15181f");
+    p(8, -2, 6, 6, "#0d1117");                     // volant
+    p(20, 6, 10, 4, "#bfe3ff");                    // jet d'eau derrière
+  }
 }
 
 /* ---------------------- 12. RENDU PRINCIPAL ---------------------- */
@@ -918,12 +1195,14 @@ function dessiner(){
   dessinerHUD();
 
   if (etat === "titre"){
-    ecranTexte("🐴 MOB RACER — PROTO v0.1", [
+    ecranTexte("🐴 MOB RACER — PROTO v0.2", [
       "Trace propre, recharge l'eau, câline les loutres.",
       "Une case ne se nettoie qu'UNE seule fois.",
       "Chrono 75 s. Le carrelage glisse : traînée double !",
       "Flèches / WASD : bouger · M : son"
     ], "APPUYE SUR UNE TOUCHE POUR LANCER");
+  } else if (etat === "choixMode"){
+    dessinerChoixMode();
   } else if (etat === "compte"){
     ctx.fillStyle = "rgba(6,9,20,.5)";
     ctx.fillRect(0, 0, cv.width, cv.height);
@@ -933,10 +1212,12 @@ function dessiner(){
     ctx.fillText(String(Math.ceil(compte)), cv.width/2, 280);
     ctx.textAlign = "left";
   } else if (etat === "fin"){
+    /* v0.2 : le score des 3 machines affiche leur mode (comparaison styles) */
+    const nomMode = id => { const mm = MODES.find(x => x.id === id); return mm ? mm.nom : "?"; };
     ecranTexte("MANCHE TERMINÉE !", [
       "Surface nettoyée : " + pctNettoye() + " %",
-      "Cases frottées : " + (joueur ? joueur.nettoyees : 0),
-      "MOPZILLA (bot) : " + (ia ? ia.nettoyees : 0) + " cases · PROPRETAIN (bot) : " + (bot2 ? bot2.nettoyees : 0) + " cases",
+      "TOI (" + nomMode(joueur.mode) + ") : " + (joueur ? joueur.nettoyees : 0) + " cases",
+      "MOPZILLA (" + nomMode(ia.mode) + ") : " + (ia ? ia.nettoyees : 0) + " cases · PROPRETAIN (" + nomMode(bot2.mode) + ") : " + (bot2 ? bot2.nettoyees : 0) + " cases",
       "Cœurs de loutre : " + (joueur ? joueur.coeurs : 0) + " / 3",
       "Les specs vivent, les loutres aussi."
     ], "R : REJOUER");
@@ -966,9 +1247,17 @@ function boucle(temps){
     if (Math.ceil(compte) !== avant && compte > 0) sonKlaxon();
     if (compte <= 0){ etat = "course"; compte = 0; dernierT = performance.now(); }
   } else if (etat === "titre"){
-    if (Object.values(touches).some(Boolean)) demarrerManche();
+    /* v0.2 : n'importe quelle touche → écran de choix de mode (via etatEntrees) */
+    if (etatEntrees === "choixMode") etat = "choixMode";
+  } else if (etat === "choixMode"){
+    if (etatEntrees === "course"){
+      demarrerManche();                        // Entrée : mode validé → on lance
+      dernierT = performance.now();
+      accum = 0;
+    }
   } else if (etat === "fin"){
-    if (touches.KeyR) demarrerManche();
+    /* v0.2 : R = retour à l'écran de choix de mode (nouveau choix avant rejouer) */
+    if (etatEntrees === "choixMode") etat = "choixMode";
   }
 
   dessiner();
@@ -978,9 +1267,12 @@ function boucle(temps){
 creerArene();
 creerPanneaux();
 placerLoutres();
-joueur = creerMachine(1, 1, "#4fc3f7", "TOI", false);
-ia     = creerMachine(13, 11, "#ff7043", "MOPZILLA", true);
-bot2   = creerMachine(13, 1, "#66bb6a", "PROPRETAIN", true);
+/* v0.2 : les machines ne sont créées qu'au lancement de la manche (le mode
+   du joueur est choisi à l'écran de sélection). On crée des stubs pour que
+   dessiner() fonctionne avant la première manche. */
+joueur = creerMachine(1, 1, "#4fc3f7", "TOI", false, DEFAUT_MODE);
+ia     = creerMachine(13, 11, "#ff7043", "MOPZILLA", true, MODE_PUSHED);
+bot2   = creerMachine(13, 1, "#66bb6a", "PROPRETAIN", true, MODE_AUTO);
 BOTS.push(ia, bot2);
 laya = new BotBrain();
 requestAnimationFrame(boucle);
