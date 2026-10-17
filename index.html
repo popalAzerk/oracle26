@@ -931,29 +931,45 @@ function rangBot(bot){
 
 let laya = null;   // instance unique du cerveau, créée à demarrerManche()
 
-/* l'IA vise son objectif selon la décision LAYA (ou fallback) en cours */
+/* l'IA vise son objectif selon la décision LAYA (ou fallback) en cours
+   v0.3.1 FIX BOTS : cible STABLE pendant la fenêtre de décision (1,5 s)
+   + BFS complet (grille 15x13) → le chemin est suivi case par case,
+   plus de zigzag ni de bot collé à un mur. Les cases VISEES :
+   échantillonnées au MOMENT de la décision seulement, scan complet
+   (la grille est petite : random banni pour le choix de cible).     */
+function cheminBFS(sc, sl, tc, tl){
+  if (sc===tc && sl===tl) return null;
+  const vu = Array.from({length:LIGNES}, () => Array(COLONNES).fill(false));
+  const parent = Array.from({length:LIGNES}, () => Array(COLONNES).fill(null));
+  const q = [[sc, sl]]; vu[sl][sc] = true;
+  while (q.length){
+    const [c,l] = q.shift();
+    if (c===tc && l===tl){
+      const chemin=[]; let cur=[c,l];
+      while (!(cur[0]===sc && cur[1]===sl)){ chemin.unshift(cur); cur = parent[cur[1]][cur[0]]; }
+      return chemin.length ? {c: chemin[0][0], l: chemin[0][1]} : null;
+    }
+    for (const [dc,dl] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const cc=c+dc, ll=l+dl;
+      if (cc<0||ll<0||cc>=COLONNES||ll>=LIGNES) continue;
+      if (vu[ll][cc] || grille[ll][cc]===T_MUR) continue;
+      vu[ll][cc]=true; parent[ll][cc]=[c,l]; q.push([cc,ll]);
+    }
+  }
+  return null;
+}
 function updateIA(m, dt){
-  m.dx = 0; m.dy = 0;          // delta de la frame, appliqué par updateMach
+  m.dx = 0; m.dy = 0;
   if (m.calin > 0) return;
   if (m.drift > 0){
     m.dx = m.dir.x >= 0.5 ? 1 : m.dir.x <= -0.5 ? -1 : 0;
     m.dy = m.dir.y >= 0.5 ? 1 : m.dir.y <= -0.5 ? -1 : 0;
     return;
   }
-  /* décision LAYA active pour cette fenêtre ? sinon heuristique immédiate */
-  let choice = laya && laya.fenetre[m.nom] ? laya.fenetre[m.nom].choice : null;
-  if (!choice){
-    /* pas encore de décision (démarrage) → heuristique locale instantanée */
-    choice = laya ? laya.heuristique(laya.etatPourBot(m)) : "chase_dirty";
-  }
-  switch (choice){
-    case "go_fountain": {
-      /* foncer vers la borne fontaine centrale */
-      m.cible = {c: fontaines[0].c, l: fontaines[0].l};
-      break;
-    }
-    case "grab_otter": {
-      /* foncer vers la loutre la plus proche (câlin volontaire !) */
+  /* choisir une cible (SCAN COMPLET, la case courante est EXCLUE) */
+  function choisirCible(choice){
+    if (choice === "go_fountain") return {c: fontaines[0].c, l: fontaines[0].l};
+    if (choice === "grab_otter"){
       let best = null, bd = Infinity;
       for (const o of loutres){
         const d = Math.hypot(o.x - m.x, o.y - m.y);
@@ -962,64 +978,73 @@ function updateIA(m, dt){
       if (best){
         const oc = Math.round((best.x - MARGE_X - TUILE/2)/TUILE);
         const ol = Math.round((best.y - MARGE_Y - TUILE/2)/TUILE);
-        m.cible = {c: Math.max(1, Math.min(COLONNES-2, oc)), l: Math.max(1, Math.min(LIGNES-2, ol))};
+        return {c: Math.max(1, Math.min(COLONNES-2, oc)), l: Math.max(1, Math.min(LIGNES-2, ol))};
       }
-      break;
+      return null;
     }
-    case "contest": {
-      /* couper la trace du joueur : viser la case propre la plus proche DE LUI */
+    if (choice === "contest"){
       const {c: jc, l: jl} = caseDe(joueur.x, joueur.y);
       let best = null, bd = Infinity;
-      for (let i=0; i<24; i++){
-        const c = 1 + ((Math.random()*(COLONNES-2))|0);
-        const l = 1 + ((Math.random()*(LIGNES-2))|0);
-        if (grille[l][c] === T_MUR) continue;
-        const d = Math.abs(c - jc) + Math.abs(l - jl);
+      for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++){
+        if (grille[l][c] !== T_SOL || propre[l][c] === 0) continue;
+        const d = Math.abs(c-jc) + Math.abs(l-jl);
         if (d < bd){ bd = d; best = {c, l}; }
       }
-      m.cible = best || {c: 7, l: 6};
-      break;
+      return best || {c: 7, l: 6};
     }
-    case "chase_dirty":
-    default: {
-      /* cible la case sale la plus proche */
-      let best = null, bd = Infinity;
-      for (let i=0; i<28; i++){
-        const c = 1 + ((Math.random()*(COLONNES-2))|0);
-        const l = 1 + ((Math.random()*(LIGNES-2))|0);
-        if (grille[l][c] !== T_SOL || propre[l][c] !== 0) continue;
-        const d = Math.abs(c*TUILE + MARGE_X - m.x) + Math.abs(l*TUILE + MARGE_Y - m.y);
-        if (d < bd){ bd = d; best = {c, l}; }
+    /* chase_dirty : case SALE la plus proche, SA PROPRE CASE EXCLUE */
+    const ici = caseDe(m.x, m.y);
+    let best = null, bd = Infinity;
+    for (let l=1;l<LIGNES-1;l++) for (let c=1;c<COLONNES-1;c++){
+      if (grille[l][c] !== T_SOL || propre[l][c] !== 0) continue;
+      if (c===ici.c && l===ici.l) continue;
+      const d = Math.abs(c*TUILE + MARGE_X - m.x) + Math.abs(l*TUILE + MARGE_Y - m.y);
+      if (d < bd){ bd = d; best = {c, l}; }
+    }
+    return best;
+  }
+  let choice = laya && laya.fenetre[m.nom] ? laya.fenetre[m.nom].choice : null;
+  if (!choice){ choice = laya ? laya.heuristique(laya.etatPourBot(m)) : "chase_dirty"; }
+  /* NOUVELLE décision OU cible atteinte => re-decider IMMÉDIATEMENT */
+  const besoinCible = !m.cibleCourante || m.cibleChoice !== choice;
+  if (besoinCible){
+    m.cibleChoice = choice;
+    m.cibleCourante = choisirCible(choice);
+    /* réservoir vide → fontaine PRIORITAIRE */
+    if (m.reservoir <= 0) m.cibleCourante = {c: fontaines[0].c, l: fontaines[0].l};
+    m.cheminCase = null;
+  } else if (m.cibleCourante){
+    const {c: cc2, l: ll2} = caseDe(m.x, m.y);
+    if (cc2===m.cibleCourante.c && ll2===m.cibleCourante.l){
+      /* cible atteinte pendant la fenêtre → re-décider SANS ATTENTE */
+      const re = choisirCible(choice);
+      m.cibleCourante = (re && !(re.c===cc2 && re.l===ll2)) ? re : null;
+      if (m.cibleCourante === null && laya && laya.fenetre[m.nom]){
+        laya.fenetre[m.nom].expire = 0;   /* force une nouvelle décision au prochain tick */
       }
-      /* rien trouvé de proche → échantillonner plus large (sinon la case courante) */
-      if (!best){
-        for (let l=1; l<LIGNES-1; l++) for (let c=1; c<COLONNES-1; c++){
-          if (grille[l][c] !== T_SOL || propre[l][c] !== 0) continue;
-          const d = Math.abs(c*TUILE + MARGE_X - m.x) + Math.abs(l*TUILE + MARGE_Y - m.y);
-          if (d < bd){ bd = d; best = {c, l}; }
-        }
-      }
-      m.cible = best || {c: 7, l: 6};
-      break;
+      m.cheminCase = null;
+      if (!m.cibleCourante) return;
     }
   }
-  /* reservoir bas FORCÉ pour go_fountain même si pas l'action LAYA */
-  if (m.reservoir <= 0) m.cible = {c: fontaines[0].c, l: fontaines[0].l};
-
-  if (!m.cible) return;
-  /* chemin simple : axe le plus long d'abord ; si mur devant, essayer l'autre axe */
-  const tx = m.cible.c*TUILE + TUILE/2 + MARGE_X;
-  const ty = m.cible.l*TUILE + TUILE/2 + MARGE_Y;
+  if (!m.cibleCourante) return;
+  /* chemin : BFS une fois par cible, on suit la prochaine case */
+  if (!m.cheminCase){
+    const {c: sc, l: sl} = caseDe(m.x, m.y);
+    const nx = cheminBFS(sc, sl, m.cibleCourante.c, m.cibleCourante.l);
+    m.cheminCase = nx || null;
+    if (!m.cheminCase) return; /* déjà sur la cible ? garde-fou */
+  }
+  const tx = m.cheminCase.c*TUILE + TUILE/2 + MARGE_X;
+  const ty = m.cheminCase.l*TUILE + TUILE/2 + MARGE_Y;
   let dx = 0, dy = 0;
   if (Math.abs(tx - m.x) > 3) dx = Math.sign(tx - m.x);
   else if (Math.abs(ty - m.y) > 3) dy = Math.sign(ty - m.y);
-  /* anti-blocage : si l'axe choisi est un mur, essayer l'autre axe */
+  else { m.cheminCase = null; return; }   /* case suivante au prochain update */
+  /* anti-blocage : si un mur bloque l'axe, tenter l'autre (rare avec BFS) */
   if (dx && dansMur(m.x + dx*16, m.y)){ dx = 0; dy = Math.sign(ty - m.y) || 1; }
-  if (dy && dansMur(m.x, m.y + dy*16)){ dy = 0; dx = -(dx||Math.sign(tx-m.x)||1); }
-  /* la direction est stockée : update() l'applique via updateMach */
+  if (dy && dansMur(m.x, m.y + dy*16)){ dy = 0; dx = -(dx || Math.sign(tx - m.x) || 1); }
   m.dx = dx; m.dy = dy;
 }
-
 /* ---------------------- 8. MISE À JOUR ---------------------- */
 function updateMach(m, dx, dy, dt){
   appliquerDrift(m, dt);
