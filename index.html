@@ -9,7 +9,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>🐴 MOB RACER — Proto v0.5 · arcade 3/4</title>
+<title>🐴 MOB RACER — Proto v0.6 · projection oblique</title>
 <style>
   html, body {
     margin: 0; padding: 0; background: #0b0d16;
@@ -30,7 +30,7 @@
 </style>
 </head>
 <body>
-<canvas id="jeu" width="720" height="668"></canvas>
+<canvas id="jeu" width="1032" height="720"></canvas>
 <div id="aide">
   <b>Flèches / WASD</b> : bouger · <b>R</b> rejouer · <b>M</b> son on/off
 </div>
@@ -47,7 +47,39 @@
 const COLONNES = 15, LIGNES = 13;      // grille Bomberman 15×13
 const TUILE = 44;                      // taille pixel d'une tuile
 const MARGE_X = (720 - COLONNES*TUILE)/2;   // centrage horizontal
-const MARGE_Y = 26;                          // espace HUD en haut
+const MARGE_Y = 26;                          // espace HUD en haut (MONDE)
+
+/* ───── v0.6 · PROJECTION OBLIQUE (diorama incliné, pixel art, zéro 3D) ─────
+   Le MONDE reste en 720×668 et la logique ne change pas un pixel : on
+   n'agit qu'au RENDU. Deux couches :
+     • COUCHE SOL (+ murs, ombres, particules plates) dessinée sous un
+       transform écrasé verticalement (PROJ_SY) → le plan du sol devient
+       une « maquette » vue de haut (cases 64×0,62 ≈ 40 px) ;
+     • COUCHES OBJETS DEBOUT (machines, pousseurs, marmottes, grand-mère,
+       fontaine) dessinées sous une échelle UNIFORME K_ZOOM : leurs
+       hauteurs restent vraies, ce qui crée la projection oblique.
+     C'est exactement le principe d'une projection oblique : plan écrasé,
+     verticales non écrasées. Aucune bibliothèque, aucun WebGL. ───── */
+const K_ZOOM = 64/44;              // 1,4545 : une case monde de 44 px → 64 px écran
+const PROJ_SY = 0.62;              // inclinaison : 1 px monde en Y = 0,62 px écran
+const MARGEX = 36;                 // marge écran à gauche
+const MARGEY = 104;                // marge écran en haut (HUD 56 + murs dressés)
+const HUD_H = 56;                  // hauteur du bandeau HUD (écran)
+function ecrX(x){ return MARGEX + (x - MARGE_X)*K_ZOOM; }
+function ecrY(y){ return MARGEY + (y - MARGE_Y)*K_ZOOM*PROJ_SY; }
+/* couche SOL : plan écrasé (le shake est injecté ici) */
+function tfSol(shx, shy){
+  ctx.setTransform(K_ZOOM, 0, 0, K_ZOOM*PROJ_SY,
+    MARGEX - MARGE_X*K_ZOOM + (shx||0),
+    MARGEY - MARGE_Y*K_ZOOM*PROJ_SY + (shy||0));
+}
+/* couche OBJET DEBOUT : échelle uniforme K autour du point d'ancrage */
+function tfEntite(x, y, shx, shy){
+  const sx = ecrX(x) + (shx||0), sy = ecrY(y) + (shy||0);
+  ctx.setTransform(K_ZOOM, 0, 0, K_ZOOM, sx - K_ZOOM*x, sy - K_ZOOM*y);
+}
+/* retour au repère écran (HUD, écrans) */
+function tfEcran(){ ctx.setTransform(1, 0, 0, 1, 0, 0); }
 
 const CHRONO_MANCHE = 75;              // chrono 75 secondes
 const RECHARGE_FONTAINE = 3.0;         // recharge : 3 s sur la borne
@@ -1859,6 +1891,9 @@ function murDresse(l, c){
         faible (le mur « tombe » vers la caméra, on voit l'arène) ;
       • chaises empilées conservées sur le dessus des murs dressés. ── */
 function dessinerMur(x, y, c, l){
+  /* v0.6 : la couche sol est écrasée par PROJ_SY → on compense la hauteur
+     des faces pour qu'elles gardent leur hauteur écran réelle. */
+  const MUR_HS = MUR_H / PROJ_SY;
   if (!murDresse(l, c)){
     /* CUTAWAY : le mur sud/est est APLATI — une dalle + sillage bas sombre
        (2 px de relief, jamais plus), l'action reste visible au-dessus */
@@ -1874,37 +1909,37 @@ function dessinerMur(x, y, c, l){
     ctx.fillRect(x + 4, y + TUILE - 9, TUILE - 8, 2);  // ombre courte
     return;
   }
-  /* MUR DRESSÉ : face avant de MUR_H de haut, dessus visible par-dessus */
-  const faceY = y + TUILE - MUR_H;
+  /* MUR DRESSÉ : face avant de MUR_HS de haut, dessus visible par-dessus */
+  const faceY = y + TUILE - MUR_HS;
   /* ombre portée au pied du mur (sur le sol devant) */
-  dessinerOmbreDouce(x + TUILE/2, faceY + MUR_H, TUILE*0.45, 5, 0.20);
+  dessinerOmbreDouce(x + TUILE/2, faceY + MUR_HS, TUILE*0.45, 5, 0.20);
   /* FACE AVANT (pierre bleutée sombre, briques suggérées) */
   ctx.fillStyle = "#3d4456";
-  ctx.fillRect(x, faceY, TUILE, MUR_H);
+  ctx.fillRect(x, faceY, TUILE, MUR_HS);
   ctx.fillStyle = "#454d63";
-  ctx.fillRect(x + 1, faceY + 1, TUILE - 2, MUR_H - 2);
+  ctx.fillRect(x + 1, faceY + 1, TUILE - 2, MUR_HS - 2);
   /* joints de briques verticaux décalés (relief) */
   ctx.fillStyle = "#343b4e";
   const decal = ((l*7 + c*13) % 2) ? 11 : 26;
-  ctx.fillRect(x + decal, faceY + 2, 1, MUR_H - 4);
-  ctx.fillRect(x + ((decal + 15) % 30) + 8, faceY + MUR_H/2, 1, MUR_H/2 - 2);
+  ctx.fillRect(x + decal, faceY + 2, 1, MUR_HS - 4);
+  ctx.fillRect(x + ((decal + 15) % 30) + 8, faceY + MUR_HS/2, 1, MUR_HS/2 - 2);
   /* ombre sous la corniche (creux) */
   ctx.fillStyle = "rgba(0,0,0,.28)";
   ctx.fillRect(x, faceY, TUILE, 3);
   /* DESSUS du mur (vu en plongée) */
   ctx.fillStyle = "#5b6377";
-  ctx.fillRect(x, y, TUILE, TUILE - MUR_H);
+  ctx.fillRect(x, y, TUILE, TUILE - MUR_HS);
   ctx.fillStyle = "#67718c";
   ctx.fillRect(x + 2, y + 2, TUILE - 4, 5);          // liseré du dessus
   /* contour sombre du bloc */
   ctx.fillStyle = "#262c3d";
   ctx.fillRect(x, y, TUILE, 1);
-  ctx.fillRect(x, y, 1, MUR_H);
-  ctx.fillRect(x, y, 1, TUILE - MUR_H);
+  ctx.fillRect(x, y, 1, MUR_HS);
+  ctx.fillRect(x, y, 1, TUILE - MUR_HS);
   /* deux chaises empilées SUR le dessus (détail conservé) */
   for (let i=0;i<2;i++){
-    const cx = x+6, cy = y+5+i*Math.min(15, TUILE - MUR_H - 16);
-    if (cy < 0 || cy > y + TUILE - MUR_H - 10) break;
+    const cx = x+6, cy = y+5+i*Math.min(15, TUILE - MUR_HS - 16);
+    if (cy < 0 || cy > y + TUILE - MUR_HS - 10) break;
     ctx.fillStyle = "#8a7a54";
     ctx.fillRect(cx, cy, 18, 10);
     ctx.fillStyle = "#6e6042";
@@ -2598,9 +2633,9 @@ let scoreAff = 0;        /* compteur ease-out pour le % nettoyé affiché */
 function dessinerHUD(){
   /* fond de bandeau HUD opaque pour lisibilité, avec liseré inférieur */
   ctx.fillStyle = "rgba(10,14,26,.85)";
-  ctx.fillRect(0, 0, cv.width, MARGE_Y);
+  ctx.fillRect(0, 0, cv.width, HUD_H);
   ctx.fillStyle = "#2a3550";
-  ctx.fillRect(0, MARGE_Y-1, cv.width, 1);
+  ctx.fillRect(0, HUD_H-1, cv.width, 1);
 
   /* ── TOI : % nettoyé avec compteur qui défile (ease-out) ── */
   const pct = pctNettoye();
@@ -2764,6 +2799,7 @@ function dessinerBordureArcade(){
   }
 }
 function ecranTitre(){
+  tfEcran();   /* v0.6 : écrans en repère écran */
   const t = performance.now()/1000;
   /* 1) ARÈNE DE DÉMO en fond : les bots jouent seuls, caméra les suit */
   ctx.save();
@@ -2807,6 +2843,7 @@ function ecranTitre(){
 
 /* ── écran CHOIX DE MODE : 2 cartes avec vraies mini-illustrations ── */
 function dessinerChoixMode(){
+  tfEcran();   /* v0.6 : écrans en repère écran */
   ctx.fillStyle = "rgba(6,9,20,.9)";
   ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.textAlign = "center";
@@ -2866,6 +2903,7 @@ function dessinerChoixMode(){
 
 /* ── écran COMPTE À REBOURS : chiffres pixel qui pulsent ── */
 function dessinerCompte(){
+  tfEcran();   /* v0.6 : écrans en repère écran */
   ctx.fillStyle = "rgba(6,9,20,.5)";
   ctx.fillRect(0, 0, cv.width, cv.height);
   const n = Math.ceil(compte);
@@ -2876,6 +2914,7 @@ function dessinerCompte(){
 
 /* ── écran FIN : podium + confetti + résultats pixel ── */
 function dessinerFin(){
+  tfEcran();   /* v0.6 : écrans en repère écran */
   const fade = Math.min(1, (performance.now() - finT0)/600);
   ctx.fillStyle = "rgba(6,9,20," + (0.9*fade) + ")";
   ctx.fillRect(0, 0, cv.width, cv.height);
@@ -2958,12 +2997,17 @@ function ecranTexte(titre, lignes, sousTitre, couleur){
 
 /* ---------------------- 12. RENDU PRINCIPAL ---------------------- */
 function dessiner(){
+  tfEcran();
   ctx.fillStyle = "#0b0d16";
   ctx.fillRect(0, 0, cv.width, cv.height);
 
-  /* v0.3 : screen shake — le monde tremble, pas le HUD (ctx.save/restore) */
-  ctx.save();
-  ctx.translate(Math.round(shake.x), Math.round(shake.y));
+  /* v0.6 : le shake est injecté DANS les transforms de projection */
+  const SHX = Math.round(shake.x), SHY = Math.round(shake.y);
+
+  /* ═══════════ COUCHE 1 : PLAN DU SOL, ÉCRASÉ (projection oblique) ═══════════
+     Le transform écrase Y par PROJ_SY : les cases de 44 px monde font
+     64 × 40 px à l'écran. Murs, ombres et objets PLATS vivent ici. */
+  tfSol(SHX, SHY);
 
   /* tuiles : sol, saleté, traînée, murs, fontaine
      v0.5 : les murs DRESSÉS (nord/ouest) ne sont PAS dessinés ici —
@@ -2993,29 +3037,29 @@ function dessiner(){
   if (torpilleBonus) dessinerTorpille(torpilleBonus);
   for (const pc of pieces) dessinerPiece(pc);
 
-  /* v0.5 · Y-SORT : murs dressés mélangés aux entités (pied machine =
-     y-sort de l'ensemble machine+perso ; la face basse d'un mur est
-     sa ligne y + TUILE). Une machine devant un mur SUD passe DESSUS,
-     devant un mur NORD passe DESSOUS : exactement la maison de poupée. */
+  /* ═══════════ COUCHE 2 : OBJETS DEBOUT (hauteurs NON écrasées) ═══════════
+     Chaque entité est dessinée sous une échelle UNIFORME K_ZOOM ancrée sur
+     son point (x,y) projeté : le sprite grandit (44 → 64) mais sa hauteur
+     reste vraie → c'est la projection oblique. Le y-sort reste sur m.y. */
   const ents = [...loutres, ...marmottes, joueur, ia, ...(bot2?[bot2]:[]),
     ...mursPourYSort()].sort((a,b)=>a.y - b.y);
   for (const e of ents){
-    if (e.__mur){ dessinerMur(e.x, e.y, e.c, e.l); continue; }
-    if (e === joueur || e === ia) dessinerMachine(e);
-    else if (loutres.indexOf(e) >= 0) dessinerLoutre(e);
-    else dessinerMarmotte(e);
+    if (e.__mur){ tfSol(SHX, SHY); dessinerMur(e.x, e.y, e.c, e.l); continue; }
+    if (e === joueur || e === ia) { tfEntite(e.x, e.y, SHX, SHY); dessinerMachine(e); }
+    else if (loutres.indexOf(e) >= 0) { tfEntite(e.x, e.y, SHX, SHY); dessinerLoutre(e); }
+    else { tfEntite(e.x, e.y, SHX, SHY); dessinerMarmotte(e); }
   }
-  /* grand-mère (au-dessus de tout : elle est GRANDE) */
-  dessinerGrandMere();
-  /* v0.4 : animation de la vague torpille en cours */
+  /* grand-mère (GRANDE : debout, projetée comme les autres) */
+  if (grandMere){ tfEntite(grandMere.x, grandMere.y, SHX, SHY); dessinerGrandMere(); }
+  /* v0.4 : animation de la vague torpille (plate → couche sol) */
+  tfSol(SHX, SHY);
   dessinerVagueTorpille();
 
-  /* v0.3 : particules de juice (savon, gouttes, étoiles, flash) */
+  /* v0.3 : particules de juice (plates → couche sol) */
   drParticules();
 
-  /* fin du monde secoué */
-  ctx.restore();
-
+  /* ═══════════ COUCHE 3 : HUD + écrans, en repère écran ═══════════ */
+  tfEcran();
   dessinerHUD();
 
   if (etat === "titre" || etat === "attract"){
