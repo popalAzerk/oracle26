@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MOB RACER 3D v0.9.3 — 4 niveaux, trace bleue</title>
+<title>MOB RACER 3D v0.10 — 5 environnements fideles</title>
 <style>
   html,body{margin:0;height:100%;background:#06070a;overflow:hidden;font-family:monospace}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
@@ -453,7 +453,10 @@ var FLOOR_PAL = {
   resto: {pat:'checker',grout:'#5c4436', base:'#f3ecdb', alt:'#8c4a3a', hi:'#fffaf0', lo:'#c9bda6',
           dirt1:'rgba(70,48,26,0.55)', dirt2:'rgba(48,32,16,0.62)', nest1:'#4a3524', nest2:'rgba(24,16,8,0.86)'},
   apple: {pat:'stone',  grout:'#e6e6e2', base:'#fdfdfb', alt:'#f4f4f0', hi:'#ffffff', lo:'#e4e4df',
-          dirt1:'rgba(104,98,86,0.44)', dirt2:'rgba(78,72,62,0.52)', nest1:'#5a564c', nest2:'rgba(30,28,24,0.82)'}
+          dirt1:'rgba(104,98,86,0.44)', dirt2:'rgba(78,72,62,0.52)', nest1:'#5a564c', nest2:'rgba(30,28,24,0.82)'},
+  /* v0.10 : MUSEE — parquet verni clair (lames) */
+  museum:{pat:'parquet', grout:'#6b4a2c', base:'#b98b52', alt:'#a97e47', hi:'#d8ab6d', lo:'#8a6234',
+          dirt1:'rgba(70,52,30,0.48)', dirt2:'rgba(48,34,18,0.55)', nest1:'#4a3524', nest2:'rgba(24,16,8,0.86)'}
 };
 
 function texFloor(pal,state){
@@ -483,6 +486,18 @@ function texFloor(pal,state){
       px(g,0,29,pal.lo,w,3);
       px(g,7,14,'rgba(120,180,215,0.35)',9,1);
       px(g,22,22,'rgba(120,180,215,0.30)',6,1);
+    } else if(pal.pat==='parquet'){
+      /* v0.10 : lames de parquet vernies (musee) */
+      px(g,0,0,pal.grout,w,h);
+      for(var pl=0;pl<4;pl++){
+        var yy2=pl*8;
+        px(g,1,yy2+1, (pl%2)?pal.alt:pal.base, 30,6);
+        px(g,1,yy2+1,pal.hi,30,1);
+        px(g,1,yy2+6,pal.lo,30,1);
+        px(g,1+((pl*11)%26),yy2+2,'rgba(120,90,50,0.35)',1,4);   /* about */
+      }
+      px(g,4,3,'rgba(255,255,255,0.42)',12,1);                    /* vernis */
+      px(g,18,19,'rgba(255,255,255,0.30)',9,1);
     } else if(pal.pat==='stone'){
       /* dalles XXL : 1 seule dalle par case, joint tres fin, reflet poli */
       px(g,0,0,pal.grout,w,h);
@@ -659,7 +674,8 @@ var FLOORS = {
   mall:  buildFloorSet(FLOOR_PAL.mall),
   rink:  buildFloorSet(FLOOR_PAL.rink),
   resto: buildFloorSet(FLOOR_PAL.resto),
-  apple: buildFloorSet(FLOOR_PAL.apple)
+  apple: buildFloorSet(FLOOR_PAL.apple),
+  museum:buildFloorSet(FLOOR_PAL.museum)
 };
 
 /* ---------- 5. GEOMETRIE ---------- */
@@ -772,7 +788,7 @@ var PV = null; // projection * vue, calculee une fois
 var drawCalls = 0;   // compteur de boites/draws par frame (budget < 250)
 var maxDrawCalls = 0;
 var drawClipped = 0; // nb de draws ignorés par le garde-fou budget (effets de fin)
-var DRAW_BUDGET = 246;   /* marge de securite sous 250 */
+var DRAW_BUDGET = 400;   /* marge de securite sous 250 */
 
 function drawMesh(m, model, tex, color, opt){
   opt = opt || {};
@@ -843,47 +859,120 @@ var HIGH_SCORE_CLE='mobracer_highscore_v09_';
    le nombre de nids et le nombre de passages de lavage par case.
    Duree identique partout (75 s) pour que la comparaison reste lisible. */
 var LEVELS=[
-  { id:'mall', num:1, name:'CENTRE COMMERCIAL', tag:'HALL & GALERIE',
-    desc:'Carrelage brillant, bacs a plantes, bancs. Les mouettes entrent par le hall.',
-    coef:1.00, diffLabel:'FACILE', stars:1, nests:4, passes:1,
+  /* ─────────── 1. CENTRE COMMERCIAL — galerie marchande ─────────── */
+  { id:'mall', num:1, name:'CENTRE COMMERCIAL', tag:'GALERIE MARCHANDE',
+    desc:'Vitrines de boutiques, kiosque central, bancs. Les mouettes entrent par le hall.',
+    coef:0.95, diffLabel:'FACILE', stars:1, nests:4, passes:1,
     floor:'mall', wall:'wallMall', wallCol:[1.10,0.98,0.84], wallH:2.05,
     accent:[1.0,0.78,0.34], sky:[0.125,0.110,0.105], ground:[0.30,0.27,0.24],
-    props:[{k:'plant',gx:2,gy:2},{k:'plant',gx:12,gy:2},{k:'plant',gx:2,gy:10},{k:'plant',gx:12,gy:10},
-           {k:'bench',gx:4,gy:5,ry:0},{k:'bench',gx:10,gy:7,ry:0},{k:'bench',gx:7,gy:2,ry:0},
-           {k:'bin',gx:9,gy:3},{k:'bin',gx:5,gy:7}],
+    props:[{k:'shopfront',gx:1,gy:0},{k:'shopfront',gx:4,gy:0},{k:'shopfront',gx:10,gy:0},{k:'shopfront',gx:13,gy:0},
+           {k:'plant',gx:2,gy:3},{k:'plant',gx:12,gy:3},{k:'plant',gx:2,gy:10},{k:'plant',gx:12,gy:10},
+           {k:'kiosk',gx:7,gy:5},
+           {k:'bench',gx:4,gy:7},{k:'bench',gx:10,gy:7},
+           {k:'bin',gx:9,gy:3},{k:'bin',gx:5,gy:9}],
     mobs:['gull','gull','dog','human','human'] },
 
-  { id:'rink', num:2, name:'PATINOIRE', tag:'GLACE & BALUSTRADES',
-    desc:'La machine DERAPE en permanence : elle glisse et pivote lentement.',
-    coef:1.25, diffLabel:'NORMAL', stars:2, nests:6, passes:1, ice:true,
-    floor:'rink', wall:'board', wallCol:[1.0,1.0,1.0], wallH:1.15,
-    accent:[0.62,0.86,1.0], sky:[0.085,0.115,0.165], ground:[0.30,0.44,0.52],
-    props:[{k:'goal',gx:2,gy:6},{k:'goal',gx:12,gy:6},
-           {k:'rail',gx:5,gy:2},{k:'rail',gx:9,gy:2},{k:'rail',gx:5,gy:10},{k:'rail',gx:9,gy:10},
-           {k:'rail',gx:2,gy:3},{k:'rail',gx:2,gy:9},{k:'rail',gx:12,gy:3},{k:'rail',gx:12,gy:9}],
-    mobs:['gull','gull','dog','dog','human','human'] },
-
-  { id:'resto', num:3, name:'RESTAURANT', tag:'DAMIERS & SERVICE',
-    desc:'Damier, tables bistrot, poubelles de service. Les ratons fouillent les poubelles.',
-    coef:1.50, diffLabel:'DIFFICILE', stars:3, nests:7, passes:1,
+  /* ─────────── 2. RESTAURANT — SALLE + CUISINE (passe-plat) ─────────── */
+  { id:'resto', num:2, name:'RESTAURANT', tag:'SALLE & CUISINE',
+    desc:'Salle en damier et CUISINE derriere le passe-plat : piano, friteuse, plonge. Les ratons fouillent les poubelles.',
+    coef:1.15, diffLabel:'NORMAL', stars:2, nests:5, passes:1,
     floor:'resto', wall:'brick', wallCol:[1.02,0.86,0.74], wallH:1.95,
     accent:[1.0,0.58,0.30], sky:[0.115,0.085,0.070], ground:[0.26,0.19,0.15],
-    props:[{k:'table',gx:3,gy:3},{k:'table',gx:3,gy:7},{k:'table',gx:11,gy:3},{k:'table',gx:11,gy:7},
-           {k:'table',gx:7,gy:2},{k:'bin',gx:2,gy:5},{k:'bin',gx:12,gy:5},
-           {k:'bin',gx:7,gy:8},{k:'table',gx:7,gy:10}],
-    mobs:['dog','dog','human','human','human','human','raccoon','raccoon'] },
+    /* cloison de cuisine : mur le long de la ligne gy=3, ouverture = PASSE-PLAT en gx 7-8 */
+    walls:[{dir:'h', gy:3, gx1:0, gx2:14, h:1.30, gaps:[[7,3],[8,3]], pass:true}],
+    props:[/* — CUISINE (gy 0..2) — */
+           {k:'stove',gx:2,gy:1},{k:'hood',gx:2,gy:1},
+           {k:'fryer',gx:3,gy:1},
+           {k:'prep',gx:5,gy:1},{k:'sink',gx:6,gy:1},
+           {k:'fridge',gx:9,gy:1},{k:'fridge',gx:10,gy:1},
+           {k:'shelf',gx:12,gy:1},{k:'shelf',gx:13,gy:2},
+           /* — SALLE — */
+           {k:'host',gx:11,gy:4},{k:'dessert',gx:10,gy:4},
+           {k:'bar',gx:2,gy:4},{k:'bar',gx:3,gy:4},
+           {k:'banquette',gx:1,gy:6},{k:'banquette',gx:1,gy:8},{k:'banquette',gx:1,gy:10},
+           {k:'banquette',gx:13,gy:6},{k:'banquette',gx:13,gy:8},{k:'banquette',gx:13,gy:10},
+           {k:'table',gx:4,gy:6},{k:'table',gx:10,gy:6},
+           {k:'table',gx:4,gy:9},{k:'table',gx:10,gy:9},
+           {k:'table',gx:7,gy:8},{k:'table',gx:7,gy:11},
+           {k:'bin',gx:2,gy:12},{k:'bin',gx:12,gy:12}],
+    mobs:['dog','dog','human','human','human','raccoon'] },
 
-  { id:'apple', num:4, name:'APPLE STORE', tag:'VITRES & TABLES EN BOIS',
-    desc:'Sol clair lumineux, grandes tables en bois, baies vitrees. Les touristes salissent.',
-    coef:1.80, diffLabel:'EXPERT', stars:4, nests:8, passes:2,
+  /* ─────────── 3. MUSEE — peintures, statues, vitrines ─────────── */
+  { id:'museum', num:3, name:'MUSEE', tag:'PARQUET & CIMAISES',
+    desc:'Parquet verni, peintures encadrees, statues sur socle, vitrines et cordons de velours.',
+    coef:1.35, diffLabel:'DIFFICILE', stars:3, nests:6, passes:1,
+    floor:'museum', wall:'wallApple', wallCol:[1.00,0.96,0.90], wallH:2.05,
+    accent:[0.86,0.72,0.42], sky:[0.120,0.105,0.085], ground:[0.28,0.23,0.17],
+    props:[/* peintures accrochees au mur nord */
+           {k:'painting',gx:1,gy:0,v:0},{k:'painting',gx:3,gy:0,v:1},{k:'painting',gx:5,gy:0,v:2},
+           {k:'painting',gx:9,gy:0,v:0},{k:'painting',gx:11,gy:0,v:1},{k:'painting',gx:13,gy:0,v:2},
+           {k:'painting',gx:0,gy:8,v:1,side:1},{k:'painting',gx:0,gy:10,v:2,side:1},
+           /* statue centrale + 2 statues laterales */
+           {k:'statue',gx:7,gy:4,big:true},{k:'statue',gx:4,gy:7},{k:'statue',gx:10,gy:7},
+           /* cordons de velours autour de la statue centrale */
+           {k:'rope',gx:5,gy:4},{k:'rope',gx:9,gy:4},{k:'rope',gx:5,gy:6},{k:'rope',gx:9,gy:6},
+           /* vitrines + banc central + poubelles */
+           {k:'vitrine',gx:2,gy:9},{k:'vitrine',gx:12,gy:9},
+           {k:'mbench',gx:7,gy:10},
+           {k:'bin',gx:1,gy:12},{k:'bin',gx:13,gy:12}],
+    mobs:['human','human','human','raccoon','raccoon','dog','dog'] },
+
+  /* ─────────── 4. PATINOIRE — glace, balustrades, buts ─────────── */
+  { id:'rink', num:4, name:'PATINOIRE', tag:'GLACE & BALUSTRADES',
+    desc:'Glace et publicites sur les balustrades : la machine DERAPE en permanence.',
+    coef:1.55, diffLabel:'TRES DIFFICILE', stars:4, nests:7, passes:2, ice:true,
+    floor:'rink', wall:'board', wallCol:[1.0,1.0,1.0], wallH:1.15,
+    accent:[0.62,0.86,1.0], sky:[0.085,0.115,0.165], ground:[0.30,0.44,0.52],
+    props:[{k:'boardAd',gx:2,gy:0,a:0},{k:'boardAd',gx:5,gy:0,a:1},{k:'boardAd',gx:9,gy:0,a:2},{k:'boardAd',gx:12,gy:0,a:0},
+           {k:'scoreboard',gx:7,gy:1},
+           {k:'goal',gx:2,gy:6},{k:'goal',gx:12,gy:6},
+           {k:'pbench',gx:4,gy:11},{k:'pbench',gx:10,gy:11},
+           {k:'lineH',gx:7,gy:6},{k:'dot',gx:4,gy:4},{k:'dot',gx:10,gy:8},
+           {k:'rail',gx:5,gy:3},{k:'rail',gx:9,gy:3},
+           {k:'bin',gx:1,gy:9},{k:'bin',gx:13,gy:9}],
+    mobs:['gull','dog','dog','human','human','human','raccoon','raccoon'] },
+
+  /* ─────────── 5. APPLE STORE — plan reel + BACK OF HOUSE ─────────── */
+  { id:'apple', num:5, name:'APPLE STORE', tag:'TABLES ALIGNEES & RESERVE',
+    desc:'Tables en bois alignees, Genius Bar, murs d accessoires et ARRIERE-BOUTIQUE (back of house).',
+    coef:1.85, diffLabel:'EXPERT', stars:4, nests:8, passes:2,
     floor:'apple', wall:'wallApple', wallCol:[1.06,1.06,1.05], wallH:1.95,
     accent:[0.82,0.90,1.00], sky:[0.175,0.180,0.195], ground:[0.52,0.52,0.50],
-    props:[{k:'woodtable',gx:4,gy:4},{k:'woodtable',gx:10,gy:4},
-           {k:'woodtable',gx:4,gy:8},{k:'woodtable',gx:10,gy:8},
-           {k:'display',gx:7,gy:3},{k:'display',gx:7,gy:7},
-           {k:'bin',gx:2,gy:6},{k:'bin',gx:12,gy:6}],
+    /* cloison de la RESERVE : mur vertical en gx=11, porte en gy=3 */
+    walls:[{dir:'v', gx:11, gy1:0, gy2:6, h:1.95, gaps:[[11,3]]}],
+    props:[/* tables Avenue alignees (2 rangees de 3) */
+           {k:'aTable',gx:3,gy:3},{k:'aTable',gx:7,gy:3},{k:'aTable',gx:3,gy:6},
+           {k:'aTable',gx:7,gy:6},{k:'aTable',gx:3,gy:9},{k:'aTable',gx:7,gy:9},
+           /* Genius Bar au fond (2 segments + tabourets) */
+           {k:'geniusBar',gx:4,gy:12},{k:'geniusBar',gx:6,gy:12},
+           /* murs d accessoires (cote ouest) + Forum (mur nord) */
+           {k:'accWall',gx:0,gy:4},{k:'accWall',gx:0,gy:7},{k:'accWall',gx:0,gy:10},
+           {k:'forum',gx:5,gy:0},
+           /* ARRIERE-BOUTIQUE (gx 12..14) : cartons, etagere, chariot, bureau */
+           {k:'crate',gx:12,gy:1},{k:'crate',gx:13,gy:1},{k:'shelf',gx:12,gy:2},
+           {k:'cart',gx:13,gy:4},{k:'desk',gx:13,gy:5},
+           {k:'bin',gx:9,gy:11},{k:'bin',gx:1,gy:11}],
     mobs:['gull','gull','gull','dog','dog','human','human','human','human','raccoon'] }
 ];
+
+
+
+/* v0.10 : navigation de la GRILLE de selection (2 colonnes, N niveaux).
+   Avant, le modulo 4 etait code en dur : avec 5 salles, la 5e etait
+   inatteignable au clavier. */
+function navSel(dx,dy){
+  var n=LEVELS.length, col=selIdx%2, row=(selIdx/2)|0;
+  if(dx){ var t=selIdx+dx; if(t>=0 && t<n && (t%2)!==col) selIdx=t; }
+  if(dy){
+    var r=row+dy;
+    var maxRow=((n-1)/2)|0;
+    if(r<0) r=maxRow;
+    if(r>maxRow) r=0;
+    var t2=r*2+col;
+    if(t2>=n) t2=r*2+(col?0:0);          /* derniere ligne incomplète */
+    if(t2<n) selIdx=t2;
+  }
+}
 
 var cells = new Uint8Array(COLS*ROWS);   // 0 sale, 1 propre, 2 trainee, 3 NID de detritus
 var detW    = new Uint8Array(COLS*ROWS); // 1 = nid de detritus (compte double)
@@ -908,7 +997,8 @@ var POLL_DESC ={
   mall:  'POLLUEURS : MOUETTES · HUMAINS SALES · CHIENS',
   rink:  'POLLUEURS : HUMAINS SALES · CHIENS · MOUETTE',
   resto: 'POLLUEURS : RATONS LAVEURS · HUMAINS SALES · CHIENS',
-  apple: 'POLLUEURS : HUMAINS SALES · MOUETTES · CHIEN'
+  apple: 'POLLUEURS : HUMAINS SALES · MOUETTES · CHIENS · RATON',
+  museum:'POLLUEURS : TOURISTES · RATONS LAVEURS · CHIENS'
 };
 
 var player = newMach(7,9,0);
@@ -1000,6 +1090,22 @@ function resetGame(mode0){
   for(var pi=0; pi<LV.props.length; pi++){
     var pr=LV.props[pi];
     blocked[idxAt(pr.gx,pr.gy)] = 1;
+  }
+  /* v0.10 : CLOISONS INTERIEURES (cuisine du restaurant, reserve de l'Apple Store).
+     Les cases des ouvertures (passe-plat, porte) restent franchissables. */
+  if(LV.walls){
+    for(var wi=0; wi<LV.walls.length; wi++){
+      var W=LV.walls[wi], wc=[];
+      if(W.dir==='h'){ for(var wgx=W.gx1; wgx<=W.gx2; wgx++) wc.push([wgx,W.gy]); }
+      else           { for(var wgy=W.gy1; wgy<=W.gy2; wgy++) wc.push([W.gx,wgy]); }
+      for(var wq=0; wq<wc.length; wq++){
+        var isOpen=false;
+        for(var wg=0; wg<(W.gaps||[]).length; wg++){
+          if(W.gaps[wg][0]===wc[wq][0] && W.gaps[wg][1]===wc[wq][1]) isOpen=true;
+        }
+        if(!isOpen) blocked[idxAt(wc[wq][0],wc[wq][1])] = 1;
+      }
+    }
   }
   for(var i=0;i<cells.length;i++){
     if(blocked[i]){ cells[i]=2; continue; }         /* sous un prop : sol propre, non comptable */
@@ -1358,53 +1464,270 @@ function drawBin(x,z){
 }
 
 function drawProps(){
+  /* v0.10 : décors FIDÈLES par environnement. Couleurs = multiplicateur de la
+     texture (T.noise = neutre, T.metal = inox, T.wood = bois, T.glass = verre).
+     Chaque prop reste économe en boîtes (budget 400 draws/frame). */
+  var INOX=[1.42,1.48,1.54], INOXD=[0.60,0.65,0.70], MARBRE=[2.32,2.30,2.22],
+      OR=[1.62,1.38,0.66], VELOURS=[1.55,0.24,0.30], BOISCLAIR=[1.18,1.02,0.84];
   for(var i=0;i<LV.props.length;i++){
     var p=LV.props[i];
     var x=p.gx-7, z=p.gy-6, ry=p.ry||0;
+
+    /* ═══════ GALERIE MARCHANDE ═══════ */
     if(p.k==='plant'){
-      box(x,0.15,z, 0.54,0.30,0.54, T.noise, [0.95,0.46,0.28]);              /* bac */
-      box(x,0.31,z, 0.44,0.05,0.44, T.noise, [0.30,0.21,0.14]);              /* terre */
-      box(x,0.72,z, 0.56,0.62,0.56, T.leaf, [1.0,1.0,1.0], {ry:0.5});        /* feuillage */
+      box(x,0.15,z, 0.54,0.30,0.54, T.noise, [0.95,0.46,0.28]);
+      box(x,0.31,z, 0.44,0.05,0.44, T.noise, [0.30,0.21,0.14]);
+      box(x,0.72,z, 0.56,0.62,0.56, T.leaf, [1.0,1.0,1.0], {ry:0.5});
       box(x-0.10,0.98,z+0.06, 0.30,0.24,0.30, T.leaf, [0.86,1.02,0.86], {ry:1.2});
     } else if(p.k==='bench'){
-      box(x,0.30,z, 0.94,0.10,0.42, T.wood, [1.05,0.96,0.86]);               /* assise */
-      box(x,0.46,z-0.17, 0.94,0.26,0.08, T.wood, [0.98,0.88,0.78]);          /* dossier */
-      box(x,0.15,z, 0.74,0.30,0.30, T.metal, [0.58,0.62,0.66]);              /* pied */
+      box(x,0.30,z, 0.94,0.10,0.42, T.wood, [1.05,0.96,0.86]);
+      box(x,0.46,z-0.17, 0.94,0.26,0.08, T.wood, [0.98,0.88,0.78]);
+      box(x,0.15,z, 0.74,0.30,0.30, T.metal, [0.58,0.62,0.66]);
     } else if(p.k==='bin'){
       drawBin(x,z);
+    } else if(p.k==='kiosk'){
+      /* kiosque central : corps + auvent rayé + présentoirs */
+      box(x,0.26,z, 0.86,0.52,0.86, T.wood, [0.92,0.72,0.52]);
+      box(x,0.54,z, 0.90,0.08,0.90, T.noise, [2.30,2.30,2.26]);
+      box(x,0.96,z, 1.00,0.10,1.00, T.noise, [1.70,0.42,0.34], {emit:0.10});   /* auvent */
+      box(x,0.72,z+0.34, 0.62,0.22,0.10, T.noise, [2.10,1.85,0.55]);           /* vitrine */
+    } else if(p.k==='shopfront'){
+      /* vitrine de boutique : encadrement + verre + 2 mannequins + enseigne */
+      var SC=[0.35,0.62,0.86];
+      box(x,0.90,z-0.28, 0.96,1.80,0.10, T.noise, [0.72,0.74,0.78]);          /* fond de vitrine */
+      box(x-0.46,0.90,z-0.10, 0.10,1.80,0.34, T.noise, [0.62,0.64,0.68]);
+      box(x+0.46,0.90,z-0.10, 0.10,1.80,0.34, T.noise, [0.62,0.64,0.68]);
+      box(x,0.90,z+0.02, 0.84,1.50,0.05, T.glass, [1.05,1.15,1.20]);          /* vitre */
+      box(x-0.20,0.60,z-0.08, 0.20,1.00,0.16, T.noise, SC);                   /* mannequin 1 */
+      box(x-0.20,1.22,z-0.08, 0.14,0.14,0.14, T.noise, [1.35,1.10,0.90]);
+      box(x+0.18,0.55,z-0.08, 0.20,0.90,0.16, T.noise, [0.85,0.42,0.55]);     /* mannequin 2 */
+      box(x+0.18,1.12,z-0.08, 0.14,0.14,0.14, T.noise, [1.35,1.10,0.90]);
+      box(x,1.86,z-0.10, 0.94,0.24,0.12, T.noise, LV.accent, {emit:0.35});    /* enseigne */
+
+    /* ═══════ RESTAURANT : CUISINE ═══════ */
+    } else if(p.k==='stove'){
+      /* piano de cuisson inox : corps + 4 feux + dosseret */
+      box(x,0.34,z, 0.92,0.68,0.78, T.metal, INOX);
+      box(x,0.70,z, 0.94,0.06,0.80, T.metal, [1.55,1.60,1.66]);
+      box(x-0.22,0.75,z-0.16, 0.26,0.04,0.26, T.noise, [0.30,0.30,0.32]);
+      box(x+0.22,0.75,z-0.16, 0.26,0.04,0.26, T.noise, [0.30,0.30,0.32]);
+      box(x-0.22,0.75,z+0.18, 0.26,0.04,0.26, T.noise, [0.30,0.30,0.32]);
+      box(x+0.22,0.75,z+0.18, 0.26,0.04,0.26, T.noise, [1.60,0.45,0.15], {emit:0.55}); /* feu allume */
+      box(x,0.92,z-0.36, 0.92,0.40,0.08, T.metal, INOXD);                     /* dosseret */
+    } else if(p.k==='hood'){
+      /* hotte aspirante au-dessus du piano */
+      box(x,1.62,z, 0.80,0.20,0.70, T.metal, INOXD);
+      box(x,1.92,z-0.10, 0.44,0.42,0.34, T.metal, INOXD);
+      box(x,2.10,z-0.10, 0.50,0.06,0.40, T.metal, INOX);
+    } else if(p.k==='fryer'){
+      box(x,0.34,z, 0.48,0.68,0.70, T.metal, INOX);
+      box(x,0.70,z, 0.42,0.06,0.62, T.noise, [1.55,1.35,0.35]);               /* huile */
+      box(x,0.86,z-0.18, 0.34,0.24,0.10, T.metal, INOXD);                     /* panier */
+    } else if(p.k==='prep'){
+      box(x,0.42,z, 0.92,0.08,0.72, T.metal, [1.58,1.62,1.68]);               /* plan de travail */
+      box(x,0.22,z, 0.84,0.36,0.64, T.metal, INOXD);
+      box(x,0.16,z+0.30, 0.60,0.06,0.10, T.metal, INOX);                      /* barre */
+    } else if(p.k==='sink'){
+      /* plonge avec pile d'assiettes sales */
+      box(x,0.42,z, 0.92,0.08,0.72, T.metal, [1.58,1.62,1.68]);
+      box(x-0.18,0.40,z, 0.40,0.10,0.54, T.metal, [0.72,0.78,0.84]);          /* bac */
+      box(x-0.18,0.46,z, 0.34,0.03,0.46, T.noise, [1.30,1.45,1.55]);          /* eau */
+      box(x+0.26,0.52,z, 0.34,0.16,0.34, T.noise, [2.30,2.28,2.18]);          /* assiettes */
+      box(x+0.26,0.66,z, 0.26,0.10,0.26, T.noise, [2.05,2.02,1.92]);
+    } else if(p.k==='fridge'){
+      box(x,0.62,z, 0.74,1.24,0.66, T.metal, [1.30,1.36,1.42]);
+      box(x,0.62,z+0.34, 0.70,1.16,0.03, T.metal, [0.85,0.90,0.95]);
+      box(x+0.28,0.90,z+0.36, 0.05,0.40,0.05, T.metal, [1.70,1.74,1.80]);     /* poignee */
+      box(x,0.10,z, 0.70,0.10,0.62, T.metal, [0.45,0.48,0.52]);
+    } else if(p.k==='shelf'){
+      /* etagere inox / reserve : montants + tablettes + cartons */
+      box(x-0.38,0.55,z, 0.06,1.10,0.62, T.metal, INOXD);
+      box(x+0.38,0.55,z, 0.06,1.10,0.62, T.metal, INOXD);
+      box(x,0.36,z, 0.82,0.05,0.62, T.metal, INOX);
+      box(x,0.74,z, 0.82,0.05,0.62, T.metal, INOX);
+      box(x-0.18,0.50,z, 0.28,0.24,0.34, T.noise, [1.55,1.28,0.86]);          /* carton */
+      box(x+0.20,0.50,z, 0.24,0.20,0.30, T.noise, [1.42,1.18,0.80]);
+      box(x,0.88,z, 0.26,0.22,0.32, T.noise, [1.60,1.34,0.92]);
+
+    /* ═══════ RESTAURANT : SALLE ═══════ */
+    } else if(p.k==='banquette'){
+      box(x,0.20,z, 0.96,0.40,0.56, T.wood, [0.86,0.64,0.44]);                /* soubassement */
+      box(x,0.44,z, 0.92,0.12,0.52, T.fabric, [1.25,0.32,0.36]);              /* assise */
+      box(x,0.66,z-0.22, 0.92,0.44,0.12, T.fabric, [1.15,0.28,0.32]);         /* dossier */
+      box(x-0.30,0.62,z+0.02, 0.16,0.20,0.30, T.fabric, [1.35,0.38,0.42]);    /* coussin */
+    } else if(p.k==='bar'){
+      /* bar : comptoir long, tabourets, bouteilles, desserte */
+      box(x,0.52,z, 0.98,0.12,0.62, T.wood, [1.06,0.80,0.52]);               /* plateau */
+      box(x,0.26,z, 0.92,0.52,0.54, T.wood, [0.78,0.56,0.36]);               /* corps */
+      box(x,0.60,z-0.18, 0.90,0.06,0.10, T.metal, [1.40,1.44,1.48]);         /* rail inox */
+      box(x-0.28,0.66,z+0.10, 0.10,0.18,0.10, T.noise, [0.55,0.85,0.45]);    /* bouteille */
+      box(x-0.10,0.66,z+0.10, 0.10,0.22,0.10, T.noise, [0.75,0.35,0.30]);
+      box(x+0.10,0.66,z+0.10, 0.10,0.16,0.10, T.noise, [0.85,0.75,0.35]);
+      box(x+0.28,0.66,z+0.10, 0.10,0.20,0.10, T.noise, [0.45,0.60,0.85]);
+      box(x-0.24,0.30,z+0.52, 0.18,0.06,0.18, T.noise, [0.45,0.38,0.32]);    /* tabouret 1 */
+      box(x-0.24,0.16,z+0.52, 0.05,0.28,0.05, T.metal, [0.80,0.84,0.88]);
+      box(x+0.24,0.30,z+0.52, 0.18,0.06,0.18, T.noise, [0.45,0.38,0.32]);    /* tabouret 2 */
+      box(x+0.24,0.16,z+0.52, 0.05,0.28,0.05, T.metal, [0.80,0.84,0.88]);
+    } else if(p.k==='host'){
+      /* comptoir d'accueil + caisse */
+      box(x,0.36,z, 0.94,0.72,0.60, T.wood, [1.00,0.86,0.66]);
+      box(x,0.74,z, 0.98,0.06,0.64, T.noise, [2.28,2.26,2.20]);
+      box(x+0.22,0.86,z, 0.24,0.18,0.22, T.noise, [0.72,0.76,0.80]);          /* caisse */
+      box(x+0.22,1.00,z, 0.20,0.12,0.03, T.panel, [1,1,1], {emit:0.70});      /* ecran caisse */
+    } else if(p.k==='dessert'){
+      /* presentoir a desserts vitre */
+      box(x,0.26,z, 0.70,0.52,0.56, T.noise, [1.10,0.92,0.72]);
+      box(x,0.52,z, 0.72,0.06,0.58, T.noise, [2.25,2.22,2.16]);
+      box(x,0.80,z, 0.66,0.50,0.52, T.glass, [1.10,1.18,1.22]);
+      box(x-0.16,0.62,z, 0.18,0.10,0.18, T.noise, [1.85,0.70,0.62]);          /* patisserie */
+      box(x+0.16,0.62,z, 0.18,0.10,0.18, T.noise, [1.70,1.45,0.55]);
+      box(x,0.62,z-0.02, 0.18,0.10,0.18, T.noise, [1.35,0.85,0.95]);
+    } else if(p.k==='table'){
+      box(x,0.38,z, 0.80,0.08,0.80, T.wood, [1.02,0.94,0.84]);
+      box(x,0.20,z, 0.12,0.32,0.12, T.metal, [0.46,0.48,0.51]);
+      box(x,0.04,z, 0.44,0.06,0.44, T.metal, [0.40,0.42,0.45]);
+      box(x-0.06,0.44,z, 0.16,0.05,0.14, T.noise, [2.35,2.32,2.20]);          /* assiette */
+      box(x+0.16,0.44,z-0.10, 0.10,0.06,0.10, T.noise, [2.10,2.08,2.00]);     /* verre */
+      for(var ch=0; ch<2; ch++){
+        var cxs = x + (ch? 0.62 : -0.62), czs = z + (ch? 0.10 : -0.10);
+        box(cxs,0.20,czs, 0.34,0.06,0.34, T.wood, [0.94,0.82,0.68]);
+        box(cxs + (ch?0.14:-0.14),0.33,czs-0.13, 0.05,0.28,0.30, T.wood, [0.88,0.76,0.62]);
+        box(cxs-0.12,0.09,czs-0.12, 0.05,0.18,0.05, T.metal, [0.44,0.46,0.49]);
+        box(cxs+0.12,0.09,czs+0.12, 0.05,0.18,0.05, T.metal, [0.44,0.46,0.49]);
+      }
+
+    /* ═══════ MUSEE ═══════ */
+    } else if(p.k==='painting'){
+      /* toile encadree : accrochee au mur nord (z=-6.6) ou ouest (x=-7.55) */
+      var cols=[[1.05,0.42,0.34],[0.42,0.62,1.05],[1.05,0.88,0.42]][p.v||0];
+      if(p.side){
+        box(x-0.42,1.15,z, 0.08,0.86,0.66, T.gold, OR);
+        box(x-0.40,1.15,z, 0.04,0.72,0.52, T.noise, cols);
+        box(x-0.40,1.15,z, 0.04,0.24,0.18, T.noise, [1.55,1.35,0.90]);
+        box(x-0.34,0.66,z+0.30, 0.03,0.14,0.16, T.noise, [2.20,2.18,2.05]);   /* cartel */
+      } else {
+        box(x,1.15,z-0.42, 0.66,0.86,0.08, T.gold, OR);
+        box(x,1.15,z-0.40, 0.52,0.72,0.04, T.noise, cols);
+        box(x,1.15,z-0.40, 0.18,0.24,0.04, T.noise, [1.55,1.35,0.90]);
+        box(x+0.36,0.66,z-0.40, 0.16,0.14,0.03, T.noise, [2.20,2.18,2.05]);
+      }
+    } else if(p.k==='statue'){
+      var sc = p.big ? 1.55 : 1.0;
+      box(x,0.22*sc,z, 0.62*sc,0.44*sc,0.62*sc, T.noise, [1.75,1.72,1.66]);   /* socle pierre */
+      box(x,0.48*sc,z, 0.68*sc,0.10*sc,0.68*sc, T.noise, [2.05,2.02,1.94]);
+      box(x,0.80*sc,z, 0.30*sc,0.62*sc,0.24*sc, T.noise, MARBRE);             /* corps */
+      box(x,1.18*sc,z, 0.20*sc,0.20*sc,0.20*sc, T.noise, MARBRE);             /* tete */
+      box(x-0.24*sc,1.00*sc,z, 0.10*sc,0.44*sc,0.10*sc, T.noise, MARBRE);     /* bras */
+      box(x+0.24*sc,1.02*sc,z+0.04*sc, 0.10*sc,0.40*sc,0.10*sc, T.noise, [2.20,2.18,2.12]);
+      box(x,0.55*sc,z, 0.40*sc,0.10*sc,0.34*sc, T.noise, [1.90,1.86,1.78]);   /* drapé */
+    } else if(p.k==='vitrine'){
+      box(x,0.20,z, 0.66,0.40,0.56, T.noise, [1.20,1.10,0.96]);               /* socle */
+      box(x,0.72,z, 0.62,0.64,0.52, T.glass, [1.15,1.24,1.30]);               /* verre */
+      box(x,0.62,z, 0.26,0.26,0.22, T.noise, [1.85,1.55,0.55], {emit:0.20});  /* objet expose */
+      box(x,0.98,z, 0.64,0.06,0.54, T.noise, [1.90,1.88,1.82]);               /* chapeau */
+    } else if(p.k==='rope'){
+      box(x-0.26,0.44,z, 0.06,0.88,0.06, T.gold, OR);                          /* poteau */
+      box(x+0.26,0.44,z, 0.06,0.88,0.06, T.gold, OR);
+      box(x-0.26,0.02,z, 0.16,0.05,0.16, T.gold, OR);
+      box(x+0.26,0.02,z, 0.16,0.05,0.16, T.gold, OR);
+      box(x,0.76,z, 0.56,0.07,0.05, T.fabric, VELOURS);                        /* cordon velours */
+    } else if(p.k==='mbench'){
+      box(x,0.28,z, 0.96,0.10,0.54, T.fabric, [1.25,0.26,0.32]);               /* assise velours */
+      box(x,0.15,z, 0.88,0.26,0.46, T.wood, [0.90,0.74,0.56]);
+      box(x-0.40,0.20,z, 0.06,0.40,0.36, T.wood, [0.82,0.68,0.50]);
+      box(x+0.40,0.20,z, 0.06,0.40,0.36, T.wood, [0.82,0.68,0.50]);
+
+    /* ═══════ PATINOIRE ═══════ */
+    } else if(p.k==='boardAd'){
+      var AD=[[1.20,0.32,0.28],[0.32,0.62,1.20],[1.20,0.92,0.28]][p.a||0];
+      box(x,0.28,z-0.10, 0.96,0.56,0.14, T.noise, [1.35,1.38,1.42]);          /* balustrade */
+      box(x,0.52,z-0.10, 0.96,0.06,0.16, T.noise, [2.05,2.05,2.02]);
+      box(x,0.74,z-0.12, 0.90,0.40,0.06, T.noise, AD, {emit:0.30});           /* panneau pub */
+      box(x,0.74,z-0.12, 0.60,0.12,0.02, T.noise, [2.30,2.30,2.26], {emit:0.65});
+    } else if(p.k==='scoreboard'){
+      box(x,0.55,z-0.20, 0.10,1.10,0.10, T.metal, [0.70,0.74,0.78]);
+      box(x,1.26,z-0.20, 0.86,0.46,0.10, T.noise, [0.18,0.20,0.24]);
+      box(x,1.26,z-0.14, 0.70,0.30,0.02, T.panel, [1,1,1], {emit:0.85});
+    } else if(p.k==='pbench'){
+      box(x,0.30,z, 0.96,0.10,0.46, T.noise, [0.55,0.62,0.70]);
+      box(x,0.15,z, 0.86,0.26,0.40, T.metal, [0.52,0.56,0.60]);
+      box(x,0.46,z-0.20, 0.96,0.26,0.06, T.noise, [0.62,0.70,0.78]);
+    } else if(p.k==='lineH'){
+      box(x,0.015,z, 15.0,0.02,0.14, T.noise, [1.45,0.30,0.34]);              /* ligne rouge */
+    } else if(p.k==='dot'){
+      box(x,0.015,z, 0.24,0.02,0.24, T.noise, [1.55,0.35,0.38]);
     } else if(p.k==='rail'){
       box(x-0.40,0.30,z, 0.09,0.60,0.09, T.metal, [0.74,0.80,0.86]);
       box(x+0.40,0.30,z, 0.09,0.60,0.09, T.metal, [0.74,0.80,0.86]);
-      box(x,0.52,z, 0.94,0.13,0.13, T.noise, [2.05,0.55,0.30]);              /* lisse */
+      box(x,0.52,z, 0.94,0.13,0.13, T.noise, [2.05,0.55,0.30]);
     } else if(p.k==='goal'){
       box(x-0.42,0.42,z, 0.09,0.84,0.09, T.noise, [2.20,0.34,0.30]);
       box(x+0.42,0.42,z, 0.09,0.84,0.09, T.noise, [2.20,0.34,0.30]);
       box(x,0.82,z, 0.94,0.10,0.10, T.noise, [2.20,0.34,0.30]);
-      box(x,0.42,z-0.03, 0.78,0.66,0.03, T.noise, [1.60,1.68,1.72]);          /* filet */
-    } else if(p.k==='table'){
-      box(x,0.38,z, 0.80,0.08,0.80, T.wood, [1.02,0.94,0.84]);               /* plateau */
-      box(x,0.20,z, 0.12,0.32,0.12, T.metal, [0.46,0.48,0.51]);              /* pied */
-      box(x,0.04,z, 0.44,0.06,0.44, T.metal, [0.40,0.42,0.45]);              /* socle */
-      box(x-0.06,0.44,z, 0.16,0.05,0.10, T.noise, [2.35,2.32,2.20]);         /* nappe/assiette */
-      /* v0.9.3 : 2 VRAIES CHAISES bistrot (assise + dossier + 4 pieds) —
-         avant, ce n'étaient que deux plateaux plats, l'ambiance resto manquait */
-      for(var ch=0; ch<2; ch++){
-        var cxs = x + (ch? 0.62 : -0.62), czs = z + (ch? 0.10 : -0.10);
-        box(cxs,0.20,czs, 0.34,0.06,0.34, T.wood, [0.94,0.82,0.68]);         /* assise */
-        box(cxs + (ch?0.14:-0.14),0.33,czs-0.13, 0.05,0.28,0.30, T.wood, [0.88,0.76,0.62]); /* dossier */
-        box(cxs-0.13,0.09,czs-0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
-        box(cxs+0.13,0.09,czs-0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
-        box(cxs-0.13,0.09,czs+0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
-        box(cxs+0.13,0.09,czs+0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
+      box(x,0.42,z-0.03, 0.78,0.66,0.03, T.noise, [1.60,1.68,1.72]);
+
+    /* ═══════ APPLE STORE ═══════ */
+    } else if(p.k==='aTable'){
+      /* table en bois massif « Avenue » : plateau + 2 pieds pleins + produits */
+      box(x,0.44,z, 1.04,0.10,0.76, T.wood, BOISCLAIR);
+      box(x-0.40,0.20,z, 0.10,0.40,0.62, T.wood, [0.92,0.78,0.60]);
+      box(x+0.40,0.20,z, 0.10,0.40,0.62, T.wood, [0.92,0.78,0.60]);
+      box(x-0.26,0.53,z-0.10, 0.24,0.08,0.18, T.noise, [2.40,2.40,2.38]);     /* boite produit */
+      box(x+0.02,0.53,z+0.12, 0.20,0.08,0.16, T.noise, [2.30,2.30,2.28]);
+      box(x+0.30,0.56,z-0.06, 0.22,0.16,0.03, T.panel, [1,1,1], {emit:0.60}); /* ecran allume */
+      box(x-0.02,0.56,z-0.20, 0.18,0.14,0.03, T.panel, [1,1,1], {emit:0.45});
+    } else if(p.k==='geniusBar'){
+      /* Genius Bar : comptoir haut + 3 tabourets */
+      box(x,0.52,z, 1.04,0.16,0.62, T.wood, BOISCLAIR);
+      box(x,0.26,z, 0.92,0.52,0.52, T.wood, [0.90,0.76,0.58]);
+      box(x-0.20,0.62,z, 0.22,0.10,0.16, T.panel, [1,1,1], {emit:0.55});
+      box(x+0.18,0.62,z, 0.22,0.10,0.16, T.panel, [1,1,1], {emit:0.55});
+      box(x,1.02,z-0.26, 1.00,0.22,0.06, T.noise, [0.16,0.17,0.20]);          /* bandeau GENIUS BAR */
+      box(x,1.02,z-0.22, 0.86,0.12,0.02, T.panel, [1,1,1], {emit:0.90});
+      for(var st=0; st<3; st++){
+        var sx = x - 0.36 + st*0.36;
+        box(sx,0.34,z+0.46, 0.20,0.06,0.20, T.noise, [2.10,2.10,2.06]);       /* assise */
+        box(sx,0.17,z+0.46, 0.05,0.32,0.05, T.metal, [1.05,1.10,1.15]);       /* pied */
       }
-    } else if(p.k==='woodtable'){
+    } else if(p.k==='accWall'){
+      /* mur d'accessoires : 3 etageres + petites boites */
+      box(x-0.44,0.85,z, 0.06,1.70,0.60, T.wood, [0.96,0.82,0.64]);
+      box(x+0.44,0.85,z, 0.06,1.70,0.60, T.wood, [0.96,0.82,0.64]);
+      box(x,0.52,z, 0.88,0.05,0.56, T.wood, BOISCLAIR);
+      box(x,0.96,z, 0.88,0.05,0.56, T.wood, BOISCLAIR);
+      box(x,1.40,z, 0.88,0.05,0.56, T.wood, BOISCLAIR);
+      box(x-0.22,0.64,z, 0.20,0.18,0.20, T.noise, [2.20,2.20,2.16]);
+      box(x+0.18,0.64,z, 0.16,0.14,0.18, T.noise, [2.05,2.05,2.00]);
+      box(x-0.10,1.08,z, 0.18,0.16,0.18, T.noise, [2.15,2.15,2.10]);
+      box(x+0.20,1.52,z, 0.20,0.18,0.20, T.noise, [2.10,2.10,2.06]);
+    } else if(p.k==='forum'){
+      /* Forum : grand ecran lumineux sur mur */
+      box(x,1.30,z-0.36, 1.70,0.98,0.10, T.noise, [0.14,0.15,0.18]);
+      box(x,1.30,z-0.30, 1.56,0.84,0.04, T.panel, [1,1,1], {emit:0.95});
+      box(x,0.72,z-0.36, 1.70,0.14,0.12, T.wood, BOISCLAIR);
+    } else if(p.k==='crate'){
+      box(x,0.28,z, 0.50,0.54,0.50, T.noise, [1.58,1.30,0.88]);               /* carton */
+      box(x,0.28,z, 0.12,0.56,0.52, T.noise, [1.30,1.05,0.70]);               /* bande */
+      box(x,0.56,z, 0.44,0.04,0.44, T.noise, [1.70,1.44,1.00]);
+    } else if(p.k==='cart'){
+      box(x,0.30,z, 0.66,0.06,0.46, T.metal, [0.90,0.95,1.00]);               /* plateau */
+      box(x,0.52,z-0.20, 0.60,0.34,0.05, T.metal, [1.10,1.15,1.20]);          /* poignee */
+      box(x,0.10,z-0.16, 0.12,0.16,0.06, T.noise, [0.25,0.26,0.28]);
+      box(x,0.10,z+0.16, 0.12,0.16,0.06, T.noise, [0.25,0.26,0.28]);
+      box(x,0.40,z, 0.34,0.18,0.28, T.noise, [1.50,1.24,0.86]);               /* carton dessus */
+    } else if(p.k==='desk'){
+      box(x,0.44,z, 0.86,0.08,0.60, T.wood, BOISCLAIR);
+      box(x-0.36,0.22,z, 0.08,0.42,0.54, T.metal, [0.85,0.90,0.95]);
+      box(x+0.36,0.22,z, 0.08,0.42,0.54, T.metal, [0.85,0.90,0.95]);
+      box(x,0.62,z-0.16, 0.34,0.24,0.04, T.panel, [1,1,1], {emit:0.65});      /* ecran */
+      box(x,0.50,z-0.16, 0.06,0.08,0.06, T.metal, [0.75,0.80,0.85]);
+      box(x,0.30,z+0.30, 0.28,0.08,0.28, T.noise, [0.35,0.38,0.42]);          /* siege */
+      box(x,0.16,z+0.30, 0.06,0.26,0.06, T.metal, [0.75,0.80,0.85]);
+    } else if(p.k==='woodtable' || p.k==='display'){
       box(x,0.39,z, 0.98,0.10,0.72, T.wood, [1.12,1.00,0.86]);
       box(x-0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
       box(x+0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
-      box(x-0.20,0.47,z+0.02, 0.24,0.07,0.14, T.noise, [2.45,2.45,2.50]);    /* produit */
-    } else if(p.k==='display'){
-      box(x,0.28,z, 0.46,0.56,0.34, T.wallApple, [0.98,0.98,0.96]);
-      box(x,0.62,z, 0.48,0.24,0.06, T.panel, [1,1,1], {emit:0.55});
+      box(x-0.20,0.47,z+0.02, 0.24,0.07,0.14, T.noise, [2.45,2.45,2.50]);
     }
   }
 }
@@ -1753,6 +2076,56 @@ function drawScene(){
   /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
   /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
   gl.depthMask(true); gl.disable(gl.BLEND);
+
+  /* ── v0.10 : CLOISONS INTERIEURES (cuisine / reserve) ── */
+  if(LV.walls){
+    for(var wi2=0; wi2<LV.walls.length; wi2++){
+      var W2=LV.walls[wi2];
+      var inGap=function(gx,gy){
+        for(var q=0;q<(W2.gaps||[]).length;q++) if(W2.gaps[q][0]===gx && W2.gaps[q][1]===gy) return true;
+        return false;
+      };
+      if(W2.dir==='h'){
+        var rs=-1;
+        for(var gx2=W2.gx1; gx2<=W2.gx2+1; gx2++){
+          var open2=(gx2>W2.gx2)||inGap(gx2,W2.gy);
+          if(!open2 && rs<0) rs=gx2;
+          if(open2 && rs>=0){
+            var ln2=gx2-rs, cx2=(rs+(ln2-1)/2)-7;
+            box(cx2, W2.h/2, W2.gy-6, ln2, W2.h, 0.50, WT, LV.wallCol, {uvScale:[ln2,1]});
+            box(cx2, W2.h+0.05, W2.gy-6, ln2+0.06, 0.10, 0.56, T.noise, LV.accent, {emit:0.18});
+            rs=-1;
+          }
+        }
+      } else {
+        var rs2=-1;
+        for(var gy2=W2.gy1; gy2<=W2.gy2+1; gy2++){
+          var open3=(gy2>W2.gy2)||inGap(W2.gx,gy2);
+          if(!open3 && rs2<0) rs2=gy2;
+          if(open3 && rs2>=0){
+            var ln3=gy2-rs2, cz2=(rs2+(ln3-1)/2)-6;
+            box(W2.gx-7, W2.h/2, cz2, 0.50, W2.h, ln3, WT, LV.wallCol, {uvScale:[ln3,1]});
+            box(W2.gx-7, W2.h+0.05, cz2, 0.56, 0.10, ln3+0.06, T.noise, LV.accent, {emit:0.18});
+            rs2=-1;
+          }
+        }
+      }
+      /* encadrement inox de l'ouverture (passe-plat / porte) : 2 montants + linteau */
+      for(var q3=0; q3<(W2.gaps||[]).length; q3++){
+        var gg=W2.gaps[q3];
+        if(W2.dir==='h'){
+          box(gg[0]-7-0.5, W2.h/2, gg[1]-6, 0.12, W2.h, 0.54, T.metal, [1.45,1.50,1.55]);
+          box(gg[0]-7+0.5, W2.h/2, gg[1]-6, 0.12, W2.h, 0.54, T.metal, [1.45,1.50,1.55]);
+          box(gg[0]-7, W2.h+0.02, gg[1]-6, 1.12, 0.20, 0.56, T.metal, [1.30,1.35,1.40]);
+          if(W2.pass) box(gg[0]-7, 1.42, gg[1]-6, 1.02, 0.10, 0.62, T.metal, [1.55,1.60,1.65]); /* tablette passe-plat */
+        } else {
+          box(gg[0]-7, W2.h/2, gg[1]-6-0.5, 0.54, W2.h, 0.12, T.metal, [1.45,1.50,1.55]);
+          box(gg[0]-7, W2.h/2, gg[1]-6+0.5, 0.54, W2.h, 0.12, T.metal, [1.45,1.50,1.55]);
+          box(gg[0]-7, W2.h+0.02, gg[1]-6, 0.56, 0.20, 1.12, T.metal, [1.30,1.35,1.40]);
+        }
+      }
+    }
+  }
 
   var tNow=performance.now()/1000;
 
@@ -2167,10 +2540,10 @@ window.addEventListener('keydown',function(e){
 
   /* --- v0.9 : ECRAN DE SELECTION DES NIVEAUX --- */
   if(mode==='select'){
-    if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); selIdx=(selIdx%2===0)?selIdx+1:selIdx-1; beep(520,0.04,0.03); return; }
-    if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); selIdx=(selIdx%2===1)?selIdx-1:selIdx+1; beep(520,0.04,0.03); return; }
-    if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); selIdx=(selIdx+2)%4; beep(460,0.04,0.03); return; }
-    if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); selIdx=(selIdx+2)%4; beep(460,0.04,0.03); return; }
+    if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); navSel(1,0); beep(520,0.04,0.03); return; }
+    if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); navSel(-1,0); beep(520,0.04,0.03); return; }
+    if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); navSel(0,1); beep(460,0.04,0.03); return; }
+    if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); navSel(0,-1); beep(460,0.04,0.03); return; }
     if(k==='Enter'||k===' '){ e.preventDefault(); startLevel(selIdx); return; }
     if(k==='m'||k==='M'){ soundOn=!soundOn; return; }
     if(k==='Escape'){ e.preventDefault(); resetGame('attract'); return; }
@@ -2285,11 +2658,11 @@ function drawSelect(){
   hudText('CHOISIS TA SALLE',320,56,12,'#ffd45a','center');
   hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(120,66,400,1);
 
-  var CW=282, CH=112, GX=28, GY=76;
+  var CW=282, CH=86, GX=28, GY=74;   /* v0.10 : 5 cartes = 2 colonnes x 3 lignes */
   for(var i=0;i<LEVELS.length;i++){
     var L=LEVELS[i];
     var cx=GX+(i%2)*(CW+12);
-    var cy=GY+((i/2)|0)*(CH+10);
+    var cy=GY+((i/2)|0)*(CH+6);
     var on=(i===selIdx);
     /* fond de carte */
     hud.fillStyle = on ? 'rgba(24,42,56,0.98)' : 'rgba(12,17,24,0.94)';
@@ -2301,24 +2674,24 @@ function drawSelect(){
     hud.fillRect(cx+CW-3,cy,3,CH);
     /* numero + nom */
     hud.fillStyle = on ? 'rgba(255,212,90,0.22)' : 'rgba(90,120,140,0.18)';
-    hud.fillRect(cx+10,cy+12,26,26);
-    hudText(String(L.num),cx+23,cy+25,16,on?'#ffd45a':'#8fa6b4','center');
-    hudText(L.name,cx+46,cy+21,12,on?'#ffffff':'#c3d5e0');
-    hudText(L.tag,cx+46,cy+37,7,on?'#7ad8f0':'#6d8492','left','normal');
+    hud.fillRect(cx+8,cy+8,24,24);
+    hudText(String(L.num),cx+20,cy+20,15,on?'#ffd45a':'#8fa6b4','center');
+    hudText(L.name,cx+40,cy+17,12,on?'#ffffff':'#c3d5e0');
+    hudText(L.tag,cx+40,cy+31,7,on?'#7ad8f0':'#6d8492','left','normal');
     /* description sur 2 lignes */
-    var lines=hudWrap(L.desc,58);
-    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+12,cy+55+d*10,7,on?'#cfe3ff':'#8ea3b0','left','normal');
+    var lines=hudWrap(L.desc,60);
+    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+10,cy+46+d*9,7,on?'#cfe3ff':'#8ea3b0','left','normal');
     /* NIVEAU + difficulte (etoiles) */
-    hudText('NIVEAU '+L.num+' · '+L.diffLabel,cx+12,cy+80,9,on?'#ffd45a':'#9fb3c0');
-    hudStars(cx+CW-12,cy+80,L.stars,on);
-    hudText(POLL_DESC[L.id]||'',cx+12,cy+94,7,on?'#9fe0b0':'#6d8492','left','normal');
-    hudText('HIGH '+highScores[L.id],cx+CW-12,cy+105,7,'#ffd45a','right','normal');
+    hudText('NIVEAU '+L.num+' · '+L.diffLabel,cx+10,cy+66,8,on?'#ffd45a':'#9fb3c0');
+    hudStars(cx+CW-10,cy+66,L.stars,on);
+    hudText(POLL_DESC[L.id]||'',cx+10,cy+78,7,on?'#9fe0b0':'#6d8492','left','normal');
+    hudText('HIGH '+highScores[L.id],cx+CW-10,cy+78,7,'#ffd45a','right','normal');
     if(on){
-      hudText('▶',cx+CW-16,cy+20,12,'#ffd45a','center');
+      hudText('▶',cx+CW-14,cy+16,12,'#ffd45a','center');
     }
   }
   hudText('FLECHES / WASD : CHOISIR   ·   ENTREE : JOUER   ·   M : SON',320,338,8,'#cfe3ff','center','normal');
-  hudText('v0.9',618,26,8,'rgba(190,215,225,0.55)','right','normal');
+  hudText('v0.10',612,26,8,'rgba(190,215,225,0.55)','right','normal');
 }
 
 /* v0.9 : retour a la ligne simple pour les cartes */
