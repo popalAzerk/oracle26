@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MOB RACER 3D v0.9 — 4 niveaux</title>
+<title>MOB RACER 3D v0.9.3 — 4 niveaux, trace bleue</title>
 <style>
   html,body{margin:0;height:100%;background:#06070a;overflow:hidden;font-family:monospace}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
@@ -224,22 +224,25 @@ function texTileDirty(){
 }
 
 function texTileTrail(){
+  /* v0.9.3 : TRACE BLEUE de nettoyage (demande José) — le carreau nettoyé est
+     franchement bleu (sol mouillé) pour identifier d'un coup d'œil les zones
+     propres, sans avoir à lire le HUD. */
   return texCanvas(32,32,function(g,w,h){
-    px(g,0,0,'#7d8a84',w,h);
-    px(g,1,1,'#e7efe9',30,30);
-    px(g,1,1,'#ffffff',30,1);
-    px(g,1,1,'#ffffff',1,30);
-    px(g,1,30,'#cfe0d8',30,1);
-    px(g,30,1,'#cfe0d8',1,30);
+    px(g,0,0,'#3f6b95',w,h);            // joint bleu
+    px(g,1,1,'#7fc4ef',30,30);          // carreau bleu
+    px(g,1,1,'#a8dcff',30,1);           // bevel haut clair
+    px(g,1,1,'#a8dcff',1,30);           // bevel gauche
+    px(g,1,30,'#4f92c4',30,1);
+    px(g,30,1,'#4f92c4',1,30);
     // legere brillance
-    px(g,4,9,'rgba(205,250,240,0.35)',10,1);
-    px(g,16,20,'rgba(205,250,240,0.28)',8,1);
-    px(g,6,6,'rgba(255,255,255,0.55)',3,1);
-    px(g,21,17,'rgba(185,240,255,0.35)',4,1);
-    // etincelles
+    px(g,4,9,'rgba(235,250,255,0.55)',10,1);
+    px(g,16,20,'rgba(235,250,255,0.45)',8,1);
+    px(g,6,6,'rgba(255,255,255,0.75)',3,1);
+    px(g,21,17,'rgba(200,240,255,0.55)',4,1);
+    // etincelles de flotte
     px(g,9,7,'#ffffff',2,2);
-    px(g,23,22,'#c9fff4',2,2);
-    px(g,15,25,'#eafffb',1,1);
+    px(g,23,22,'#dcf6ff',2,2);
+    px(g,15,25,'#f0fbff',1,1);
   });
 }
 
@@ -449,7 +452,7 @@ var FLOOR_PAL = {
           dirt1:'rgba(88,94,100,0.40)', dirt2:'rgba(124,124,116,0.46)', nest1:'#6f7a80', nest2:'rgba(40,48,54,0.82)'},
   resto: {pat:'checker',grout:'#5c4436', base:'#f3ecdb', alt:'#8c4a3a', hi:'#fffaf0', lo:'#c9bda6',
           dirt1:'rgba(70,48,26,0.55)', dirt2:'rgba(48,32,16,0.62)', nest1:'#4a3524', nest2:'rgba(24,16,8,0.86)'},
-  apple: {pat:'stone',  grout:'#d8d8d4', base:'#f5f5f2', alt:'#ebebe7', hi:'#ffffff', lo:'#dadad5',
+  apple: {pat:'stone',  grout:'#e6e6e2', base:'#fdfdfb', alt:'#f4f4f0', hi:'#ffffff', lo:'#e4e4df',
           dirt1:'rgba(104,98,86,0.44)', dirt2:'rgba(78,72,62,0.52)', nest1:'#5a564c', nest2:'rgba(30,28,24,0.82)'}
 };
 
@@ -507,10 +510,24 @@ function texFloor(pal,state){
     }
     /* ---- etat de proprete ---- */
     if(state==='trail'){
-      for(var s=0;s<3;s++) px(g,3+s*10,5+((s*9)%19),'rgba(235,255,250,0.55)',9,2);
-      px(g,4,21,'rgba(255,255,255,0.45)',13,1);
-      px(g,9,11,'#ffffff',2,2);
-      px(g,21,17,'rgba(255,255,255,0.75)',1,1);
+      /* v0.9.3 : TRACE BLEUE de nettoyage (demande José) — le carreau nettoyé
+         est repeint en bleu « sol mouillé » : les zones propres se repèrent
+         d'un coup d'œil, sur n'importe quel niveau. */
+      px(g,0,0,'#2f5c85',w,h);                       // joint bleu profond
+      for(var tyT=0;tyT<2;tyT++){
+        for(var txT=0;txT<2;txT++){
+          var cb=((txT+tyT)%2) ? '#6fbdf0' : '#86cbf6';
+          px(g,txT*16+1,tyT*16+1,cb,14,14);
+          px(g,txT*16+1,tyT*16+1,'#b9e6ff',14,1);     // bevel haut clair
+          px(g,txT*16+1,tyT*16+1,'#b9e6ff',1,14);     // bevel gauche
+          px(g,txT*16+14,tyT*16+1,'#4a90c2',1,14);
+          px(g,txT*16+1,tyT*16+14,'#4a90c2',14,1);
+        }
+      }
+      px(g,3,6,'rgba(240,252,255,0.60)',10,2);        // reflet de flotte
+      px(g,17,19,'rgba(240,252,255,0.50)',8,2);
+      px(g,8,12,'#ffffff',2,2);
+      px(g,22,8,'rgba(255,255,255,0.85)',1,1);
     } else if(state==='dirty'){
       var st=[[3,4,11,9],[18,6,10,8],[6,19,12,8],[20,20,9,7]];
       for(var i=0;i<st.length;i++){
@@ -829,8 +846,8 @@ var LEVELS=[
   { id:'mall', num:1, name:'CENTRE COMMERCIAL', tag:'HALL & GALERIE',
     desc:'Carrelage brillant, bacs a plantes, bancs. Les mouettes entrent par le hall.',
     coef:1.00, diffLabel:'FACILE', stars:1, nests:4, passes:1,
-    floor:'mall', wall:'wallMall', wallCol:[1.0,1.0,1.0], wallH:1.95,
-    accent:[1.0,0.84,0.42], sky:[0.105,0.115,0.135], ground:[0.24,0.27,0.28],
+    floor:'mall', wall:'wallMall', wallCol:[1.10,0.98,0.84], wallH:2.05,
+    accent:[1.0,0.78,0.34], sky:[0.125,0.110,0.105], ground:[0.30,0.27,0.24],
     props:[{k:'plant',gx:2,gy:2},{k:'plant',gx:12,gy:2},{k:'plant',gx:2,gy:10},{k:'plant',gx:12,gy:10},
            {k:'bench',gx:4,gy:5,ry:0},{k:'bench',gx:10,gy:7,ry:0},{k:'bench',gx:7,gy:2,ry:0},
            {k:'bin',gx:9,gy:3},{k:'bin',gx:5,gy:7}],
@@ -859,8 +876,8 @@ var LEVELS=[
   { id:'apple', num:4, name:'APPLE STORE', tag:'VITRES & TABLES EN BOIS',
     desc:'Sol clair lumineux, grandes tables en bois, baies vitrees. Les touristes salissent.',
     coef:1.80, diffLabel:'EXPERT', stars:4, nests:8, passes:2,
-    floor:'apple', wall:'wallApple', wallCol:[1.0,1.0,1.0], wallH:1.95,
-    accent:[0.70,0.80,0.92], sky:[0.145,0.150,0.165], ground:[0.36,0.36,0.35],
+    floor:'apple', wall:'wallApple', wallCol:[1.06,1.06,1.05], wallH:1.95,
+    accent:[0.82,0.90,1.00], sky:[0.175,0.180,0.195], ground:[0.52,0.52,0.50],
     props:[{k:'woodtable',gx:4,gy:4},{k:'woodtable',gx:10,gy:4},
            {k:'woodtable',gx:4,gy:8},{k:'woodtable',gx:10,gy:8},
            {k:'display',gx:7,gy:3},{k:'display',gx:7,gy:7},
@@ -875,7 +892,7 @@ var cleanHits = new Uint8Array(COLS*ROWS); /* v0.9 : passages de lavage sur une 
 var blocked = new Uint8Array(COLS*ROWS); // 1 = prop solide (obstacle du niveau)
 var dirtyLeft=0, totalCleanable=0;
 var timeLeft=NIVEAU_DUREE, mode='attract', score=0, botScore=0;
-var soundOn=true, audioCtx=null, SHADOWS=true;
+var soundOn=true, audioCtx=null, SHADOWS=false;   /* v0.9.3 : ombres coupées (José) */
 
 /* v0.9 : niveaux + pollueurs */
 var levelIdx=0, LV=LEVELS[0], selIdx=0;
@@ -1322,7 +1339,12 @@ function drawFloorMesh(m,tex){
 }
 
 /* ---------- 10. DESSIN DE LA SCENE ---------- */
+/* v0.9.3 : OMBRES SUPPRIMÉES (demande José : « l'effet d'ombre nuit au rendu »).
+   On garde la fonction en no-op pour ne pas toucher les 6 points d'appel, et
+   le sol garde la trace bleue de nettoyage comme repère de propreté. */
+var OMBRES_ACTIVES = false;
 function drawShadow(x,z,size,alpha){
+  if(!OMBRES_ACTIVES) return;
   drawMesh(QUAD_XZ, trs(x,0.025,z,size*0.5,1,size*0.5,0), T.shadow, [0,0,0],
     {unlit:true, alpha:alpha===undefined?0.7:alpha});
 }
@@ -1360,11 +1382,21 @@ function drawProps(){
       box(x,0.82,z, 0.94,0.10,0.10, T.noise, [2.20,0.34,0.30]);
       box(x,0.42,z-0.03, 0.78,0.66,0.03, T.noise, [1.60,1.68,1.72]);          /* filet */
     } else if(p.k==='table'){
-      box(x,0.36,z, 0.80,0.08,0.80, T.wood, [1.02,0.94,0.84]);               /* plateau */
-      box(x,0.19,z, 0.12,0.30,0.12, T.metal, [0.46,0.48,0.51]);
-      box(x,0.04,z, 0.46,0.06,0.46, T.metal, [0.40,0.42,0.45]);
-      box(x-0.36,0.19,z-0.30, 0.24,0.06,0.24, T.wood, [0.90,0.80,0.70]);     /* chaise */
-      box(x+0.36,0.19,z+0.30, 0.24,0.06,0.24, T.wood, [0.90,0.80,0.70]);
+      box(x,0.38,z, 0.80,0.08,0.80, T.wood, [1.02,0.94,0.84]);               /* plateau */
+      box(x,0.20,z, 0.12,0.32,0.12, T.metal, [0.46,0.48,0.51]);              /* pied */
+      box(x,0.04,z, 0.44,0.06,0.44, T.metal, [0.40,0.42,0.45]);              /* socle */
+      box(x-0.06,0.44,z, 0.16,0.05,0.10, T.noise, [2.35,2.32,2.20]);         /* nappe/assiette */
+      /* v0.9.3 : 2 VRAIES CHAISES bistrot (assise + dossier + 4 pieds) —
+         avant, ce n'étaient que deux plateaux plats, l'ambiance resto manquait */
+      for(var ch=0; ch<2; ch++){
+        var cxs = x + (ch? 0.62 : -0.62), czs = z + (ch? 0.10 : -0.10);
+        box(cxs,0.20,czs, 0.34,0.06,0.34, T.wood, [0.94,0.82,0.68]);         /* assise */
+        box(cxs + (ch?0.14:-0.14),0.33,czs-0.13, 0.05,0.28,0.30, T.wood, [0.88,0.76,0.62]); /* dossier */
+        box(cxs-0.13,0.09,czs-0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
+        box(cxs+0.13,0.09,czs-0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
+        box(cxs-0.13,0.09,czs+0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
+        box(cxs+0.13,0.09,czs+0.13, 0.05,0.20,0.05, T.metal, [0.44,0.46,0.49]);
+      }
     } else if(p.k==='woodtable'){
       box(x,0.39,z, 0.98,0.10,0.72, T.wood, [1.12,1.00,0.86]);
       box(x-0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
@@ -1716,10 +1748,10 @@ function drawScene(){
   box( 8.0,WH+0.06,0, 0.76,0.13,15.1, T.noise, LV.accent, {emit:0.20});
   // plinthes sombres au pied des murs (lisibilite du volume)
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
-  drawMesh(QUAD_XZ, trs(0,0.03,-6.30, 8.1,1,0.75,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
-  drawMesh(QUAD_XZ, trs(-7.45,0.03,0, 0.75,1,7.5,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
-  drawMesh(QUAD_XZ, trs( 7.45,0.03,0, 0.75,1,7.5,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
-  drawMesh(QUAD_XZ, trs(0,0.03,6.35, 8.1,1,0.45,0), T.shadow, [0,0,0], {unlit:true,alpha:0.5});
+  /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
+  /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
+  /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
+  /* v0.9.3 : plinthe-ombre retirée (ombre supprimée) */
   gl.depthMask(true); gl.disable(gl.BLEND);
 
   var tNow=performance.now()/1000;
