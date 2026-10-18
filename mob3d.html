@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MOB RACER 3D — prototype WebGL</title>
+<title>MOB RACER 3D v0.9 — 4 niveaux</title>
 <style>
   html,body{margin:0;height:100%;background:#06070a;overflow:hidden;font-family:monospace}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
@@ -439,26 +439,164 @@ function texGold(){
   });
 }
 
-function texHeart(){
-  /* v0.8 : petit coeur pixel 8x8 (transparent) pour les cœurs 3D */
-  var rows=[
-    '.RR..RR.',
-    'RRRRRRRR',
-    'RRRRRRRR',
-    'RRRRRRRR',
-    '.RRRRRR.',
-    '..RRRR..',
-    '...RR...'
-  ];
-  return texCanvas(8,8,function(g,w,h){
-    g.clearRect(0,0,w,h);
-    for(var y=0;y<rows.length;y++){
-      for(var x=0;x<rows[y].length;x++){
-        if(rows[y].charAt(x)==='R'){ g.fillStyle='#ff3348'; g.fillRect(x,y,1,1); }
+/* ═════════ v0.9 : TEXTURES DE SOL — UNE AMBIANCE PAR NIVEAU ═════════
+   Chaque niveau a 4 etats de sol (propre / trainee / sale / nid) generes
+   depuis UNE palette : les 4 salles se lisent immediatement differentes. */
+var FLOOR_PAL = {
+  mall:  {pat:'tile',   grout:'#8d9aa0', base:'#e9efe9', alt:'#dde6df', hi:'#ffffff', lo:'#c2cdc7',
+          dirt1:'rgba(96,78,50,0.50)', dirt2:'rgba(64,50,32,0.58)', nest1:'#4a3c28', nest2:'rgba(24,18,10,0.86)'},
+  rink:  {pat:'ice',    grout:'#a8cfe4', base:'#cfe8f7', alt:'#c2e0f2', hi:'#f6fdff', lo:'#a3c9de',
+          dirt1:'rgba(88,94,100,0.40)', dirt2:'rgba(124,124,116,0.46)', nest1:'#6f7a80', nest2:'rgba(40,48,54,0.82)'},
+  resto: {pat:'checker',grout:'#5c4436', base:'#f3ecdb', alt:'#8c4a3a', hi:'#fffaf0', lo:'#c9bda6',
+          dirt1:'rgba(70,48,26,0.55)', dirt2:'rgba(48,32,16,0.62)', nest1:'#4a3524', nest2:'rgba(24,16,8,0.86)'},
+  apple: {pat:'stone',  grout:'#d8d8d4', base:'#f5f5f2', alt:'#ebebe7', hi:'#ffffff', lo:'#dadad5',
+          dirt1:'rgba(104,98,86,0.44)', dirt2:'rgba(78,72,62,0.52)', nest1:'#5a564c', nest2:'rgba(30,28,24,0.82)'}
+};
+
+function texFloor(pal,state){
+  return texCanvas(32,32,function(g,w,h){
+    /* ---- motif de base ---- */
+    if(pal.pat==='checker'){
+      for(var ty=0;ty<2;ty++){
+        for(var tx=0;tx<2;tx++){
+          var cc=((tx+ty)%2)?pal.base:pal.alt;
+          px(g,tx*16,ty*16,cc,16,16);
+          px(g,tx*16,ty*16,pal.hi,16,1);
+          px(g,tx*16,ty*16+15,pal.lo,16,1);
+        }
+      }
+      px(g,0,0,pal.grout,w,1); px(g,0,16,pal.grout,w,1);
+      px(g,0,0,pal.grout,1,h); px(g,16,0,pal.grout,1,h);
+      px(g,0,0,'rgba(255,255,255,0.22)',w,1);
+    } else if(pal.pat==='ice'){
+      px(g,0,0,pal.base,w,h);
+      px(g,0,0,pal.hi,w,4);
+      for(var k=0;k<8;k++){
+        var yy=(k*7)%29+1;
+        px(g,(k*5)%18,yy,'rgba(255,255,255,0.50)',10+(k%3)*4,1);
+      }
+      for(var k2=0;k2<6;k2++) px(g,(k2*9)%29,(k2*11)%29,'rgba(146,200,236,0.40)',3,2);
+      px(g,0,6,'rgba(255,255,255,0.30)',w,1);
+      px(g,0,29,pal.lo,w,3);
+      px(g,7,14,'rgba(120,180,215,0.35)',9,1);
+      px(g,22,22,'rgba(120,180,215,0.30)',6,1);
+    } else if(pal.pat==='stone'){
+      /* dalles XXL : 1 seule dalle par case, joint tres fin, reflet poli */
+      px(g,0,0,pal.grout,w,h);
+      px(g,1,1,pal.base,30,30);
+      px(g,1,1,pal.hi,30,1);
+      px(g,1,1,pal.hi,1,30);
+      px(g,1,30,'rgba(0,0,0,0.07)',30,1);
+      px(g,30,1,'rgba(0,0,0,0.05)',1,30);
+      px(g,5,6,'rgba(255,255,255,0.55)',14,1);
+      px(g,9,10,'rgba(255,255,255,0.30)',9,1);
+      for(var k3=0;k3<10;k3++) px(g,(k3*13)%30+1,(k3*7)%30+1,'rgba(120,118,110,0.10)',2,1);
+    } else { /* 'tile' : carreaux brillants a bevel */
+      px(g,0,0,pal.grout,w,h);
+      for(var ty2=0;ty2<2;ty2++){
+        for(var tx2=0;tx2<2;tx2++){
+          px(g,tx2*16+1,ty2*16+1,pal.base,14,14);
+          px(g,tx2*16+1,ty2*16+1,pal.hi,14,1);
+          px(g,tx2*16+1,ty2*16+1,pal.hi,1,14);
+          px(g,tx2*16+1,ty2*16+14,pal.lo,14,1);
+          px(g,tx2*16+13,ty2*16+1,pal.lo,1,13);
+        }
+      }
+      px(g,4,4,'rgba(255,255,255,0.55)',6,2);    /* reflet brillant */
+      px(g,20,11,'rgba(255,255,255,0.40)',4,1);
+    }
+    /* ---- etat de proprete ---- */
+    if(state==='trail'){
+      for(var s=0;s<3;s++) px(g,3+s*10,5+((s*9)%19),'rgba(235,255,250,0.55)',9,2);
+      px(g,4,21,'rgba(255,255,255,0.45)',13,1);
+      px(g,9,11,'#ffffff',2,2);
+      px(g,21,17,'rgba(255,255,255,0.75)',1,1);
+    } else if(state==='dirty'){
+      var st=[[3,4,11,9],[18,6,10,8],[6,19,12,8],[20,20,9,7]];
+      for(var i=0;i<st.length;i++){
+        px(g,st[i][0],st[i][1],pal.dirt1,st[i][2],st[i][3]);
+        px(g,st[i][0]+1,st[i][1]+1,pal.dirt2,Math.max(1,st[i][2]-3),Math.max(1,st[i][3]-3));
+      }
+      for(var k4=0;k4<28;k4++) px(g,(k4*13)%31,(k4*17)%31,pal.dirt2);
+      px(g,11,0,'rgba(50,40,26,0.20)',2,32);
+    } else if(state==='nest'){
+      px(g,0,0,pal.nest1,w,h);
+      px(g,1,1,pal.dirt1,30,30);
+      for(var k5=0;k5<34;k5++) px(g,(k5*11)%31,(k5*19)%31,(k5%3)?pal.dirt2:pal.nest2,2,2);
+      px(g,5,8,'rgba(255,240,200,0.10)',6,1);
+    }
+  });
+}
+function buildFloorSet(pal){
+  return {
+    clean: makeTex(texFloor(pal,'clean'),false),
+    trail: makeTex(texFloor(pal,'trail'),false),
+    dirty: makeTex(texFloor(pal,'dirty'),false),
+    nest:  makeTex(texFloor(pal,'nest'),false)
+  };
+}
+
+/* ── v0.9 : textures de PROPS / MURS ── */
+function texWood(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#8a5a34',w,h);
+    for(var y=0;y<h;y+=8){
+      px(g,0,y,'#a86f42',w,7);
+      px(g,0,y,'#c08a55',w,1);
+      px(g,0,y+6,'#6d4525',w,1);
+    }
+    for(var k=0;k<26;k++) px(g,(k*11)%31,(k*7)%31,'rgba(90,56,28,0.30)',2,1);
+    px(g,0,0,'rgba(255,255,255,0.10)',w,2);
+  });
+}
+function texLeaf(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#2c7438',w,h);
+    for(var k=0;k<74;k++){
+      var x=(k*13)%31, y=(k*7)%31;
+      px(g,x,y,(k%3)?'rgba(74,156,74,0.85)':'rgba(20,80,38,0.85)',2,2);
+    }
+    px(g,4,6,'rgba(168,224,144,0.45)',6,3);
+    px(g,18,18,'rgba(168,224,144,0.35)',5,2);
+  });
+}
+function texWallPanel(base,hi,lo,seam){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,seam,w,h);
+    for(var y=0;y<4;y++){
+      for(var x=0;x<2;x++){
+        px(g,x*32+1,y*16+1,base,30,14);
+        px(g,x*32+1,y*16+1,hi,30,2);
+        px(g,x*32+1,y*16+13,lo,30,2);
       }
     }
-    g.fillStyle='#ffb0b8'; g.fillRect(1,1,1,1); g.fillRect(5,1,1,1);
-    g.fillStyle='#c8102a'; g.fillRect(3,5,2,1);
+    for(var k=0;k<18;k++) px(g,(k*17)%63,(k*23)%63,'rgba(0,0,0,0.06)',3,1);
+  });
+}
+function texBoards(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#2f6fa8',w,h);
+    px(g,0,0,'#3f88c4',w,7);
+    px(g,0,8,'#eaf6fd',w,10);                       /* bandeau blanc */
+    for(var k=0;k<5;k++) px(g,5+k*13,11,'#2f6fa8',5,4);
+    px(g,0,20,'#7fb6d8',w,2);
+    px(g,0,52,'#255a89',w,12);
+    for(var k2=0;k2<16;k2++) px(g,(k2*19)%62,30,'rgba(255,255,255,0.10)',2,1);
+  });
+}
+function texGlassWall(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#8fb6c8',w,h);
+    px(g,2,2,'#cfe6f0',60,60);
+    for(var x=0;x<4;x++){
+      px(g,x*16,0,'#6f96aa',2,h);
+      px(g,x*16+3,3,'rgba(255,255,255,0.55)',2,58);
+    }
+    px(g,0,0,'#6f96aa',w,2);
+    px(g,0,0,'#6f96aa',2,h);
+    px(g,6,8,'rgba(255,255,255,0.62)',10,26);
+    px(g,40,20,'rgba(255,255,255,0.42)',8,30);
+    px(g,20,40,'rgba(160,210,230,0.45)',16,4);
   });
 }
 
@@ -491,7 +629,20 @@ var T = {
   soap:  makeTex(texSoap(),false),
   fabric:makeTex(texFabric(),false),
   gold:  makeTex(texGold(),false),
-  heart: makeTex(texHeart(),false)
+  wood:  makeTex(texWood(),true),
+  leaf:  makeTex(texLeaf(),true),
+  board: makeTex(texBoards(),true),
+  glass: makeTex(texGlassWall(),true),
+  wallMall:  makeTex(texWallPanel('#efe7d8','#fffbf2','#cec4b0','#b3a892'),true),
+  wallApple: makeTex(texWallPanel('#f8f8f5','#ffffff','#dcdcd7','#d2d2cc'),true)
+};
+
+/* v0.9 : les 4 jeux de sols (propre / trainee / sale / nid) par niveau */
+var FLOORS = {
+  mall:  buildFloorSet(FLOOR_PAL.mall),
+  rink:  buildFloorSet(FLOOR_PAL.rink),
+  resto: buildFloorSet(FLOOR_PAL.resto),
+  apple: buildFloorSet(FLOOR_PAL.apple)
 };
 
 /* ---------- 5. GEOMETRIE ---------- */
@@ -601,11 +752,14 @@ function bindMesh(m){
 }
 
 var PV = null; // projection * vue, calculee une fois
-var drawCalls = 0;   // v0.8 : compteur de boites/draws par frame (budget < 250)
+var drawCalls = 0;   // compteur de boites/draws par frame (budget < 250)
 var maxDrawCalls = 0;
+var drawClipped = 0; // nb de draws ignorés par le garde-fou budget (effets de fin)
+var DRAW_BUDGET = 246;   /* marge de securite sous 250 */
 
 function drawMesh(m, model, tex, color, opt){
   opt = opt || {};
+  if(drawCalls>=DRAW_BUDGET){ drawClipped++; return; }  /* garde-fou : on coupe les effets de fin */
   drawCalls++;
   var mvp = mulM(PV, model);
   gl.uniformMatrix4fv(U.mvp,false,mvp);
@@ -653,32 +807,92 @@ PROJ[9] = 0.090;   // decalage vertical (laisse la place aux barres HUD)
 PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
 
 /* ---------- 8. ETAT DU JEU ---------- */
-/* v0.8 : constantes reprises du patch v0.4 de la version 2D (SPECS.md) */
-var TEMPS_ETOURDIE=0.4;        // machine etourdie apres choc marmotte
-var EJET_MARMOTTE=2;           // ejection : 2 cases
-var DUREE_CALIN=2.0;           // calin de loutre : rester 2 s
-var COEURS_MAX=3;              // coeurs cumulables x3
+/* v0.9 : constantes de jeu */
+var ICE_GLISSE=0.35;           // patinoire : la machine repart seule toutes les 0,35 s
+var ICE_PIVOT=0.35;            // patinoire : pivot lent (0,35 s avant de tourner)
+var NIVEAU_DUREE=75;           // duree d'un niveau (s)
 var SAVON_VITESSE_MUL=1.6, SAVON_DUREE=4.0, SAVON_REAPPARITION=12.0;
 var TORPILLE_ZONE=5, TORPILLE_CHARGE_AUTO=3.0;
-var DETRITUS_MIN=4, DETRITUS_MAX=6, DETRITUS_COEF=3, DETRITUS_MULT=2;
+var DETRITUS_COEF=3, DETRITUS_MULT=2;
 var VITESSE_GRAND_MERE=0.10;   // case/s — ultra-lente
 var PIECE_INTERVAL=20.0, PIECE_POINTS=1;
 var COUPS_GRAND_MERE=2, RALENTI_GRAND_MERE=2.0, FENETRE_COUPS=15.0;
 var ATTRACT_DEMO_DUREE=9.0;
-var HIGH_SCORE_CLE='mobracer_highscore';
+var HIGH_SCORE_CLE='mobracer_highscore_v09_';
+
+/* ═════════════════════ v0.9 : LES 4 NIVEAUX ═════════════════════
+   PROGRESSION DE DIFFICULTE : un coefficient par niveau (coef) module
+   le nombre de pollueurs, leur cooldown (base/coef), leur vitesse (+18%/coef),
+   le nombre de nids et le nombre de passages de lavage par case.
+   Duree identique partout (75 s) pour que la comparaison reste lisible. */
+var LEVELS=[
+  { id:'mall', num:1, name:'CENTRE COMMERCIAL', tag:'HALL & GALERIE',
+    desc:'Carrelage brillant, bacs a plantes, bancs. Les mouettes entrent par le hall.',
+    coef:1.00, diffLabel:'FACILE', stars:1, nests:4, passes:1,
+    floor:'mall', wall:'wallMall', wallCol:[1.0,1.0,1.0], wallH:1.95,
+    accent:[1.0,0.84,0.42], sky:[0.105,0.115,0.135], ground:[0.24,0.27,0.28],
+    props:[{k:'plant',gx:2,gy:2},{k:'plant',gx:12,gy:2},{k:'plant',gx:2,gy:10},{k:'plant',gx:12,gy:10},
+           {k:'bench',gx:4,gy:5,ry:0},{k:'bench',gx:10,gy:7,ry:0},{k:'bench',gx:7,gy:2,ry:0},
+           {k:'bin',gx:9,gy:3},{k:'bin',gx:5,gy:7}],
+    mobs:['gull','gull','dog','human','human'] },
+
+  { id:'rink', num:2, name:'PATINOIRE', tag:'GLACE & BALUSTRADES',
+    desc:'La machine DERAPE en permanence : elle glisse et pivote lentement.',
+    coef:1.25, diffLabel:'NORMAL', stars:2, nests:6, passes:1, ice:true,
+    floor:'rink', wall:'board', wallCol:[1.0,1.0,1.0], wallH:1.15,
+    accent:[0.62,0.86,1.0], sky:[0.085,0.115,0.165], ground:[0.30,0.44,0.52],
+    props:[{k:'goal',gx:2,gy:6},{k:'goal',gx:12,gy:6},
+           {k:'rail',gx:5,gy:2},{k:'rail',gx:9,gy:2},{k:'rail',gx:5,gy:10},{k:'rail',gx:9,gy:10},
+           {k:'rail',gx:2,gy:3},{k:'rail',gx:2,gy:9},{k:'rail',gx:12,gy:3},{k:'rail',gx:12,gy:9}],
+    mobs:['gull','gull','dog','dog','human','human'] },
+
+  { id:'resto', num:3, name:'RESTAURANT', tag:'DAMIERS & SERVICE',
+    desc:'Damier, tables bistrot, poubelles de service. Les ratons fouillent les poubelles.',
+    coef:1.50, diffLabel:'DIFFICILE', stars:3, nests:7, passes:1,
+    floor:'resto', wall:'brick', wallCol:[1.02,0.86,0.74], wallH:1.95,
+    accent:[1.0,0.58,0.30], sky:[0.115,0.085,0.070], ground:[0.26,0.19,0.15],
+    props:[{k:'table',gx:3,gy:3},{k:'table',gx:3,gy:7},{k:'table',gx:11,gy:3},{k:'table',gx:11,gy:7},
+           {k:'table',gx:7,gy:2},{k:'bin',gx:2,gy:5},{k:'bin',gx:12,gy:5},
+           {k:'bin',gx:7,gy:8},{k:'table',gx:7,gy:10}],
+    mobs:['dog','dog','human','human','human','human','raccoon','raccoon'] },
+
+  { id:'apple', num:4, name:'APPLE STORE', tag:'VITRES & TABLES EN BOIS',
+    desc:'Sol clair lumineux, grandes tables en bois, baies vitrees. Les touristes salissent.',
+    coef:1.80, diffLabel:'EXPERT', stars:4, nests:8, passes:2,
+    floor:'apple', wall:'wallApple', wallCol:[1.0,1.0,1.0], wallH:1.95,
+    accent:[0.70,0.80,0.92], sky:[0.145,0.150,0.165], ground:[0.36,0.36,0.35],
+    props:[{k:'woodtable',gx:4,gy:4},{k:'woodtable',gx:10,gy:4},
+           {k:'woodtable',gx:4,gy:8},{k:'woodtable',gx:10,gy:8},
+           {k:'display',gx:7,gy:3},{k:'display',gx:7,gy:7},
+           {k:'bin',gx:2,gy:6},{k:'bin',gx:12,gy:6}],
+    mobs:['gull','gull','gull','dog','dog','human','human','human','human','raccoon'] }
+];
 
 var cells = new Uint8Array(COLS*ROWS);   // 0 sale, 1 propre, 2 trainee, 3 NID de detritus
 var detW    = new Uint8Array(COLS*ROWS); // 1 = nid de detritus (compte double)
 var detHits = new Uint8Array(COLS*ROWS); // passages de machine sur le nid (3x plus lent)
+var cleanHits = new Uint8Array(COLS*ROWS); /* v0.9 : passages de lavage sur une case sale (1 a 2 selon le niveau) */
+var blocked = new Uint8Array(COLS*ROWS); // 1 = prop solide (obstacle du niveau)
 var dirtyLeft=0, totalCleanable=0;
-var timeLeft=75, mode='attract', score=0, botScore=0;
+var timeLeft=NIVEAU_DUREE, mode='attract', score=0, botScore=0;
 var soundOn=true, audioCtx=null, SHADOWS=true;
 
-var MARMOT_SPOTS=[[3,4],[11,8],[6,2],[2,10]];
-function newMarmot(gx,gy){
-  return { gx:gx, gy:gy, ox:0, oz:0, ej:0, cheekT:Math.random()*3, t:Math.random()*6 };
-}
-var marmots = MARMOT_SPOTS.map(function(s){ return newMarmot(s[0],s[1]); });
+/* v0.9 : niveaux + pollueurs */
+var levelIdx=0, LV=LEVELS[0], selIdx=0;
+var highScores={};                       // HIGH SCORE par niveau (localStorage)
+var polluters=[];                        // mouettes / chiens / ratons / humains sales
+var soilMarks=[];                        // {gx,gy,kind,t} taches laissees par les pollueurs
+var dirtyByPolluters=0;                  // compteur (QA + HUD)
+var POLL_MAX_MARKS=6;
+var POLL_SPEED={gull:1.85,dog:1.15,raccoon:0.95,human:0.62};
+var POLL_ACT  ={gull:0.55,dog:0.80,raccoon:1.45,human:0.70};
+var POLL_CD   ={gull:7.5, dog:10.0,raccoon:10.5,human:8.5};
+var POLL_DESC ={
+  mall:  'POLLUEURS : MOUETTES · HUMAINS SALES · CHIENS',
+  rink:  'POLLUEURS : HUMAINS SALES · CHIENS · MOUETTE',
+  resto: 'POLLUEURS : RATONS LAVEURS · HUMAINS SALES · CHIENS',
+  apple: 'POLLUEURS : HUMAINS SALES · MOUETTES · CHIEN'
+};
 
 var player = newMach(7,9,0);
 var bot    = newMach(7,4,1);
@@ -692,15 +906,15 @@ function newMach(gx,gy,id){
     id:id, gx:gx, gy:gy, fx:gx, fy:gy, t:1, moving:false,
     angle:0, dx:0, dz:1, wx:0, wz:0, queued:-1, bob:0,
     dirIdx:1, moveTime:0.135,
-    stun:0, soapT:0, slowT:0, hearts:0, coins:0,
+    stun:0, soapT:0, slowT:0, coins:0,
     kox:0, koz:0,                       /* rebond visuel */
     torpCharge:0,
-    hugT:0,                             /* temps passe pres d'une loutre */
+    pivotT:0, iceCd:0,                  /* v0.9 : patinoire (pivot lent / glisse) */
     _dirty:false
   };
 }
 
-/* --- v0.8 : entites --- */
+/* --- v0.9 : entites --- */
 var nests=[];                  // {gx,gy}
 var soap=null;                 // {gx,gy,t}
 var soapTimer=SAVON_REAPPARITION;
@@ -710,24 +924,22 @@ var wave=null;                  // {cx,cy,t}
 var coins=[];                   // {x,z,t}
 var parts=[];                   // particules {x,y,z,vx,vy,vz,life,max,size,col,kind}
 var gm=null;                    // grand-mere
-var otters=[];                  // loutres calines
 var demoRound=0, demoT=0, attractT=0;
 var highScore=0;
 
 function idxAt(gx,gy){ return gy*COLS+gx; }
-function findMarmot(gx,gy){
-  for(var i=0;i<marmots.length;i++) if(marmots[i].gx===gx&&marmots[i].gy===gy) return i;
-  return -1;
-}
-function isMarmot(gx,gy){ return findMarmot(gx,gy)>=0; }
 function isNest(gx,gy){
   if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
   return detW[idxAt(gx,gy)]===1;
 }
+function isBlocked(gx,gy){
+  if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return true;
+  return blocked[idxAt(gx,gy)]===1;
+}
 function cellFreeFor(gx,gy,who){
   /* case libre pour y poser un bonus / une entite */
   if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
-  if(isMarmot(gx,gy)) return false;
+  if(blocked[idxAt(gx,gy)]) return false;
   if(gm && Math.round(gm.x+7)===gx && Math.round(gm.z+6)===gy) return false;
   if(soap && soap.gx===gx && soap.gy===gy) return false;
   if(torp && torp.gx===gx && torp.gy===gy) return false;
@@ -738,7 +950,7 @@ function cellFreeFor(gx,gy,who){
   return true;
 }
 function randFreeCell(minD, who){
-  for(var k=0;k<120;k++){
+  for(var k=0;k<160;k++){
     var gx=1+((Math.random()*(COLS-2))|0);
     var gy=1+((Math.random()*(ROWS-2))|0);
     if(!cellFreeFor(gx,gy,who)) continue;
@@ -750,8 +962,8 @@ function randFreeCell(minD, who){
 
 function canEnter(gx,gy,who){
   if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
-  if(isMarmot(gx,gy)) return false;
-  /* v0.8 : la grand-mere est INFRANCHISSABLE */
+  if(blocked[idxAt(gx,gy)]) return false;      /* v0.9 : props du niveau */
+  /* la grand-mere est INFRANCHISSABLE */
   if(gm && Math.round(gm.x+7)===gx && Math.round(gm.z+6)===gy) return false;
   var other = (who===player)?bot:player;
   if(other.gx===gx && other.gy===gy) return false;
@@ -760,36 +972,45 @@ function canEnter(gx,gy,who){
 }
 
 function resetGame(mode0){
-  cells.fill(0); detW.fill(0); detHits.fill(0);
+  mode = mode0 || 'play';
+  if(mode==='attract') levelIdx = demoRound % LEVELS.length;
+  LV = LEVELS[levelIdx];
+
+  cells.fill(0); detW.fill(0); detHits.fill(0); cleanHits.fill(0); blocked.fill(0);
+  soilMarks=[]; dirtyByPolluters=0;
+
+  /* props du niveau : chaque prop bloque sa case */
+  for(var pi=0; pi<LV.props.length; pi++){
+    var pr=LV.props[pi];
+    blocked[idxAt(pr.gx,pr.gy)] = 1;
+  }
   for(var i=0;i<cells.length;i++){
-    if(Math.random()<0.34) cells[i]=1;
+    if(blocked[i]){ cells[i]=2; continue; }         /* sous un prop : sol propre, non comptable */
+    cells[i] = (Math.random()<0.46) ? 1 : 0;
   }
-  for(var m=0;m<marmots.length;m++){
-    marmots[m]=newMarmot(MARMOT_SPOTS[m][0],MARMOT_SPOTS[m][1]);
-    cells[idxAt(marmots[m].gx,marmots[m].gy)]=0;
-  }
+
   function resetMach(mm,gx,gy,ang){
     mm.gx=gx; mm.gy=gy; mm.fx=gx; mm.fy=gy; mm.t=1; mm.moving=false;
     mm.angle=ang; mm.dx=0; mm.dz=1; mm.queued=-1; mm.dirIdx=1;
     mm.wx=gx-7; mm.wz=gy-6;
-    mm.stun=0; mm.soapT=0; mm.slowT=0; mm.hearts=0; mm.coins=0;
-    mm.kox=0; mm.koz=0; mm.torpCharge=0; mm.hugT=0; mm.moveTime=MOVE_TIME;
+    mm.stun=0; mm.soapT=0; mm.slowT=0; mm.coins=0;
+    mm.kox=0; mm.koz=0; mm.torpCharge=0; mm.moveTime=MOVE_TIME;
+    mm.pivotT=0; mm.iceCd=0;
     cells[idxAt(gx,gy)] = 2;
   }
-  resetMach(player,5,9,0);
-  resetMach(bot,10,4,0);
+  resetMach(player,7,9,0);
+  resetMach(bot,7,4,0);
 
-  /* v0.8 : nids, savon, torpille, grand-mere, loutres */
+  /* nids, savon, torpille, grand-mere, pollueurs */
   nests=[]; soap=null; torp=null; wave=null; coins=[]; parts=[];
   soapTimer=SAVON_REAPPARITION; torpUsed=false;
   placeNests();
   placeSoap();
   placeTorpille();
   placeGrandMere();
-  placeLoutres();
+  spawnPolluters();
 
-  score=0; botScore=0; timeLeft=75;
-  mode=mode0||'play';
+  score=0; botScore=0; timeLeft=NIVEAU_DUREE;
   heldDir=-1;
   if(mode==='attract'){ demoT=ATTRACT_DEMO_DUREE; demoRound++; }
   recomputeCounts();
@@ -798,13 +1019,13 @@ function resetGame(mode0){
 
 /* ── NIDS DE DETRITUS : 4 a 6 par manche ── */
 function placeNests(){
-  var target = DETRITUS_MIN + ((Math.random()*(DETRITUS_MAX-DETRITUS_MIN+1))|0);
+  var target = LV.nests;                 /* 4 / 6 / 7 / 8 : courbe de difficulte */
   var guard=0;
   while(nests.length<target && guard++<200){
     var gx=1+((Math.random()*(COLS-2))|0);
     var gy=1+((Math.random()*(ROWS-2))|0);
-    if(isMarmot(gx,gy)) continue;
-    if((gx===5&&gy===9)||(gx===10&&gy===4)) continue;
+    if(blocked[idxAt(gx,gy)]) continue;
+    if((gx===7&&gy===9)||(gx===7&&gy===4)) continue;
     var dup=false;
     for(var n=0;n<nests.length;n++) if(nests[n].gx===gx&&nests[n].gy===gy) dup=true;
     if(dup) continue;
@@ -841,24 +1062,194 @@ function placeGrandMere(){
   };
 }
 
-/* ── LOUTRES CALINES : 2, immobiles, calin 2 s = +3 coeurs ── */
-function placeLoutres(){
-  otters=[
-    {gx:2, gy:7,  hug:0, blink:Math.random()*3},
-    {gx:12,gy:10, hug:0, blink:1.4+Math.random()*3}
-  ];
-  for(var i=0;i<otters.length;i++){
-    otters[i].x=otters[i].gx-7;
-    otters[i].z=otters[i].gy-6;
+/* ═════════════ v0.9 : POLLUEURS ═════════════
+   MOUETTES (fiente), CHIENS (tas), RATONS (fouillent les poubelles),
+   HUMAINS SALES (gobelets). Ils SALISSENT des cases deja propres :
+   la case repasse a 0, le % de proprete BAISSE, une tache reste au sol. */
+
+function spawnPolluters(){
+  polluters=[];
+  for(var i=0;i<LV.mobs.length;i++){
+    var type=LV.mobs[i];
+    var p={
+      type:type, x:0, z:0, dir:Math.random()*Math.PI*2,
+      t:Math.random()*7, step:Math.random()*7, wing:Math.random()*7,
+      state:'idle', cd:0.35+i*0.26+Math.random()*0.35, timer:0, did:false,
+      tx:0, tz:0, cell:null, bin:null, dur:0, first:true
+    };
+    if(type==='gull'){
+      p.x=-6.0+Math.random()*12.0;
+      p.z=-5.0+Math.random()*10.0;
+    } else if(type==='raccoon'){
+      /* v0.9.1 : un raton laveur se tient près d'une POUBELLE (lecture immédiate) */
+      var binList=[];
+      for(var bq=0;bq<LV.props.length;bq++) if(LV.props[bq].k==='bin') binList.push(LV.props[bq]);
+      if(binList.length){
+        var bb2=binList[i%binList.length];
+        p.x=(bb2.gx-7)+(((i%2)?1:-1)*0.95);
+        p.z=(bb2.gy-6)+0.85;
+      } else { var c0=randFreeCell(2,null)||[7,6]; p.x=c0[0]-7; p.z=c0[1]-6; }
+    } else {
+      var c=randFreeCell(2,null)||[7,6];
+      p.x=c[0]-7; p.z=c[1]-6;
+      if(Math.abs(p.x-player.wx)<1.2 && Math.abs(p.z-player.wz)<1.2){
+        p.x+=1.8; if(p.x>6.3) p.x-=3.6;
+      }
+    }
+    polluters.push(p);
+  }
+}
+
+/* ── taches laissees au sol (1 a 2 boites) ── */
+function addMark(gx,gy,kind){
+  for(var i=0;i<soilMarks.length;i++){
+    if(soilMarks[i].gx===gx && soilMarks[i].gy===gy){ soilMarks.splice(i,1); break; }
+  }
+  soilMarks.push({gx:gx,gy:gy,kind:kind,t:0,ry:Math.random()*3.1});
+  while(soilMarks.length>POLL_MAX_MARKS) soilMarks.shift();
+}
+function removeMarkAt(gx,gy){
+  for(var i=soilMarks.length-1;i>=0;i--){
+    if(soilMarks[i].gx===gx && soilMarks[i].gy===gy) soilMarks.splice(i,1);
+  }
+}
+
+/* ── SALIR UNE CASE PROPRE : coeur de la v0.9 ── */
+function soilCell(gx,gy,kind){
+  if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
+  var i=idxAt(gx,gy);
+  if(blocked[i]) return false;
+  if(cells[i]!==1 && cells[i]!==2) return false;      /* deja sale / nid : rien a salir */
+  cells[i]=0; detW[i]=0; detHits[i]=0; cleanHits[i]=0;
+  dirtyByPolluters++;
+  addMark(gx,gy,kind);
+  buildFloor(); recomputeCounts();
+  burst(gx-7,gy-6,4, kind==='splat'?[2.15,2.15,2.10]:(kind==='mound'?[0.80,0.54,0.30]:[1.45,1.05,0.42]));
+  beep(150,0.05,0.02);
+  return true;
+}
+
+function pickCleanCell(fromX,fromZ,minD,maxD){
+  var cand=[];
+  for(var gy=1;gy<ROWS-1;gy++){
+    for(var gx=1;gx<COLS-1;gx++){
+      var i=idxAt(gx,gy);
+      if(blocked[i]) continue;
+      if(cells[i]!==1 && cells[i]!==2) continue;
+      var d=Math.abs((gx-7)-fromX)+Math.abs((gy-6)-fromZ);
+      if(d<minD||d>maxD) continue;
+      cand.push([gx,gy]);
+    }
+  }
+  if(!cand.length) return null;
+  return cand[(Math.random()*cand.length)|0];
+}
+
+function chooseTarget(p){
+  if(p.type==='raccoon'){
+    /* cible = la POUBELLE la plus proche */
+    var bins=[];
+    for(var i=0;i<LV.props.length;i++) if(LV.props[i].k==='bin') bins.push(LV.props[i]);
+    if(!bins.length) return false;
+    var b=null, bd=1e9;
+    for(var j=0;j<bins.length;j++){
+      var bb=bins[j];
+      var d=Math.abs((bb.gx-7)-p.x)+Math.abs((bb.gy-6)-p.z);
+      if(d<bd){ bd=d; b=bb; }
+    }
+    p.bin=b;
+    var spots=[[b.gx,b.gy+1],[b.gx,b.gy-1],[b.gx+1,b.gy],[b.gx-1,b.gy]];
+    var st=null;
+    for(var k=0;k<4;k++){
+      if(!isBlocked(spots[k][0],spots[k][1])){ st=spots[k]; break; }
+    }
+    if(!st) return false;
+    p.tx=st[0]-7; p.tz=st[1]-6;
+    return true;
+  }
+  /* la 1re cible est proche (le pollueur agit vite), les suivantes plus loin */
+  var maxD = p.type==='gull' ? 12.0 : (p.first ? 2.2 : 6.5);
+  var c=pickCleanCell(p.x,p.z,0.8, maxD);
+  if(!c) c=pickCleanCell(p.x,p.z,0.4,14.0);
+  if(!c) return false;
+  p.first=false;
+  p.cell=c;
+  p.tx=c[0]-7; p.tz=c[1]-6;
+  return true;
+}
+
+function doPollute(p){
+  if(p.type==='raccoon'){
+    /* fouille la poubelle : projette 1 a 3 dechets autour */
+    var b=p.bin;
+    if(!b) return;
+    var n=1+((Math.random()*3)|0), done=0, tries=0;
+    while(done<n && tries<26){
+      tries++;
+      var dx=((Math.random()*5)|0)-2, dy=((Math.random()*5)|0)-2;
+      if(soilCell(b.gx+dx,b.gy+dy,'junk')) done++;
+    }
+    if(done>0){ burst(b.gx-7,b.gy-6,6,[1.1,0.95,0.60]); beep(190,0.07,0.03); }
+    return;
+  }
+  var kind = (p.type==='gull') ? 'splat' : ((p.type==='dog') ? 'mound' : 'trash');
+  if(p.cell && soilCell(p.cell[0],p.cell[1],kind)) return;
+  /* repli : une case propre autour de la cible */
+  if(p.cell){
+    for(var k=0;k<8;k++){
+      var ox=((Math.random()*3)|0)-1, oy=((Math.random()*3)|0)-1;
+      if(soilCell(p.cell[0]+ox,p.cell[1]+oy,kind)) return;
+    }
+  }
+}
+
+/* FSM : idle (cooldown) -> move -> action (salit) -> rest */
+function updatePolluters(dt){
+  for(var i=0;i<polluters.length;i++){
+    var p=polluters[i];
+    p.t+=dt; p.step+=dt;
+    if(p.state==='idle'){
+      p.cd-=dt;
+      if(p.cd<=0){
+        if(chooseTarget(p)){ p.state='move'; p.dur=0; }
+        else p.cd=1.2;
+      }
+    } else if(p.state==='move'){
+      p.dur+=dt;
+      var dx=p.tx-p.x, dz=p.tz-p.z;
+      var d=Math.sqrt(dx*dx+dz*dz)||0.0001;
+      /* v0.9 : vitesse modulee par la difficulte (+18 % par point de coef) */
+      var sp=POLL_SPEED[p.type]*(1+0.18*(LV.coef-1));
+      var mv=Math.min(sp*dt,d);
+      if(d>0.05){
+        p.x+=dx/d*mv; p.z+=dz/d*mv;
+        p.dir=Math.atan2(dx,dz);
+      }
+      if(d<=0.07 || p.dur>16){
+        p.x=p.tx; p.z=p.tz;
+        p.state='action'; p.timer=POLL_ACT[p.type]; p.did=false;
+      }
+    } else if(p.state==='action'){
+      var A=POLL_ACT[p.type];
+      p.timer-=dt;
+      if(!p.did && p.timer<=A*0.45){ p.did=true; doPollute(p); }
+      if(p.timer<=0){ p.state='rest'; p.timer=0.45+Math.random()*0.7; }
+    } else if(p.state==='rest'){
+      p.timer-=dt;
+      if(p.timer<=0){
+        p.state='idle';
+        /* v0.9 : cooldown divise par le coefficient de difficulte */
+        p.cd=(POLL_CD[p.type]/LV.coef)*(0.8+Math.random()*0.5);
+      }
+    }
   }
 }
 
 function recomputeCounts(){
   totalCleanable=0; dirtyLeft=0;
   for(var i=0;i<cells.length;i++){
-    var gx=i%COLS, gy=(i/COLS)|0;
-    if(isMarmot(gx,gy)) continue;
-    var w = detW[i] ? DETRITUS_MULT : 1;      /* v0.8 : un nid compte double */
+    if(blocked[i]) continue;                  /* v0.9 : sous un prop, non nettoyable */
+    var w = detW[i] ? DETRITUS_MULT : 1;      /* un nid compte double */
     totalCleanable += w;
     if(cells[i]===0||cells[i]===3) dirtyLeft += w;
   }
@@ -936,30 +1327,53 @@ function drawShadow(x,z,size,alpha){
     {unlit:true, alpha:alpha===undefined?0.7:alpha});
 }
 
-function drawMarmot(m){
-  /* v0.8 : marmotte ANIMEE — joues qui gonflent (2 frames), petit balancement,
-     glisse d'ejection (ox/oz) et tremblement quand elle vient d'etre percutee */
-  var x=m.gx-7+m.ox, z=m.gy-6+m.oz;
-  var t=m.t;
-  var bob=Math.sin(t*2.2)*0.018;
-  var puff = (Math.floor(t*1.7)%2) ? 1.0 : 0.45;      /* 2 frames de joues */
-  var fur=[1.22,1.02,0.80], dark=[0.86,0.68,0.48], light=[1.85,1.70,1.45];
-  box(x,0.16+bob,z, 0.46,0.34,0.38, T.fur, fur);
-  box(x,0.42+bob,z-0.02, 0.30,0.26,0.27, T.fur, fur);
-  box(x,0.36+bob,z+0.15, 0.15,0.10,0.10, T.noise, light);      // museau
-  box(x-0.11,0.58+bob,z-0.03, 0.10,0.12,0.07, T.fur, dark);    // oreilles
-  box(x+0.11,0.58+bob,z-0.03, 0.10,0.12,0.07, T.fur, dark);
-  box(x-0.11,0.61+bob,z-0.02, 0.06,0.06,0.02, T.noise, light);
-  box(x+0.11,0.61+bob,z-0.02, 0.06,0.06,0.02, T.noise, light);
-  box(x,0.15+bob,z+0.20, 0.24,0.19,0.03, T.noise, light);      // ventre
-  /* joues gonflees : grossissent et ressortent par alternance */
-  box(x-0.13,0.36+bob,z+0.14, 0.10+0.05*puff,0.09+0.04*puff,0.09, T.fur, light);
-  box(x+0.13,0.36+bob,z+0.14, 0.10+0.05*puff,0.09+0.04*puff,0.09, T.fur, light);
-  box(x-0.055,0.45+bob,z+0.12, 0.045,0.05,0.03, null, [0.12,0.09,0.07]); // yeux
-  box(x+0.055,0.45+bob,z+0.12, 0.045,0.05,0.03, null, [0.12,0.09,0.07]);
-  /* v0.8 : etourdie par l'ejection — petite etoile grise au-dessus */
-  if(m.ej>0){
-    box(x,0.78,z, 0.10,0.10,0.10, T.noise, [1.0,0.92,0.35], {ry:m.ej*9});
+/* ═════════ v0.9 : PROPS DU NIVEAU (obstacles solides) ═════════ */
+function drawBin(x,z){
+  box(x,0.02,z, 0.46,0.05,0.46, T.noise, [0.20,0.22,0.24]);
+  box(x,0.27,z, 0.42,0.50,0.42, T.metal, [0.62,0.66,0.70]);
+  box(x,0.55,z, 0.48,0.07,0.48, T.metal, [0.82,0.86,0.90]);
+  box(x,0.40,z+0.215, 0.24,0.16,0.03, T.noise, [0.10,0.12,0.14]);
+}
+
+function drawProps(){
+  for(var i=0;i<LV.props.length;i++){
+    var p=LV.props[i];
+    var x=p.gx-7, z=p.gy-6, ry=p.ry||0;
+    if(p.k==='plant'){
+      box(x,0.15,z, 0.54,0.30,0.54, T.noise, [0.95,0.46,0.28]);              /* bac */
+      box(x,0.31,z, 0.44,0.05,0.44, T.noise, [0.30,0.21,0.14]);              /* terre */
+      box(x,0.72,z, 0.56,0.62,0.56, T.leaf, [1.0,1.0,1.0], {ry:0.5});        /* feuillage */
+      box(x-0.10,0.98,z+0.06, 0.30,0.24,0.30, T.leaf, [0.86,1.02,0.86], {ry:1.2});
+    } else if(p.k==='bench'){
+      box(x,0.30,z, 0.94,0.10,0.42, T.wood, [1.05,0.96,0.86]);               /* assise */
+      box(x,0.46,z-0.17, 0.94,0.26,0.08, T.wood, [0.98,0.88,0.78]);          /* dossier */
+      box(x,0.15,z, 0.74,0.30,0.30, T.metal, [0.58,0.62,0.66]);              /* pied */
+    } else if(p.k==='bin'){
+      drawBin(x,z);
+    } else if(p.k==='rail'){
+      box(x-0.40,0.30,z, 0.09,0.60,0.09, T.metal, [0.74,0.80,0.86]);
+      box(x+0.40,0.30,z, 0.09,0.60,0.09, T.metal, [0.74,0.80,0.86]);
+      box(x,0.52,z, 0.94,0.13,0.13, T.noise, [2.05,0.55,0.30]);              /* lisse */
+    } else if(p.k==='goal'){
+      box(x-0.42,0.42,z, 0.09,0.84,0.09, T.noise, [2.20,0.34,0.30]);
+      box(x+0.42,0.42,z, 0.09,0.84,0.09, T.noise, [2.20,0.34,0.30]);
+      box(x,0.82,z, 0.94,0.10,0.10, T.noise, [2.20,0.34,0.30]);
+      box(x,0.42,z-0.03, 0.78,0.66,0.03, T.noise, [1.60,1.68,1.72]);          /* filet */
+    } else if(p.k==='table'){
+      box(x,0.36,z, 0.80,0.08,0.80, T.wood, [1.02,0.94,0.84]);               /* plateau */
+      box(x,0.19,z, 0.12,0.30,0.12, T.metal, [0.46,0.48,0.51]);
+      box(x,0.04,z, 0.46,0.06,0.46, T.metal, [0.40,0.42,0.45]);
+      box(x-0.36,0.19,z-0.30, 0.24,0.06,0.24, T.wood, [0.90,0.80,0.70]);     /* chaise */
+      box(x+0.36,0.19,z+0.30, 0.24,0.06,0.24, T.wood, [0.90,0.80,0.70]);
+    } else if(p.k==='woodtable'){
+      box(x,0.39,z, 0.98,0.10,0.72, T.wood, [1.12,1.00,0.86]);
+      box(x-0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
+      box(x+0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
+      box(x-0.20,0.47,z+0.02, 0.24,0.07,0.14, T.noise, [2.45,2.45,2.50]);    /* produit */
+    } else if(p.k==='display'){
+      box(x,0.28,z, 0.46,0.56,0.34, T.wallApple, [0.98,0.98,0.96]);
+      box(x,0.62,z, 0.48,0.24,0.06, T.panel, [1,1,1], {emit:0.55});
+    }
   }
 }
 
@@ -967,10 +1381,8 @@ function drawMarmot(m){
 function drawNest(gx,gy,t,hits){
   var x=gx-7, z=gy-6;
   var k=1-0.26*(hits||0);            /* le tas fond a chaque passage (3x plus lent) */
-  box(x-0.14,0.045*k,z-0.10, 0.34,0.09*k,0.26, T.nest, [1.05,1.0,0.95], {ry:0.3});
-  box(x+0.15,0.035*k,z+0.13, 0.26,0.07*k,0.30*k, T.nest, [0.95,0.90,0.84], {ry:-0.5});
-  box(x+0.02,0.030*k,z-0.20, 0.20,0.06*k,0.18*k, T.nest, [0.88,0.83,0.76], {ry:0.9});
-  if(k>0.5) box(x+0.22,0.075*k,z-0.02, 0.11,0.05,0.11, T.noise, [0.55,0.46,0.32]);  // trognon
+  box(x-0.10,0.045*k,z-0.08, 0.44,0.09*k,0.36, T.nest, [1.05,1.0,0.95], {ry:0.3});
+  box(x+0.17,0.032*k,z+0.15, 0.28,0.06*k,0.28*k, T.nest, [0.92,0.87,0.80], {ry:-0.5});
 }
 
 /* ── v0.8 : savon rose — plus gros, halo + marqueur flottant ── */
@@ -1036,28 +1448,108 @@ function drawGrandMere(g,t){
   box(x-0.20,0.37+bob,z+0.20, 0.02,0.22,0.02, null, [0.62,0.40,0.22], {ry:ry});   // anse
 }
 
-/* ── v0.8 : LOUTRE CALINE (boites arrondies, museau clair) ── */
-function drawLoutre(o,t){
-  var x=o.x, z=o.z;
-  var hug=o.hug>0 ? Math.sin(t*14)*0.05 : 0;
-  /* v0.8.2 : LOUTRES = CRÈME (texture claire T.noise teintée) — les marmottes
-     sont brun foncé (T.fur), la distinction doit être IMMÉDIATE. Queue brune
-     conservée pour la silhouette de loutre, cœur BLEU « câlinable ». */
-  var cream=[2.00,1.88,1.64], brown=[1.05,0.86,0.66], white=[2.55,2.50,2.42];
-  box(x,0.24+hug,z, 0.70,0.42,0.50, T.noise, cream);           // corps crème
-  box(x,0.13+hug,z-0.34, 0.24,0.20,0.20, T.fur, brown);        // queue brune
-  box(x,0.52+hug,z+0.13, 0.42,0.34,0.36, T.noise, cream);      // tete
-  box(x,0.45+hug,z+0.33, 0.24,0.17,0.14, T.noise, white);      // museau blanc
-  box(x-0.12,0.62+hug,z+0.19, 0.09,0.09,0.05, null, [0.10,0.09,0.07]);   // yeux
-  box(x+0.12,0.62+hug,z+0.19, 0.09,0.09,0.05, null, [0.10,0.09,0.07]);
-  box(x,0.60+hug,z+0.36, 0.06,0.05,0.04, null, [0.16,0.12,0.10]);        // nez
-  box(x-0.16,0.70+hug,z+0.06, 0.10,0.10,0.06, T.fur, brown);   // oreilles
-  box(x+0.16,0.70+hug,z+0.06, 0.10,0.10,0.06, T.fur, brown);
-  box(x,0.28+hug,z+0.23, 0.32,0.22,0.05, T.noise, white);      // ventre blanc
-  box(x-0.34,0.29+hug,z+0.08, 0.12,0.24,0.13, T.noise, cream); // pattes
-  box(x+0.34,0.29+hug,z+0.08, 0.12,0.24,0.13, T.noise, cream);
-  if(o.hug<=0){
-    heartBillboardTint(x, 1.14+Math.sin(t*2.4+o.gx*0.7)*0.05, z+0.02, 0.36, [0.55,0.90,1.35]);
+/* ═════════ v0.9 : LES 4 POLLUEURS (volumes 3D lisibles en 640×360) ═════════ */
+
+/* ── MOUETTE : corps blanc, ailes grises (2 frames), bec jaune, vol haut ── */
+function drawGull(p,t){
+  var y=1.28+Math.sin(t*2.0+p.t*1.7)*0.09;
+  var flap=Math.sin(t*10.5+p.wing*3.1);
+  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
+  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
+  var white=[2.30,2.34,2.36], grey=[0.40,0.46,0.55], grey2=[0.28,0.32,0.40];
+  box(p.x,y,p.z, 0.28,0.22,0.56, T.noise, white, {ry:p.dir});                         /* corps */
+  box(p.x+px*0.32, y+0.03+flap*0.09, p.z+pz*0.32, 0.56,0.06,0.30, T.noise, grey, {ry:p.dir});  /* aile G */
+  box(p.x-px*0.32, y+0.03+flap*0.09, p.z-pz*0.32, 0.56,0.06,0.30, T.noise, grey, {ry:p.dir});  /* aile D */
+  box(p.x+fx*0.30, y+0.06, p.z+fz*0.30, 0.20,0.20,0.20, T.noise, white, {ry:p.dir});   /* tete */
+  box(p.x+fx*0.43, y+0.03, p.z+fz*0.43, 0.15,0.06,0.09, null, [2.60,1.85,0.10]);      /* bec jaune */
+}
+
+/* ── CHIEN : corps brun, tete, queue, 4 pattes ── */
+function drawDog(p,t){
+  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
+  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
+  var walk=Math.sin(p.step*9.0);
+  var b=Math.abs(walk)*0.015;
+  var brown=[1.48,0.92,0.44], light=[1.95,1.55,1.02], dark=[0.52,0.31,0.14];
+  var A=0.16, B=-0.20;
+  box(p.x,0.36+b,p.z, 0.34,0.28,0.62, T.fur, brown, {ry:p.dir});                       /* corps */
+  box(p.x+fx*0.40,0.47+b,p.z+fz*0.40, 0.28,0.26,0.28, T.fur, brown, {ry:p.dir});       /* tete */
+  box(p.x+fx*0.57,0.40+b,p.z+fz*0.57, 0.18,0.15,0.16, T.fur, light, {ry:p.dir});       /* museau clair */
+  box(p.x-fx*0.40,0.52+b,p.z-fz*0.40, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});        /* queue */
+  box(p.x+px*0.13+fx*0.18, 0.12, p.z+pz*0.13+fz*0.18, 0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
+  box(p.x-px*0.13+fx*0.18, 0.12, p.z-pz*0.13+fz*0.18, 0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
+  box(p.x+px*0.13+fx*B,    0.12, p.z+pz*0.13+fz*B,    0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
+  box(p.x-px*0.13+fx*B,    0.12, p.z-pz*0.13+fz*B,    0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
+}
+
+/* ── RATON LAVEUR : corps gris, masque noir, queue rayee, bras qui fouillent ── */
+function drawRaccoon(p,t){
+  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
+  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
+  var grey=[0.92,0.95,1.02], dark=[0.20,0.21,0.26], light=[1.85,1.84,1.78];
+  var forage = (p.state==='action') ? Math.abs(Math.sin(t*12.0))*0.13 : 0.0;
+  box(p.x,0.32,p.z, 0.42,0.32,0.54, T.noise, grey, {ry:p.dir});                        /* corps gris */
+  box(p.x+fx*0.27,0.47,p.z+fz*0.27, 0.30,0.26,0.28, T.noise, grey, {ry:p.dir});        /* tete grise */
+  box(p.x+fx*0.36,0.51,p.z+fz*0.36, 0.34,0.19,0.17, T.noise, [0.09,0.09,0.13], {ry:p.dir});  /* masque noir large */
+  box(p.x+px*0.09+fx*0.44,0.53,p.z+pz*0.09+fz*0.44, 0.10,0.08,0.04, T.noise, [2.30,2.30,2.25], {ry:p.dir}); /* oeil blanc G */
+  box(p.x-px*0.09+fx*0.44,0.53,p.z-pz*0.09+fz*0.44, 0.10,0.08,0.04, T.noise, [2.30,2.30,2.25], {ry:p.dir}); /* oeil blanc D */
+  box(p.x+fx*0.48,0.41,p.z+fz*0.48, 0.12,0.09,0.10, T.noise, light, {ry:p.dir});       /* museau clair */
+  box(p.x+px*0.19+fx*0.15,0.26+forage,p.z+pz*0.19+fz*0.15, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});
+  box(p.x-px*0.19+fx*0.15,0.26+forage,p.z-pz*0.19+fz*0.15, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});
+  box(p.x-fx*0.36,0.40,p.z-fz*0.36, 0.15,0.15,0.42, T.noise, grey, {ry:p.dir});        /* queue relevee */
+  box(p.x-fx*0.50,0.42,p.z-fz*0.50, 0.16,0.16,0.11, T.noise, dark, {ry:p.dir});        /* anneau noir */
+  box(p.x-fx*0.60,0.44,p.z-fz*0.60, 0.15,0.15,0.10, T.noise, grey, {ry:p.dir});        /* bout de queue */
+}
+
+/* ── HUMAIN SALE : jambes, torse vif, tete, casquette ── */
+function drawDirtyHuman(p,t){
+  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
+  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
+  var walk=Math.sin(p.step*5.2);
+  /* v0.9.2 : chaque humain sale porte une tenue DIFFÉRENTE, tirée d'une palette
+     qui EXCLUT l'orange du joueur et le violet de la grand-mère. Objectif : une
+     foule bigarrée reconnaissable, sans confusion d'identité. */
+  var PAL=[[0.55,0.95,0.85],[1.02,0.92,0.34],[0.78,0.34,0.40],[0.42,0.54,0.96]];
+  var shirt=PAL[Math.abs(Math.round(p.x*7+p.z*13))%4];
+  var pants=[0.40,0.52,0.66], skin=[2.00,1.64,1.30], cap=[0.50,0.32,0.18];
+  var y=Math.abs(walk)*0.012;
+  box(p.x+px*0.085+fx*walk*0.07,0.20+y,p.z+pz*0.085+fz*walk*0.07, 0.12,0.34,0.13, T.noise, pants, {ry:p.dir});
+  box(p.x-px*0.085-fx*walk*0.07,0.20+y,p.z-pz*0.085-fz*walk*0.07, 0.12,0.34,0.13, T.noise, pants, {ry:p.dir});
+  box(p.x,0.48+y,p.z, 0.34,0.30,0.24, T.noise, shirt, {ry:p.dir});                    /* torse vif */
+  box(p.x+px*0.22,0.46+y,p.z+pz*0.22, 0.10,0.26,0.10, T.noise, shirt, {ry:p.dir});
+  box(p.x-px*0.22,0.46+y,p.z-pz*0.22, 0.10,0.26,0.10, T.noise, shirt, {ry:p.dir});
+  box(p.x,0.74+y,p.z, 0.24,0.22,0.22, T.noise, skin, {ry:p.dir});                     /* tete */
+  box(p.x,0.86+y,p.z, 0.28,0.09,0.26, T.noise, cap, {ry:p.dir});                      /* cheveux */
+  box(p.x+px*0.30+fx*0.10, 0.40+y, p.z+pz*0.30+fz*0.10, 0.13,0.16,0.13, T.noise, [0.30,0.26,0.22], {ry:p.dir}); /* déchet en main */
+}
+
+function drawPolluters(t){
+  for(var i=0;i<polluters.length;i++){
+    var p=polluters[i];
+    if(p.type==='gull') drawGull(p,t);
+    else if(p.type==='dog') drawDog(p,t);
+    else if(p.type==='raccoon') drawRaccoon(p,t);
+    else drawDirtyHuman(p,t);
+  }
+}
+
+/* ── taches laissees par les pollueurs (fiente blanche, tas, dechets) ── */
+function drawMarks(){
+  for(var i=0;i<soilMarks.length;i++){
+    var m=soilMarks[i], x=m.gx-7, z=m.gy-6;
+    if(m.kind==='splat'){
+      box(x,0.035,z, 0.32,0.03,0.26, T.noise, [2.45,2.45,2.40], {ry:m.ry});
+      box(x+0.13,0.030,z-0.09, 0.13,0.025,0.11, T.noise, [2.25,2.25,2.20], {ry:m.ry+0.7});
+    } else if(m.kind==='mound'){
+      box(x,0.055,z, 0.25,0.11,0.21, T.fur, [0.78,0.52,0.28], {ry:m.ry});
+      box(x-0.07,0.105,z+0.04, 0.13,0.07,0.11, T.fur, [0.58,0.37,0.20], {ry:m.ry});
+    } else if(m.kind==='trash'){
+      box(x,0.055,z, 0.14,0.10,0.14, T.noise, [2.25,0.48,0.42], {ry:m.ry, emit:0.25});
+      box(x+0.14,0.040,z-0.06, 0.10,0.05,0.10, T.noise, [2.40,2.35,2.20], {ry:m.ry+1.1});
+    } else {
+      box(x,0.055,z, 0.15,0.09,0.13, T.noise, [2.10,1.80,0.35], {ry:m.ry});
+      box(x-0.11,0.045,z+0.07, 0.11,0.06,0.10, T.noise, [0.55,1.55,1.85], {ry:m.ry+0.8});
+    }
   }
 }
 
@@ -1067,44 +1559,7 @@ function drawCoin(c,t){
   drawMesh(CYL10, trs(c.x,0.10+bob,c.z, 0.20,0.06,0.20, t*2.0), T.gold, [1,1,1], {emit:0.35});
 }
 
-/* ── v0.8 : billboard coeur pixel (petit quad texte, facing camera) ── */
-function heartBillboard(x,y,z,size){
-  heartBillboardTint(x,y,z,size,[1,1,1]);
-}
-/* v0.8.1 : même billboard avec une TEINTE (bleu = câlinable, rouge = gagné) */
-function heartBillboardTint(x,y,z,size,tint){
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-  gl.depthMask(false);
-  drawMesh(QUAD_XY, trs(x,y,z,size,size,1,0), T.heart, tint, {unlit:true,alpha:1});
-  gl.depthMask(true);
-  gl.disable(gl.BLEND);
-}
-
-/* ── v0.8 : coeurs rouges EMPILES au-dessus de la machine (câlins) ── */
-function drawHearts(m){
-  var n=Math.min(COEURS_MAX,m.hearts);
-  var hx=m.wx+m.kox, hz=m.wz+m.koz;
-  for(var i=0;i<n;i++){
-    var hy=1.70+i*0.42+0.03*Math.sin(performance.now()/280+i*0.9);
-    var hx2=hx+(i-(n-1)/2)*0.62;
-    heartBillboard(hx2,hy,hz+0.34,0.31);
-  }
-}
-
-/* ── v0.8 : ETOILES jaunes au-dessus d'une machine etourdie ── */
-function drawStars(m){
-  var t=performance.now()/1000;
-  for(var i=0;i<3;i++){
-    var a=t*6+i*2.094;
-    var sx=m.wx+m.kox+Math.cos(a)*0.30;
-    var sz=m.wz+m.koz+Math.sin(a)*0.26;
-    var sy=1.22+Math.sin(t*10+i)*0.05;
-    box(sx,sy,sz, 0.09,0.09,0.09, T.noise, [1.0,0.92,0.30], {ry:a*1.7, emit:0.85});
-  }
-}
-
-/* ── v0.8 : particules (etincelles de savon, eclats) ── */
+/* ── v0.9 : particules (etincelles de savon, eclats, fientes) ── */
 function drawParticles(){
   if(!parts.length) return;
   gl.enable(gl.BLEND);
@@ -1125,7 +1580,7 @@ function drawWave(){
   var p=Math.min(1,wave.t/0.85);
   var cx=wave.cx-7, cz=wave.cy-6;
   var r=0.5+p*3.1;
-  var n=14, a0=performance.now()/900;
+  var n=6, a0=performance.now()/900;
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.depthMask(false);
@@ -1151,9 +1606,6 @@ function drawMachine(m){
   // jupe / châssis
   box(x,0.05,z, 0.94,0.10,0.94, T.metal, [0.45,0.47,0.50], o);
   box(x,0.27,z, 0.86,0.40,0.86, T.metal, m.id===0?[1,1,1]:[0.90,1.0,0.94], o);
-  // bandeau avant clair
-  p=localToWorld(x,z,ry,0,0.43);
-  box(p[0],0.42,p[1], 0.72,0.07,0.03, T.noise, [0.62,0.68,0.72], o);
   // bac (volume bleu)
   box(x,0.66,z, 0.72,0.40,0.72, T.basin, m.basinTint, o);
   box(x,0.875,z, 0.80,0.07,0.80, T.metal, [1,1,1], o);
@@ -1184,9 +1636,6 @@ function drawPusher(m){
   var y0 = bob;
   var suit=m.suit;
   var dark=[0.19,0.17,0.22], pants=[0.28,0.33,0.46];
-  // chaussures
-  box(px_-0.13,y0+0.045,pz_+0.03, 0.18,0.09,0.26, T.noise, dark, {ry:m.angle});
-  box(px_+0.13,y0+0.045,pz_-0.03, 0.18,0.09,0.26, T.noise, dark, {ry:m.angle});
   // jambes
   box(px_-0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
   box(px_+0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
@@ -1208,8 +1657,6 @@ function drawPusher(m){
   var ox=Math.cos(m.angle)*0.06, oz=-Math.sin(m.angle)*0.06;
   box(px_+ex*0.14+ox, y0+1.06, pz_+ez*0.14+oz, 0.05,0.06,0.03, null, [0.13,0.11,0.12], {ry:m.angle});
   box(px_+ex*0.14-ox, y0+1.06, pz_+ez*0.14-oz, 0.05,0.06,0.03, null, [0.13,0.11,0.12], {ry:m.angle});
-  // nez
-  box(px_+ex*0.15, y0+1.02, pz_+ez*0.15, 0.05,0.05,0.03, null, [0.90,0.66,0.48], {ry:m.angle});
   // casquette
   /* v0.7 : casquette BLANCHE + bandeau de couleur équipe (une casquette
      orange/rouge se lisait comme un gyrophare sur le toit de la machine) */
@@ -1217,9 +1664,7 @@ function drawPusher(m){
   box(px_,y0+1.20,pz_, 0.33,0.11,0.31, T.noise, [0.96,0.95,0.90], {ry:m.angle});   // calotte blanche
   box(px_,y0+1.145,pz_, 0.34,0.05,0.32, T.noise, teamCol, {ry:m.angle});           // bandeau équipe
   box(px_+ex*0.19, y0+1.20, pz_+ez*0.19, 0.30,0.06,0.16, T.noise, [0.99,0.98,0.94], {ry:m.angle}); // visière
-  box(px_+ex*0.17, y0+1.185, pz_+ez*0.17, 0.29,0.05,0.15, T.noise, teamCol.map(function(c){return c*0.72;}), {ry:m.angle});
-  // col / cheveux
-  box(px_,y0+0.885,pz_, 0.26,0.06,0.26, T.noise, [0.22,0.18,0.16], {ry:m.angle});
+  // (col / visiere ombre retires en v0.9 pour tenir le budget de boites)
 }
 
 function drawScene(){
@@ -1227,20 +1672,21 @@ function drawScene(){
   gl.disable(gl.BLEND);
   gl.depthMask(true);
 
-  // sol exterieur (decor)
-  drawMesh(QUAD_XZ, trs(0,-0.02,0,40,1,34,0), T.metal, [0.28,0.32,0.38], {uvScale:[56,56]});
+  var FL=FLOORS[LV.floor];
+
+  // sol exterieur (decor propre au niveau)
+  drawMesh(QUAD_XZ, trs(0,-0.02,0,40,1,34,0), T.metal, LV.ground, {uvScale:[56,56]});
 
   // sol de l'arene : 4 batches (sale / propre / trainee / NID de detritus)
-  drawFloorMesh(floorMeshes[0], T.dirty);
-  drawFloorMesh(floorMeshes[1], T.tile);
-  drawFloorMesh(floorMeshes[2], T.trail);
-  drawFloorMesh(floorMeshes[3], T.nest);
+  if(floorCnt[0]) drawFloorMesh(floorMeshes[0], FL.dirty);
+  if(floorCnt[1]) drawFloorMesh(floorMeshes[1], FL.clean);
+  if(floorCnt[2]) drawFloorMesh(floorMeshes[2], FL.trail);
+  if(floorCnt[3]) drawFloorMesh(floorMeshes[3], FL.nest);
 
   // ombres portees (alpha)
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.depthMask(false);
-  for(var s=0;s<marmots.length;s++) drawShadow(marmots[s].gx-7+marmots[s].ox, marmots[s].gy-6+marmots[s].oz, 1.05, 0.90);
   if(SHADOWS) drawShadow(bot.wx+bot.kox,bot.wz+bot.koz,1.70,0.85);
   if(SHADOWS) drawShadow(player.wx+player.kox,player.wz+player.koz,1.70,0.85);
   var prx=Math.sin(player.angle), prz=Math.cos(player.angle);
@@ -1248,17 +1694,26 @@ function drawScene(){
   var brx=Math.sin(bot.angle), brz=Math.cos(bot.angle);
   drawShadow(bot.wx+bot.kox-brx*0.56, bot.wz+bot.koz-brz*0.56, 1.0, 0.7);
   if(gm) drawShadow(gm.x,gm.z,1.15,0.85);
-  for(var o=0;o<otters.length;o++) drawShadow(otters[o].x,otters[o].z,1.0,0.80);
+  /* pollueurs : une ombre au sol (la mouette en a une plus large, elle vole) */
+  for(var pI=0;pI<polluters.length;pI++){
+    var po=polluters[pI];
+    drawShadow(po.x,po.z, po.type==='gull'?0.95:0.75, po.type==='gull'?0.40:0.62);
+  }
   gl.depthMask(true);
   gl.disable(gl.BLEND);
 
-  // murs (vrais volumes)
-  var WH=1.95;
-  box(0,WH/2,-6.95, 16.2,WH,0.7, T.brick, [0.92,0.92,0.92], {uvScale:[13,2]});
-  box(-8.0,WH/2,0, 0.7,WH,15.0, T.brick, [0.80,0.80,0.80], {uvScale:[12,2]});
-  box( 8.0,WH/2,0, 0.7,WH,15.0, T.brick, [0.80,0.80,0.80], {uvScale:[12,2]});
+  // murs du niveau (vrais volumes, texture + palette propres)
+  var WH=LV.wallH, WT=T[LV.wall];
+  var tileV = WH>1.4?2:1;
+  box(0,WH/2,-6.95, 16.2,WH,0.7, (LV.id==='apple'?T.glass:WT), LV.wallCol, {uvScale:[13,tileV]});
+  box(-8.0,WH/2,0, 0.7,WH,15.0, WT, LV.wallCol, {uvScale:[12,tileV]});
+  box( 8.0,WH/2,0, 0.7,WH,15.0, WT, LV.wallCol, {uvScale:[12,tileV]});
   // mur sud bas (cutaway)
-  box(0,0.20,6.85, 16.2,0.40,0.45, T.brick, [0.98,0.98,0.98], {uvScale:[13,1]});
+  box(0,0.20,6.85, 16.2,0.40,0.45, WT, LV.wallCol, {uvScale:[13,1]});
+  // bandeau de couleur au sommet : signature visuelle du niveau
+  box(0,WH+0.06,-6.95, 16.3,0.13,0.76, T.noise, LV.accent, {emit:0.20});
+  box(-8.0,WH+0.06,0, 0.76,0.13,15.1, T.noise, LV.accent, {emit:0.20});
+  box( 8.0,WH+0.06,0, 0.76,0.13,15.1, T.noise, LV.accent, {emit:0.20});
   // plinthes sombres au pied des murs (lisibilite du volume)
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
   drawMesh(QUAD_XZ, trs(0,0.03,-6.30, 8.1,1,0.75,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
@@ -1269,38 +1724,37 @@ function drawScene(){
 
   var tNow=performance.now()/1000;
 
-  /* ── v0.8 : NIDS DE DETRITUS (tas 3D sur les cases encore sales) ── */
+  /* ── PROPS du niveau (obstacles) ── */
+  drawProps();
+
+  /* ── taches des pollueurs (fientes, tas, dechets) ── */
+  drawMarks();
+
+  /* ── NIDS DE DETRITUS (tas 3D sur les cases encore sales) ── */
   for(var n=0;n<nests.length;n++){
     var nd=nests[n];
     if(cells[idxAt(nd.gx,nd.gy)]===3) drawNest(nd.gx,nd.gy,tNow,detHits[idxAt(nd.gx,nd.gy)]);
   }
 
-  /* ── marmottes animées ── */
-  for(var k=0;k<marmots.length;k++) drawMarmot(marmots[k]);
-
-  /* ── v0.8 : bonus au sol ── */
+  /* ── bonus au sol ── */
   if(soap) drawSoap(soap,tNow);
   if(torp) drawTorpille(torp,tNow);
   for(var c0=0;c0<coins.length;c0++) drawCoin(coins[c0],tNow);
 
-  /* ── v0.8 : grand-mere + loutres ── */
+  /* ── grand-mere ── */
   if(gm) drawGrandMere(gm,tNow);
-  for(var oo=0;oo<otters.length;oo++) drawLoutre(otters[oo],tNow);
+
+  /* ── v0.9 : POLLUEURS (mouettes / chiens / ratons / humains sales) ── */
+  drawPolluters(tNow);
 
   /* ── machines ── */
   drawMachine(player); drawPusher(player);
   drawMachine(bot);    drawPusher(bot);
 
-  /* ── v0.8 : etats au-dessus des machines ── */
-  if(player.stun>0) drawStars(player);
-  if(bot.stun>0)    drawStars(bot);
-  if(player.hearts>0) drawHearts(player);
-  if(bot.hearts>0)    drawHearts(bot);
-
-  /* ── v0.8 : mousse de la torpille + particules ── */
+  /* ── mousse de la torpille + particules ── */
   drawWave();
   drawParticles();
-  if(drawCalls>maxDrawCalls) maxDrawCalls=drawCalls;   /* budget boites < 250 */
+  if(drawCalls>maxDrawCalls) maxDrawCalls=drawCalls;   /* budget boites < 250 (plafonne a DRAW_BUDGET) */
 }
 
 function drawBlit(){
@@ -1328,9 +1782,6 @@ function startMove(m,di){
   if(m.stun>0) return false;
   var d=DIRS[di];
   var nx=m.gx+d[0], ny=m.gy+d[1];
-  /* v0.8 : une marmotte sur la case = CHOC (ejection + etourdie) */
-  var mi=findMarmot(nx,ny);
-  if(mi>=0){ bumpMarmot(m,mi,d); return false; }
   if(!canEnter(nx,ny,m)) return false;
   m.fx=m.gx; m.fy=m.gy;
   m.gx=nx;  m.gy=ny;
@@ -1344,40 +1795,11 @@ function startMove(m,di){
   return true;
 }
 
-/* v0.8 : CHOC MACHINE ↔ MARMOTTE — la marmotte est ejectee de 2 cases,
-   la machine recule de 2 cases (rebond visuel) et reste etourdie 0,4 s.
-   AUCUNE perte de score. */
-function bumpMarmot(m,mi,d){
-  var marm=marmots[mi];
-  var ex=marm.gx, ey=marm.gy, tx=ex, ty=ey;
-  for(var s=EJET_MARMOTTE;s>=1;s--){
-    var cx=ex+d[0]*s, cy=ey+d[1]*s;
-    if(cx<1||cy<1||cx>=COLS-1||cy>=ROWS-1) continue;
-    if(isMarmot(cx,cy)) continue;
-    if(cx===m.gx&&cy===m.gy) continue;
-    tx=cx; ty=cy; break;
-  }
-  marm.ox=ex-tx; marm.oz=ey-ty;      /* glisse visuelle depuis l'ancienne case */
-  marm.gx=tx; marm.gy=ty;
-  marm.ej=1.0;
-  /* la machine recule de 2 cases si le passage est libre */
-  var back=0;
-  for(var b=0;b<EJET_MARMOTTE;b++){
-    var bx=m.gx-d[0], by=m.gy-d[1];
-    if(!canEnter(bx,by,m)) break;
-    m.fx=m.gx; m.fy=m.gy; m.gx=bx; m.gy=by; back++;
-  }
-  if(back>0){ m.kox=back*d[0]; m.koz=back*d[1]; }
-  m.wx=m.gx-7; m.wz=m.gy-6;
-  m.moving=false; m.t=1; m.queued=-1; m.stun=TEMPS_ETOURDIE;
-  beep(760,0.09,0.05);
-  burst(m.wx+d[0]*0.5, m.wz+d[1]*0.5, 8, [1.9,1.6,0.85]);
-}
-
 function arrive(m){
   var i=idxAt(m.gx,m.gy);
+  removeMarkAt(m.gx,m.gy);          /* v0.9 : la tache disparait avec la salete */
   if(cells[i]===3){
-    /* v0.8 : NID DE DETRITUS — lavage 3x plus lent, compte double */
+    /* NID DE DETRITUS — lavage 3x plus lent, compte double */
     detHits[i]++;
     if(detHits[i]>=DETRITUS_COEF){
       cells[i]=2; detW[i]=0;
@@ -1390,11 +1812,18 @@ function arrive(m){
       if(m===player) beep(150,0.05,0.03);
     }
   } else if(cells[i]===0){
-    if(m===player){ cells[i]=2; score++; }
-    else { cells[i]=1; botScore++; }
+    /* v0.9 : une case sale peut demander 1 ou 2 passages (niveau 4) */
+    cleanHits[i]++;
+    if(cleanHits[i]>=LV.passes){
+      cleanHits[i]=0;
+      if(m===player){ cells[i]=2; score++; }
+      else { cells[i]=1; botScore++; }
+      m._dirty=true;
+    } else {
+      burst(m.wx,m.wz,3,[0.72,0.78,0.72]);   /* premier passage : la crasse part a moitie */
+    }
     buildFloor();
     recomputeCounts();
-    m._dirty=true;
   } else if(m===player && cells[i]===1){
     cells[i]=2; buildFloor();
   }
@@ -1408,7 +1837,7 @@ function updateMachines(dt){
   var list=[player,bot];
   for(var i=0;i<2;i++){
     var m=list[i];
-    /* v0.8 : rebond visuel amorti */
+    /* rebond visuel amorti */
     if(m.kox||m.koz){
       var dd=Math.min(1,dt*7.5);
       m.kox-=m.kox*dd; m.koz-=m.koz*dd;
@@ -1423,17 +1852,39 @@ function updateMachines(dt){
         var next = (m===player) ? player.queued : -1;
         if(m===player) player.queued=-1;
         if(m.stun>0){ next=-1; }
-        if(next>=0) startMove(m,next);
-        else if(m===player && heldDir>=0) startMove(m,heldDir);
-        else if(m.soapT>0){ startMove(m,m.dirIdx); }   /* v0.8 : INERTIE du savon */
+        if(next>=0){
+          if(LV.ice && m===player && next!==m.dirIdx){
+            /* PATINOIRE : pivot lent — la machine garde son cap 0,35 s */
+            m.queued=next; m.pivotT=ICE_PIVOT;
+          } else startMove(m,next);
+        }
+        else if(!LV.ice && m===player && heldDir>=0) startMove(m,heldDir);
+        else if(m.soapT>0){ startMove(m,m.dirIdx); }        /* inertie du savon */
       }
       var e=m.t*m.t*(3-2*m.t);
       var ax=lerp(m.fx,m.gx,e), az=lerp(m.fy,m.gy,e);
       m.wx=ax-7; m.wz=az-6;
     } else {
       m.wx=m.gx-7; m.wz=m.gy-6;
-      /* la glisse du savon relance la machine toute seule */
-      if(m.soapT>0 && m.stun<=0 && m===bot) startMove(bot, bot.dirIdx);
+      /* v0.9 : pivot differe de la patinoire */
+      if(m.pivotT>0){
+        m.pivotT-=dt;
+        if(m.pivotT<=0 && m.queued>=0){
+          var qd=m.queued; m.queued=-1;
+          m.pivotT=0;
+          startMove(m,qd);
+        }
+      } else if(m.iceCd>0){
+        m.iceCd-=dt;
+      }
+      if(!m.moving && m.pivotT<=0){
+        if(m.soapT>0 && m.stun<=0 && m===bot){ startMove(bot, bot.dirIdx); }
+        else if(LV.ice && m.stun<=0 && m.iceCd<=0){
+          /* v0.9 : la machine DERAPE en permanence sur la glace */
+          if(startMove(m,m.dirIdx)) m.iceCd=ICE_GLISSE;
+          else m.iceCd=0.20;
+        }
+      }
     }
   }
 }
@@ -1445,7 +1896,7 @@ var demoAITimer=0;
 
 /* ── v0.8 : les bonus / pieces / etats, par frame ── */
 function burst(x,z,n,col){
-  if(parts.length>36) return;
+  if(parts.length>12) return;
   for(var i=0;i<n;i++){
     var a=Math.random()*Math.PI*2, sp=0.5+Math.random()*1.1;
     parts.push({
@@ -1498,14 +1949,14 @@ function fireTorpille(m){
     for(var dc=-r0;dc<=r0;dc++){
       var cc=cx+dc, ll=cy+dl;
       if(cc<0||ll<0||cc>=COLS||ll>=ROWS) continue;
-      if(isMarmot(cc,ll)) continue;
+      if(blocked[idxAt(cc,ll)]) continue;
       var k=idxAt(cc,ll);
       if(cells[k]===3){
-        cells[k]=2; detW[k]=0; detHits[k]=0; removeNest(cc,ll);
+        cells[k]=2; detW[k]=0; detHits[k]=0; removeNest(cc,ll); removeMarkAt(cc,ll);
         if(m===player) score+=DETRITUS_MULT; else botScore+=DETRITUS_MULT;
         nids++;
       } else if(cells[k]===0){
-        cells[k]=2;
+        cells[k]=2; cleanHits[k]=0; removeMarkAt(cc,ll);
         if(m===player) score++; else botScore++;
       }
     }
@@ -1546,15 +1997,7 @@ function updateGrandMere(dt){
   if(gm.coupsWin>0){ gm.coupsWin-=dt; if(gm.coupsWin<=0) gm.coups=0; }
 }
 
-function doHug(m,o){
-  o.hug=1.4;
-  m.hearts=Math.min(COEURS_MAX, m.hearts+3);   /* +3 COEURS */
-  burst(o.x,o.z,12,[1.9,0.35,0.45]);
-  beep(880,0.10,0.05); beep(1180,0.10,0.04);
-  m.hugT=0;
-}
-
-/* ── v0.8 : collisions/ramassages par frame pour une machine ── */
+/* ── collisions/ramassages par frame pour une machine ── */
 function machineCollisions(m,dt){
   if(m.stun>0){ m.stun-=dt; if(m.stun<0) m.stun=0; }
   if(m.soapT>0){ m.soapT-=dt; if(m.soapT<0) m.soapT=0; }
@@ -1611,42 +2054,14 @@ function machineCollisions(m,dt){
     }
     if(m._gmCd>0) m._gmCd-=dt;
   }
-
-  /* loutres : rester 2 s a cote = CALIN (+3 coeurs) */
-  if(m===player && m.stun<=0){
-    var best=-1, bd=1e9;
-    for(var o=0;o<otters.length;o++){
-      var ox=m.wx-otters[o].x, oz=m.wz-otters[o].z;
-      var od=Math.sqrt(ox*ox+oz*oz);
-      if(od<bd){ bd=od; best=o; }
-    }
-    for(var o2=0;o2<otters.length;o2++){
-      if(o2===best && bd<1.15){
-        otters[o2].calmT=(otters[o2].calmT||0)+dt;
-        if(otters[o2].calmT>=DUREE_CALIN && otters[o2].hug<=0) doHug(m,otters[o2]);
-      } else {
-        otters[o2].calmT=Math.max(0,(otters[o2].calmT||0)-dt*1.8);
-      }
-      if(otters[o2].hug>0) otters[o2].hug-=dt;
-    }
-    if(bd<1.15) m.hugT=Math.min(m.hugT+dt,DUREE_CALIN);
-  }
 }
 
 function updateEntities(dt){
-  /* marmottes */
-  for(var i=0;i<marmots.length;i++){
-    var mm=marmots[i];
-    mm.t+=dt;
-    if(mm.ox||mm.oz){
-      var dd=Math.min(1,dt*6.5);
-      mm.ox-=mm.ox*dd; mm.oz-=mm.oz*dd;
-      if(Math.abs(mm.ox)<0.004) mm.ox=0;
-      if(Math.abs(mm.oz)<0.004) mm.oz=0;
-    }
-    if(mm.ej>0){ mm.ej-=dt; if(mm.ej<0) mm.ej=0; }
-  }
   updateGrandMere(dt);
+
+  /* v0.9 : les pollueurs salissent, les taches vieillissent */
+  updatePolluters(dt);
+  for(var mi=0;mi<soilMarks.length;mi++) soilMarks[mi].t+=dt;
 
   /* reapparition du savon ~12 s */
   if(!soap){
@@ -1716,27 +2131,58 @@ function beep(freq,dur,vol){
 /* ---------- 13. ENTREES ---------- */
 var keyMap={ArrowUp:0,ArrowDown:1,ArrowRight:2,ArrowLeft:3,w:0,s:1,d:2,a:3,W:0,S:1,D:2,A:3};
 window.addEventListener('keydown',function(e){
-  /* v0.8 : ENTREE demarre depuis l'attract mode / l'ecran de fin */
-  if(e.key==='Enter'||e.key===' '){
-    e.preventDefault();
-    if(mode==='attract'||mode==='over'||mode==='win') startGame();
+  var k=e.key;
+
+  /* --- v0.9 : ECRAN DE SELECTION DES NIVEAUX --- */
+  if(mode==='select'){
+    if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); selIdx=(selIdx%2===0)?selIdx+1:selIdx-1; beep(520,0.04,0.03); return; }
+    if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); selIdx=(selIdx%2===1)?selIdx-1:selIdx+1; beep(520,0.04,0.03); return; }
+    if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); selIdx=(selIdx+2)%4; beep(460,0.04,0.03); return; }
+    if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); selIdx=(selIdx+2)%4; beep(460,0.04,0.03); return; }
+    if(k==='Enter'||k===' '){ e.preventDefault(); startLevel(selIdx); return; }
+    if(k==='m'||k==='M'){ soundOn=!soundOn; return; }
+    if(k==='Escape'){ e.preventDefault(); resetGame('attract'); return; }
     return;
   }
-  if(e.key==='r'||e.key==='R'){ startGame(); return; }
-  if(e.key==='m'||e.key==='M'){ soundOn=!soundOn; return; }
-  /* v0.8 : E tire la torpille laveuse chargee */
-  if(e.key==='e'||e.key==='E'){
+
+  /* --- ENTREE : titres / resultats / niveau suivant --- */
+  if(k==='Enter'||k===' '){
+    e.preventDefault();
+    if(mode==='attract'){ mode='select'; selIdx=0; beep(660,0.08,0.05); return; }
+    if(mode==='over'||mode==='win'){ nextLevel(); return; }
+    return;
+  }
+  if(k==='Escape'){
+    e.preventDefault();
+    if(mode==='play'||mode==='over'||mode==='win'){ recordHighScore(); mode='select'; selIdx=levelIdx; beep(300,0.07,0.04); }
+    return;
+  }
+  if(k==='r'||k==='R'){
+    if(mode==='play'||mode==='over'||mode==='win') startLevel(levelIdx);
+    else if(mode==='attract') resetGame('attract');
+    return;
+  }
+  if(k==='m'||k==='M'){ soundOn=!soundOn; return; }
+  /* E tire la torpille laveuse chargee */
+  if(k==='e'||k==='E'){
     if(mode==='play' && player.torpCharge>0) fireTorpille(player);
     return;
   }
-  var di=keyMap[e.key];
+  var di=keyMap[k];
   if(di===undefined) return;
   e.preventDefault();
   heldDir=di;
   if(mode!=='play') return;
   if(player.stun>0) return;
+  /* PATINOIRE : pivot lent, la machine garde son cap 0,35 s */
+  if(LV.ice){
+    if(!player.moving){
+      if(di!==player.dirIdx){ player.queued=di; player.pivotT=ICE_PIVOT; }
+    } else player.queued=di;
+    return;
+  }
   if(!player.moving){
-    /* v0.8 : pendant la glisse du savon, pas de pivot sur place —
+    /* pendant la glisse du savon, pas de pivot sur place —
        la machine glisse encore une case avant de tourner (inertie) */
     if(player.soapT>0 && di!==player.dirIdx){
       if(startMove(player,player.dirIdx)){ player.queued=di; return; }
@@ -1749,9 +2195,19 @@ window.addEventListener('keyup',function(e){
   if(di!==undefined && di===heldDir) heldDir=-1;
 });
 
+/* v0.9 : entrer dans un niveau / enchaîner */
+function startLevel(i){
+  levelIdx = (i+LEVELS.length)%LEVELS.length;
+  selIdx = levelIdx;
+  resetGame('play');
+  beep(760,0.09,0.05); beep(1040,0.09,0.04);
+}
+function nextLevel(){
+  startLevel((levelIdx+1)%LEVELS.length);
+}
 function startGame(){
   if(mode!=='attract') recordHighScore();   /* la demo ne compte pas au HIGH SCORE */
-  resetGame('play');
+  startLevel(levelIdx);
 }
 
 /* ---------- 14. HUD CANVAS 2D ---------- */
@@ -1774,14 +2230,75 @@ function hudProject(x,y,z){
   return { x:(ix*0.5+0.5)*640, y:(1-(iy*0.5+0.5))*360 };
 }
 
-function hudHeart(x,y,on){
-  var c=on?'#ff3b4e':'#33424c';
-  hud.fillStyle=c;
-  hud.fillRect(x,y,2,2); hud.fillRect(x+4,y,2,2);
-  hud.fillRect(x-1,y+2,9,2);
-  hud.fillRect(x,y+4,7,2);
-  hud.fillRect(x+1,y+6,5,1);
-  hud.fillRect(x+2,y+7,3,1);
+/* v0.9 : etoiles de difficulte (★ a ★★★★) */
+function hudStars(x,y,n,on){
+  var s='';
+  for(var i=0;i<4;i++) s += (i<n?'★':'☆');
+  hud.font='bold 9px "Courier New",monospace';
+  hud.textAlign='right'; hud.textBaseline='middle';
+  hud.fillStyle='rgba(0,0,0,0.65)';
+  hud.fillText(s,x+2,y+2);
+  hud.fillStyle= on ? (n>=4?'#ff6a5a':(n===3?'#ffb04a':(n===2?'#ffd45a':'#6ff0c8'))) : 'rgba(190,215,225,0.55)';
+  hud.fillText(s,x,y);
+}
+
+/* v0.9 : ECRAN DE SELECTION DES NIVEAUX (4 cartes, fleches + Entree) */
+function drawSelect(){
+  var t=performance.now()/1000;
+  hud.fillStyle='rgba(4,7,12,0.90)';
+  hud.fillRect(0,0,640,360);
+  drawStripeBorder();
+
+  hudText('MOB RACER',320,30,26,'#eafcff','center');
+  hudText('CHOISIS TA SALLE',320,56,12,'#ffd45a','center');
+  hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(120,66,400,1);
+
+  var CW=282, CH=112, GX=28, GY=76;
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i];
+    var cx=GX+(i%2)*(CW+12);
+    var cy=GY+((i/2)|0)*(CH+10);
+    var on=(i===selIdx);
+    /* fond de carte */
+    hud.fillStyle = on ? 'rgba(24,42,56,0.98)' : 'rgba(12,17,24,0.94)';
+    hud.fillRect(cx,cy,CW,CH);
+    hud.fillStyle = on ? (Math.floor(t*4)%2?'#ffd45a':'#ffeaa0') : 'rgba(120,150,170,0.55)';
+    hud.fillRect(cx,cy,CW,3);
+    hud.fillRect(cx,cy+CH-3,CW,3);
+    hud.fillRect(cx,cy,3,CH);
+    hud.fillRect(cx+CW-3,cy,3,CH);
+    /* numero + nom */
+    hud.fillStyle = on ? 'rgba(255,212,90,0.22)' : 'rgba(90,120,140,0.18)';
+    hud.fillRect(cx+10,cy+12,26,26);
+    hudText(String(L.num),cx+23,cy+25,16,on?'#ffd45a':'#8fa6b4','center');
+    hudText(L.name,cx+46,cy+21,12,on?'#ffffff':'#c3d5e0');
+    hudText(L.tag,cx+46,cy+37,7,on?'#7ad8f0':'#6d8492','left','normal');
+    /* description sur 2 lignes */
+    var lines=hudWrap(L.desc,58);
+    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+12,cy+55+d*10,7,on?'#cfe3ff':'#8ea3b0','left','normal');
+    /* NIVEAU + difficulte (etoiles) */
+    hudText('NIVEAU '+L.num+' · '+L.diffLabel,cx+12,cy+80,9,on?'#ffd45a':'#9fb3c0');
+    hudStars(cx+CW-12,cy+80,L.stars,on);
+    hudText(POLL_DESC[L.id]||'',cx+12,cy+94,7,on?'#9fe0b0':'#6d8492','left','normal');
+    hudText('HIGH '+highScores[L.id],cx+CW-12,cy+105,7,'#ffd45a','right','normal');
+    if(on){
+      hudText('▶',cx+CW-16,cy+20,12,'#ffd45a','center');
+    }
+  }
+  hudText('FLECHES / WASD : CHOISIR   ·   ENTREE : JOUER   ·   M : SON',320,338,8,'#cfe3ff','center','normal');
+  hudText('v0.9',618,26,8,'rgba(190,215,225,0.55)','right','normal');
+}
+
+/* v0.9 : retour a la ligne simple pour les cartes */
+function hudWrap(s,maxChars){
+  var words=s.split(' '), out=[], cur='';
+  for(var i=0;i<words.length;i++){
+    var test=cur?cur+' '+words[i]:words[i];
+    if(test.length>maxChars){ if(cur) out.push(cur); cur=words[i]; }
+    else cur=test;
+  }
+  if(cur) out.push(cur);
+  return out;
 }
 
 /* v0.8 : bordure a rayures diagonales rouge/jaune, facon borne 80s */
@@ -1816,7 +2333,7 @@ function drawAttract(){
   /* sous-titre defilant */
   hud.save();
   hud.beginPath(); hud.rect(24,128,592,16); hud.clip();
-  var st='DES MACHINES QUI TRACENT DU PROPRE  ·  LOUTRES MIGNONNES  ·  GRAND-MERE RANCUNIERE  ·  MARMOTTES SUSCEPTIBLES';
+  var st='DES MACHINES QUI TRACENT DU PROPRE  ·  4 SALLES  ·  MOUETTES VANDALES  ·  CHIENS INDECIS  ·  RATONS LAVEURS  ·  HUMAINS SALES';
   hud.font='bold 9px "Courier New",monospace';
   var w=hud.measureText(st).width;
   var sx=640-((t*46)%(w+660));
@@ -1830,10 +2347,10 @@ function drawAttract(){
 
   /* instructions */
   var lignes=[
-    '1 JOUEUR  /  BOT LAYA',
+    '1 JOUEUR  /  BOT LAYA  ·  4 NIVEAUX',
     'FLECHES OU WASD : DEPLACER   ·   E : TORPILLE',
     'SAVON = GLISSE x1.6   ·   TORPILLE = ZONE 5x5',
-    'MEFIE-TOI DES MARMOTTES ET DE LA GRAND-MERE !'
+    'LES POLLUEURS RESALISSENT CE QUE TU AS NETTOYE !'
   ];
   for(var i=0;i<lignes.length;i++) hudText(lignes[i],320,198+i*19,9,i===0?'#eafcff':'#cfe3ff','center','normal');
 
@@ -1841,18 +2358,19 @@ function drawAttract(){
   var pulse=((t*1)|0)%2===0;
   if(pulse){
     hudText('INSERT COIN',320,282,17,'#7dffa0','center');
-    hudText('PRESS START  (ENTREE)',320,308,13,'#ffffff','center');
+    hudText('PRESS START  (ENTREE)  →  CHOIX DE LA SALLE',320,308,11,'#ffffff','center');
   }
   /* badge demo + credit */
   hudText('DEMO',596,26,9,'#ff9a7a','right');
   hudText('CREDIT 01',46,26,9,'#7ac0ea','left');
-  hudText('v0.8',320,338,7,'rgba(190,215,225,0.55)','center','normal');
+  hudText('v0.9',320,338,7,'rgba(190,215,225,0.55)','center','normal');
 }
 
 function drawHUD(){
   hud.clearRect(0,0,640,360);
-  /* v0.8 : en attract mode, l'ecran titre remplace tout le HUD de jeu */
+  /* v0.9 : ecrans plein HUD */
   if(mode==='attract'){ drawAttract(); return; }
+  if(mode==='select'){ drawSelect(); return; }
   var pct = totalCleanable? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable):0;
 
   /* --- barre haute --- */
@@ -1860,8 +2378,8 @@ function drawHUD(){
   hud.fillStyle='rgba(90,230,250,0.10)'; hud.fillRect(0,0,640,2);
   hud.fillStyle='rgba(90,230,250,0.42)'; hud.fillRect(0,41,640,1);
 
-  hudText('MOB RACER',12,17,20,'#eafcff');
-  hudText('SALLE DE NETTOYAGE · 3D',13,33,7,'#5fd8ec');
+  hudText('MOB RACER',12,16,18,'#eafcff');
+  hudText(LV.num+'/'+LEVELS.length+' · '+LV.name,13,32,7,'#5fd8ec');
 
   /* propre % + barre */
   hudText('PROPRE',196,10,8,'#7f96a3');
@@ -1878,10 +2396,13 @@ function drawHUD(){
   hud.fillStyle='#e05555'; hud.fillRect(258,31,6,6);
   hudText('BOT '+botScore,268,35,8,'#eafcff');
 
-  /* v0.8 : coeurs + pieces */
-  for(var hI=0;hI<COEURS_MAX;hI++) hudHeart(340+hI*14,31,hI<player.hearts);
-  hud.fillStyle='#ffd45a'; hud.fillRect(392,32,6,6);
-  hudText('x'+player.coins,401,35,8,'#ffd45a');
+  /* v0.9 : pollueurs actifs + cases resalies (remplace les coeurs) */
+  hudText('POLLUEURS '+polluters.length,336,10,8,'#7f96a3');
+  hudText('SALES '+dirtyByPolluters,336,31,8,dirtyByPolluters>0?'#ff9a7a':'#6d8492');
+
+  /* pieces */
+  hud.fillStyle='#ffd45a'; hud.fillRect(424,9,6,6);
+  hudText('x'+player.coins,433,13,8,'#ffd45a');
 
   /* chrono */
   var tl=Math.max(0,Math.ceil(timeLeft));
@@ -1890,8 +2411,8 @@ function drawHUD(){
   var blink = urgent ? ((Math.floor(performance.now()/250)%2)?'#ff5a5a':'#ffb0b0') : '#ffd24a';
   hudText(tl+' s',628,26,22,blink,'right');
 
-  /* v0.8 : bulle de la grand-mere « 1… 2… 3… » (billboard HUD) */
-  if(gm && (mode==='play'||mode==='attract')){
+  /* bulle de la grand-mere « 1… 2… 3… » (billboard HUD) */
+  if(gm && mode==='play'){
     var q=hudProject(gm.x,1.48,gm.z);
     if(q){
       var num=1+(Math.floor(gm.pieces)%3);
@@ -1918,7 +2439,7 @@ function drawHUD(){
   hud.fillStyle='rgba(90,230,250,0.30)'; hud.fillRect(0,340,640,1);
 
   /* savon : jauge de glisse */
-  hudText('SAVON',12,350,7,player.soapT>0?'#ffb6cf':'#5f7078');
+  hudText('SAVON',12,350,8,player.soapT>0?'#ffb6cf':'#5f7078');
   hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(44,346,58,7);
   if(player.soapT>0){
     hud.fillStyle='#ff9ec2'; hud.fillRect(44,346,Math.round(58*player.soapT/SAVON_DUREE),7);
@@ -1929,22 +2450,26 @@ function drawHUD(){
   else if(torp){ tState='TORPILLE AU SOL'; tCol='#8fd8ea'; }
   else if(torpUsed){ tState='TORPILLE —'; tCol='#5f7078'; }
   else { tState='TORPILLE'; tCol='#5f7078'; }
-  hudText(tState,124,350,7,tCol);
+  hudText(tState,126,350,8,tCol);
   /* nids restants */
   var nidLeft=0;
   for(var nI=0;nI<nests.length;nI++) if(cells[idxAt(nests[nI].gx,nests[nI].gy)]===3) nidLeft++;
-  hudText('NIDS '+nidLeft,236,350,7,'#c39a63');
+  hudText('NIDS '+nidLeft,258,350,8,'#c39a63');
+  if(LV.passes>1) hudText('LAVAGE x'+LV.passes,318,350,8,'#ff9a7a');
 
   hudText('FLECHES/WASD  ·  E TORPILLE  ·  R REJOUER  ·  M SON',628,350,7,'rgba(190,215,225,0.80)','right','normal');
 
   if(mode==='over'||mode==='win'){
-    hud.fillStyle='rgba(4,7,10,0.76)';
+    hud.fillStyle='rgba(4,7,10,0.82)';
     hud.fillRect(0,0,640,360);
-    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,140,30,mode==='win'?'#5cf0b0':'#ffd24a','center');
-    hudText('TON SCORE : '+score+'   ·   BOT : '+botScore,320,186,13,'#eafcff','center');
-    hudText('PROPRE : '+pct+'%   ·   COEURS : '+player.hearts+'   ·   PIECES : '+player.coins,320,210,10,'#7ad8f0','center');
-    hudText('HIGH SCORE : '+highScore,320,232,10,'#ffd45a','center','normal');
-    hudText('ENTREE / R  POUR REJOUER',320,262,14,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
+    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,108,30,mode==='win'?'#5cf0b0':'#ffd24a','center');
+    hudText('NIVEAU '+LV.num+' · '+LV.name,320,142,11,'#7ad8f0','center');
+    hudText('TON SCORE : '+score+'   ·   BOT : '+botScore,320,176,13,'#eafcff','center');
+    hudText('PROPRE : '+pct+'%   ·   SALI PAR LES POLLUEURS : '+dirtyByPolluters+'   ·   PIECES : '+player.coins,320,200,10,'#cfe3ff','center','normal');
+    hudText('HIGH SCORE '+LV.name+' : '+(highScores[LV.id]||0),320,222,10,'#ffd45a','center','normal');
+    var nx=LEVELS[(levelIdx+1)%LEVELS.length];
+    hudText('ENTREE = NIVEAU SUIVANT  ('+nx.name+')',320,256,13,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
+    hudText('R = REJOUER   ·   ECHAP = CHOIX DES SALLES',320,282,9,'#8fa6b4','center','normal');
   }
 }
 /* ---------- 15. HIGH SCORE (localStorage) ---------- */
@@ -1954,18 +2479,30 @@ function lsGet(k){
 function lsSet(k,v){
   try{ window.localStorage.setItem(k,v); }catch(e){ /* mode prive : on ignore */ }
 }
+/* v0.9 : HIGH SCORE PAR NIVEAU */
+function hsKey(id){ return HIGH_SCORE_CLE+id; }
 function loadHighScore(){
-  var v=lsGet(HIGH_SCORE_CLE);
-  var n=parseInt(v,10);
-  highScore=(isFinite(n)&&n>0)?n:0;
+  highScore=0;
+  for(var i=0;i<LEVELS.length;i++){
+    var L=LEVELS[i];
+    var n=parseInt(lsGet(hsKey(L.id)),10);
+    highScores[L.id]=(isFinite(n)&&n>0)?n:0;
+    if(highScores[L.id]>highScore) highScore=highScores[L.id];
+  }
 }
 function recordHighScore(){
-  if(score>highScore){ highScore=score; lsSet(HIGH_SCORE_CLE,String(highScore)); }
+  if(!LV) return;
+  var id=LV.id;
+  if(score>(highScores[id]||0)){
+    highScores[id]=score;
+    lsSet(hsKey(id),String(score));
+  }
+  if(score>highScore) highScore=score;
 }
 
 /* ---------- 16. BOUCLE ---------- */
 var last=performance.now(), fpsFrames=0, fpsT=last, fpsReported=0;
-var cpuMs=0, cpuN=0, tFrame=0;
+var cpuMs=0, cpuN=0, tFrame=0, lastLoggedDraws=0;
 
 function resizeStage(){
   var s=Math.min(window.innerWidth/OW, window.innerHeight/OH);
@@ -1982,7 +2519,7 @@ function frame(now){
     timeLeft-=dt;
     if(timeLeft<=0){ timeLeft=0; mode='over'; recordHighScore(); }
   } else if(mode==='attract'){
-    /* v0.8 : demo auto-jouee 8-10 s, relancee en boucle */
+    /* demo auto-jouee 8-10 s, relancee en boucle (un niveau different a chaque tour) */
     demoT-=dt;
     if(demoT<=0) resetGame('attract');
   }
@@ -1995,7 +2532,7 @@ function frame(now){
   // --- passe scene -> FBO basse res ---
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
   gl.viewport(0,0,GW,GH);
-  gl.clearColor(0.045,0.055,0.070,1);
+  gl.clearColor(LV.sky[0],LV.sky[1],LV.sky[2],1);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
@@ -2017,6 +2554,10 @@ function frame(now){
   if(now-fpsT>=1000){
     var f=Math.round(1000*fpsFrames/(now-fpsT));
     if(fpsReported<12 || fpsReported%5===0) console.log('FPS: '+f+' ('+fpsFrames+' frames / '+Math.round(now-fpsT)+' ms)');
+    if(maxDrawCalls>lastLoggedDraws){
+      lastLoggedDraws=maxDrawCalls;
+      console.log('BOITES MAX: '+maxDrawCalls+' / 250  (niveau '+LV.name+')');
+    }
     fpsReported++;
     fpsFrames=0; fpsT=now;
   }
@@ -2033,11 +2574,12 @@ requestAnimationFrame(frame);
 if(!fbOK) console.error('FBO incomplet');
 window.__mob = {
   get state(){
-    return { mode:mode, score:score, botScore:botScore, timeLeft:Math.round(timeLeft*10)/10,
+    return { mode:mode, level:LV.id, levelName:LV.name, levelIdx:levelIdx,
+             score:score, botScore:botScore, timeLeft:Math.round(timeLeft*10)/10,
              px:player.wx, pz:player.wz, gx:player.gx, gy:player.gy,
              botx:bot.wx, botz:bot.wz, dirtyLeft:dirtyLeft, fboOK:fbOK,
              glErr:gl.getError(),
-             hearts:player.hearts, coins:player.coins, soapT:Math.round(player.soapT*10)/10,
+             coins:player.coins, soapT:Math.round(player.soapT*10)/10,
              stun:Math.round(player.stun*100)/100, slowT:Math.round(player.slowT*10)/10,
              soap: soap?{gx:soap.gx,gy:soap.gy}:null,
              torp: torp?{gx:torp.gx,gy:torp.gy}:null,
@@ -2046,14 +2588,17 @@ window.__mob = {
              coinsList:coins.map(function(c){return {x:Math.round(c.x*100)/100,z:Math.round(c.z*100)/100};}),
              gm: gm?{x:Math.round(gm.x*100)/100,z:Math.round(gm.z*100)/100,pcs:Math.round(gm.pieces*100)/100,
                      coups:gm.coups,colere:Math.round(gm.colere*10)/10}:null,
-             otters:otters.map(function(o){return {gx:o.gx,gy:o.gy,hug:Math.round(o.hug*10)/10,calm:Math.round((o.calmT||0)*10)/10};}),
-             marmots:marmots.map(function(m){return {gx:m.gx,gy:m.gy,ej:Math.round(m.ej*10)/10};}),
-             highScore:highScore, demo:Math.round(demoT*10)/10, drawCalls:drawCalls, maxDrawCalls:maxDrawCalls,
+             polluters:polluters.length, dirtyByPolluters:dirtyByPolluters,
+             highScore:highScore, highScores:highScores,
+             demo:Math.round(demoT*10)/10, drawCalls:drawCalls, maxDrawCalls:maxDrawCalls,
              cpuMs: cpuN?Math.round(cpuMs/cpuN*100)/100:0 };
   },
   reset: function(){ resetGame('play'); },
   start: function(){ startGame(); },
   attract: function(){ resetGame('attract'); },
+  select: function(){ mode='select'; selIdx=levelIdx; },
+  level: function(i){ startLevel(i); },
+  next: function(){ nextLevel(); },
   setShadows: function(v){ SHADOWS=!!v; },
   setTime: function(v){ timeLeft=v; },
   /* aides de test : placer la machine / forcer un ramassage */
@@ -2071,6 +2616,57 @@ window.__mob = {
   },
   pos: function(){
     return { player:{x:player.wx,z:player.wz,a:player.angle}, bot:{x:bot.wx,z:bot.wz,a:bot.angle} };
+  }
+};
+
+/* v0.9 : etat expose pour l'auto-QA (niveaux, pollueurs, salissures) */
+window.__dbg = {
+  get level(){ return { idx:levelIdx, sel:selIdx, id:LV.id, name:LV.name, num:LV.num, ice:!!LV.ice,
+                        coef:LV.coef, diffLabel:LV.diffLabel, stars:LV.stars,
+                        polluters:polluters.length, nests:nests.length, passes:LV.passes }; },
+  /* la courbe complete, telle que definie (decompte reel des listes) */
+  get levels(){
+    return LEVELS.map(function(L,i){
+      var by={gull:0,dog:0,raccoon:0,human:0};
+      for(var k=0;k<L.mobs.length;k++) by[L.mobs[k]]++;
+      return { idx:i, id:L.id, name:L.name, num:L.num, coef:L.coef, diffLabel:L.diffLabel,
+               stars:L.stars, total:L.mobs.length, by:by, nests:L.nests, passes:L.passes,
+               cdScale:Math.round(100/L.coef)/100 };
+    });
+  },
+  get mode(){ return mode; },
+  get cleanPct(){
+    return totalCleanable ? Math.round(1000*(totalCleanable-dirtyLeft)/totalCleanable)/10 : 0;
+  },
+  get dirtyLeft(){ return dirtyLeft; },
+  get dirtyCells(){
+    var n=0;
+    for(var i=0;i<cells.length;i++) if(!blocked[i] && cells[i]===0) n++;
+    return n;
+  },
+  get polluters(){
+    return polluters.map(function(p){
+      return { type:p.type, state:p.state, x:Math.round(p.x*100)/100, z:Math.round(p.z*100)/100,
+               cd:Math.round(p.cd*10)/10, cell:p.cell?[p.cell[0],p.cell[1]]:null };
+    });
+  },
+  get dirtyByPolluters(){ return dirtyByPolluters; },
+  get marks(){
+    return soilMarks.map(function(m){ return {gx:m.gx,gy:m.gy,kind:m.kind}; });
+  },
+  get maxDrawCalls(){ return maxDrawCalls; },
+  get drawClipped(){ return drawClipped; },
+  get drawBudget(){ return DRAW_BUDGET; },
+  get highScores(){ return highScores; },
+  forcePollute: function(type){
+    for(var i=0;i<polluters.length;i++){
+      if(!type || polluters[i].type===type){
+        var p=polluters[i];
+        if(!p.cell) p.cell=pickCleanCell(p.x,p.z,0.5,14);
+        if(p.cell){ doPollute(p); return true; }
+      }
+    }
+    return false;
   }
 };
 })();
