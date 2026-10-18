@@ -9,7 +9,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>🐴 MOB RACER — Proto v0.4 · arcade</title>
+<title>🐴 MOB RACER — Proto v0.5 · arcade 3/4</title>
 <style>
   html, body {
     margin: 0; padding: 0; background: #0b0d16;
@@ -130,13 +130,13 @@ const DEFAUT_MODE = MODE_AUTO;    // v0.1 ≈ auto-tracée : choix par défaut
    Les accents français sont rendus sans accent volontairement.
    ================================================================ */
 const PF = {
-  A:[14,17,31,17,17], B:[30,17,30,17,30], C:[31,1,1,1,31],
-  D:[30,17,17,17,30], E:[31,1,30,1,31], F:[31,1,30,1,1],
-  G:[31,1,13,17,31], H:[17,17,31,17,17], I:[31,4,4,4,31],
-  J:[15,2,2,2,30], K:[17,18,28,18,17], L:[17,17,17,17,31],
+  A:[14,17,31,17,17], B:[30,17,30,17,30], C:[14,17,16,17,14],
+  D:[30,17,17,17,30], E:[31,16,30,16,31], F:[31,16,30,16,16],
+  G:[14,17,16,19,17], H:[17,17,31,17,17], I:[31,4,4,4,31],
+  J:[15,2,2,2,30], K:[17,18,28,18,17], L:[16,16,16,16,31],
   M:[17,27,21,17,17], N:[17,25,21,19,17], O:[14,17,17,17,14],
-  P:[30,17,30,1,1], Q:[14,17,21,18,13], R:[30,17,30,18,17],
-  S:[29,1,14,16,29], T:[31,4,4,4,4], U:[17,17,17,17,14],
+  P:[30,17,30,16,16], Q:[14,17,21,18,13], R:[30,17,30,18,17],
+  S:[15,16,14,1,30], T:[31,4,4,4,4], U:[17,17,17,17,14],
   V:[17,17,17,10,4], W:[17,17,21,27,17], X:[17,10,4,10,17],
   Y:[17,10,4,4,4], Z:[31,2,4,8,31],
   "0":[14,17,21,19,14], "1":[4,12,4,4,14], "2":[30,1,14,16,31],
@@ -148,8 +148,8 @@ const PF = {
   "%":[19,9,6,25,19], "/":[1,2,4,8,16], "·":[0,0,4,0,0],
   /* % lisible : rond O-O diagonale */
   "★":[4,31,27,27,10], "©":[14,17,23,21,14],
-  "È":[14,17,31,1,30], "É":[2,4,30,1,31], "Ê":[4,10,31,1,30],
-  "À":[2,4,0,31,17], "Ç":[16,8,31,1,31], "Ô":[4,10,14,17,14],
+  "È":[4,2,31,16,31], "É":[2,4,31,16,31], "Ê":[4,10,31,16,31],
+  "À":[2,4,0,31,17], "Ç":[14,17,16,25,6], "Ô":[4,10,14,17,14],
   "Û":[4,10,17,17,14], "Î":[31,4,4,4,4], "ÔÙ":[0,0,0,0,0],
   "Ù":[4,10,17,17,14], "Œ":[14,21,21,21,14], "'":[4,4,0,0,0],
   "(":[2,4,4,4,2], ")":[8,4,4,4,8], "+":[0,4,14,4,0],
@@ -1739,56 +1739,34 @@ function dessinerBrillanceSol(x, y, c, l){
   ctx.fillRect(x+24, y+28 - f*2, 6, 3);
 }
 
-/* mur : empilement de chaises / distributeur, relief 3D pixel :
-   bord supérieur clair, face avant sombre (effet hauteur) */
-function dessinerMur(x, y){
-  /* relief : la bande basse est la "face" verticale du mur (plus sombre) */
-  ctx.fillStyle = "#3d4456";
-  ctx.fillRect(x, y+9, TUILE, TUILE-9);            // face avant (ombre)
-  ctx.fillStyle = "#5b6377";
-  ctx.fillRect(x, y, TUILE, TUILE-9);              // dessus
-  ctx.fillStyle = "#6d7790";
-  ctx.fillRect(x+2, y+2, TUILE-4, 6);              // liseré éclairé
-  /* deux chaises empilées sur le dessus */
-  for (let i=0;i<2;i++){
-    const cx = x+6, cy = y+5+i*15;
-    ctx.fillStyle = "#8a7a54";
-    ctx.fillRect(cx, cy, 18, 10);
-    ctx.fillStyle = "#6e6042";
-    ctx.fillRect(cx, cy+10, 18, 2);
-    ctx.fillStyle = "#a3956b";
-    ctx.fillRect(cx+2, cy+2, 14, 4);
-  }
-  /* ombre portée au pied du mur (sur la case en dessous, dessinée ici : bas) */
-  ctx.fillStyle = "rgba(0,0,0,.18)";
-  ctx.fillRect(x+4, y+TUILE-3, TUILE-8, 3);
-}
-
-/* borne fontaine : robinet + bassin, eau animée, gouttes quand recharge */
+/* borne fontaine en VOLUME 3/4 (v0.5) : bassin au sol (ellipse) + colonne
+   dressée avec face avant, robinet, eau animée, gouttes quand recharge */
 function dessinerFontaine(x, y){
   const t2 = performance.now()/300;
-  /* socle pierre */
+  /* ombre douce au sol */
+  dessinerOmbreDouce(x + TUILE/2, y + TUILE - 8, TUILE*0.42, 6, 0.24);
+  /* BASSIN au sol : anneaux concentriques (vue 3/4 aplatie) */
+  pvEllipse(ctx, x + TUILE/2, y + TUILE - 12, 17, 9, "#5d6880");
+  pvEllipse(ctx, x + TUILE/2, y + TUILE - 12, 15, 7, "#2c6c9e");
+  pvEllipse(ctx, x + TUILE/2, y + TUILE - 13, 12, 5, "#4fa3d8");
+  /* vaguelette au centre du bassin (eau qui ondule) */
+  pvEllipse(ctx, x + TUILE/2, y + TUILE - 13, 6, 2, "rgba(190,227,250,.8)");
+  /* COLONNE dressée : socle + corps + face avant claire */
+  const hautCol = 20;
+  const baseY = y + TUILE - 14;
   ctx.fillStyle = "#29304a";
-  ctx.fillRect(x, y, TUILE, TUILE);
-  ctx.fillStyle = "#39415f";
-  ctx.fillRect(x+3, y+3, TUILE-6, TUILE-6);
-  /* bassin (anneau + eau qui ondule légèrement) */
-  ctx.fillStyle = "#5d6880";
-  ctx.fillRect(x+7, y+22, TUILE-14, 16);
-  ctx.fillStyle = "#2c6c9e";
-  ctx.fillRect(x+9, y+24 + ((t2|0)%2), TUILE-18, 10);
-  ctx.fillStyle = "#4fa3d8";
-  ctx.fillRect(x+11, y+25 + ((t2|0)%2), TUILE-22, 6);
-  /* borne (colonne centrale) avec face claire */
+  ctx.fillRect(x + 14, baseY - hautCol, 16, hautCol + 4);       // silhouette
   ctx.fillStyle = "#c0392b";
-  ctx.fillRect(x+14, y+8, 16, 16);
+  ctx.fillRect(x + 15, baseY - hautCol + 1, 14, hautCol);       // corps rouge
   ctx.fillStyle = "#e74c3c";
-  ctx.fillRect(x+15, y+9, 14, 6);
+  ctx.fillRect(x + 16, baseY - hautCol + 1, 12, 6);             // face éclairée
+  ctx.fillStyle = "#a52a20";
+  ctx.fillRect(x + 15, baseY - 5, 14, 4);                       // base sombre
   /* robinet + jet */
   ctx.fillStyle = "#3498db";
-  ctx.fillRect(x+19, y+20, 6, 5);
+  ctx.fillRect(x + 19, baseY - hautCol - 4, 6, 5);
   ctx.fillStyle = "#bfe3ff";
-  ctx.fillRect(x+20 + ((t2|0)%3 === 0 ? 1 : 0), y+25, 3, 4);
+  ctx.fillRect(x + 20 + ((t2|0)%3 === 0 ? 1 : 0), baseY - hautCol + 2, 3, 4);
   /* halo pulsant (aiguille vers la recharge) */
   const p = 0.22 + 0.14*Math.sin(performance.now()/400);
   ctx.strokeStyle = "rgba(80,180,255," + p + ")";
@@ -1844,21 +1822,143 @@ function dessinerPanneau(p){
 
 /* ombre portée elliptique semi-transparente sous une entité */
 function ombreEntite(x, y, rx, ry){
-  ctx.fillStyle = "rgba(0,0,0,.22)";
+  dessinerOmbreDouce(x, y, rx || 8, (ry || 8)*0.9, 0.22);
+}
+
+/* ================================================================
+   v0.5 · CAMÉRA « MAISON DE POUPEE » (référence Overcooked 2)
+   Plongée ~55° : le sol est vu de dessus, mais tout ce qui SE DRESSE
+   (murs de bordure, machines, fontaine, perso pusseur) est dessiné en
+   VOLUME 3/4 pixel art — jamais isométrique, les verticales restent
+   verticales. Murs NORD + OUEST relevés (hauteur MUR_H), mur SUD et
+   bord EST coupés façON cutaway pour ne jamais masquer l'action.
+   ================================================================ */
+const MUR_H = 26;                    // hauteur écran des murs relevés (24-32 px demandés)
+const CAM_PLONGEE = 0.42;            // aplatissement vertical des ombres (plongée 55°)
+
+/* ombre douce 2 couches (noyau + halo) — sous CHAQUE volume */
+function dessinerOmbreDouce(x, y, rx, ry, alpha){
+  ctx.fillStyle = "rgba(10,14,26," + ((alpha || 0.22)*0.55).toFixed(3) + ")";
   ctx.beginPath();
-  ctx.ellipse(x, y + (ry||8), rx, (ry||8)/2, 0, 0, Math.PI*2);
+  ctx.ellipse(x, y + ry*0.4, rx*1.45, (ry||8)*1.15, 0, 0, Math.PI*2);
   ctx.fill();
+  ctx.fillStyle = "rgba(0,0,0," + (alpha || 0.22).toFixed(3) + ")";
+  ctx.beginPath();
+  ctx.ellipse(x, y + (ry || 8), rx, (ry || 8)/2, 0, 0, Math.PI*2);
+  ctx.fill();
+}
+/* le mur (c,l) dresse-t-il sa face vers la caméra ? (volume 3/4) */
+function murDresse(l, c){
+  return (l === 0 || c === 0);       // nord + ouest relevés, sud/est en cutaway
+}
+
+/* ── MUR D'ARÈNE en volume 3/4 (v0.5) :
+      • bord NORD + OUEST (+ coins hauts du bord EST) : DRESSÉS —
+        dessus clair + face avant haute MUR_H + liseré éclairé ;
+      • bord SUD + bas du bord EST : CUTAWAY Overcooked — sillage bas
+        faible (le mur « tombe » vers la caméra, on voit l'arène) ;
+      • chaises empilées conservées sur le dessus des murs dressés. ── */
+function dessinerMur(x, y, c, l){
+  if (!murDresse(l, c)){
+    /* CUTAWAY : le mur sud/est est APLATI — une dalle + sillage bas sombre
+       (2 px de relief, jamais plus), l'action reste visible au-dessus */
+    ctx.fillStyle = "#31384a";
+    ctx.fillRect(x, y + TUILE - 7, TUILE, 7);          // sillage bas
+    ctx.fillStyle = "#4a5266";
+    ctx.fillRect(x, y + TUILE - 7, TUILE, 2);          // arête
+    ctx.fillStyle = "#515b74";
+    ctx.fillRect(x, y, TUILE, TUILE - 7);              // dessus vu de plongée
+    ctx.fillStyle = "#5c677f";
+    ctx.fillRect(x + 2, y + 2, TUILE - 4, 5);          // liseré doux
+    ctx.fillStyle = "rgba(0,0,0,.14)";
+    ctx.fillRect(x + 4, y + TUILE - 9, TUILE - 8, 2);  // ombre courte
+    return;
+  }
+  /* MUR DRESSÉ : face avant de MUR_H de haut, dessus visible par-dessus */
+  const faceY = y + TUILE - MUR_H;
+  /* ombre portée au pied du mur (sur le sol devant) */
+  dessinerOmbreDouce(x + TUILE/2, faceY + MUR_H, TUILE*0.45, 5, 0.20);
+  /* FACE AVANT (pierre bleutée sombre, briques suggérées) */
+  ctx.fillStyle = "#3d4456";
+  ctx.fillRect(x, faceY, TUILE, MUR_H);
+  ctx.fillStyle = "#454d63";
+  ctx.fillRect(x + 1, faceY + 1, TUILE - 2, MUR_H - 2);
+  /* joints de briques verticaux décalés (relief) */
+  ctx.fillStyle = "#343b4e";
+  const decal = ((l*7 + c*13) % 2) ? 11 : 26;
+  ctx.fillRect(x + decal, faceY + 2, 1, MUR_H - 4);
+  ctx.fillRect(x + ((decal + 15) % 30) + 8, faceY + MUR_H/2, 1, MUR_H/2 - 2);
+  /* ombre sous la corniche (creux) */
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fillRect(x, faceY, TUILE, 3);
+  /* DESSUS du mur (vu en plongée) */
+  ctx.fillStyle = "#5b6377";
+  ctx.fillRect(x, y, TUILE, TUILE - MUR_H);
+  ctx.fillStyle = "#67718c";
+  ctx.fillRect(x + 2, y + 2, TUILE - 4, 5);          // liseré du dessus
+  /* contour sombre du bloc */
+  ctx.fillStyle = "#262c3d";
+  ctx.fillRect(x, y, TUILE, 1);
+  ctx.fillRect(x, y, 1, MUR_H);
+  ctx.fillRect(x, y, 1, TUILE - MUR_H);
+  /* deux chaises empilées SUR le dessus (détail conservé) */
+  for (let i=0;i<2;i++){
+    const cx = x+6, cy = y+5+i*Math.min(15, TUILE - MUR_H - 16);
+    if (cy < 0 || cy > y + TUILE - MUR_H - 10) break;
+    ctx.fillStyle = "#8a7a54";
+    ctx.fillRect(cx, cy, 18, 10);
+    ctx.fillStyle = "#6e6042";
+    ctx.fillRect(cx, cy+10, 18, 2);
+    ctx.fillStyle = "#a3956b";
+    ctx.fillRect(cx+2, cy+2, 14, 4);
+  }
+}
+/* les murs NORD/OUEST dessinés APRÈS les entités (ils les masquent) :
+   les machines passent DERRIÈRE (y-sort), à l'inverse des murs sud
+   dessinés avant, qui passent derrière l'action (cutaway). */
+function dessinerMursDresse(){
+  for (let l=0; l<LIGNES; l++){
+    for (let c=0; c<COLONNES; c++){
+      if (grille[l][c] !== T_MUR) continue;
+      if (!murDresse(l, c)) continue;              // les murs sud/est restent au sol
+      /* est-ce un mur d'arène (bordure) ? les murs internes hauts ne
+         reçoivent pas de face dressée : ils restent aplats (l'action
+         derrière eux doit rester lisible) */
+      const interne = (l > 0 && c > 0 && c < COLONNES-1 && l < LIGNES-1);
+      if (interne && l > 1) continue;              // internes non-bordure : dessinés plats au sol
+      dessinerMur(MARGE_X + c*TUILE, MARGE_Y + l*TUILE, c, l);
+    }
+  }
+}
+/* v0.5 : liste des murs DRESSÉS pour le y-sort (les internes dressés,
+   l===1 côté ouest, y compris les coins, entrent dans le tri avec la
+   ligne de PIED de leur face = y + TUILE). */
+function mursPourYSort(){
+  const out = [];
+  for (let l=0; l<LIGNES; l++){
+    for (let c=0; c<COLONNES; c++){
+      if (grille[l][c] !== T_MUR) continue;
+      if (!murDresse(l, c)) continue;
+      if (l > 1) continue;          // internes non-bordure : dessinés au sol avant
+      out.push({__mur: true, c, l,
+        x: MARGE_X + c*TUILE,
+        y: MARGE_Y + (l+1)*TUILE}); // pied de la face avant = ligne de tri
+    }
+  }
+  return out;
 }
 
 
 
 /* ================================================================
-   v0.3-§9b · MACHINE top-down stylisée
-   Châssis gris clair + liseré sombre, timon qui PIVOTE (à l'opposé
-   du déplacement), bac visible avec liquide qui baisse, badge jaune
-   plaque générique, brosse rotative (ombre animée sur les bords),
-   raclette arrière, roues, squish & stretch, HUD in-game de réservoir.
-   Le sprite est pré-rendu 4 orientations sur canvas offscreen.
+   v0.5 · MACHINE EN VOLUME 3/4 (référence Overcooked 2 « Fire-1-1 »)
+   La machine n'est PLUS vue purement top-down : on voit le DESSUS du
+   bac (ellipse) PUIS la face avant (grille/rouleau) — et le PUSSEUR
+   derrière la machine, vu de 3/4 ARRIÈRE (nuque/dos) quand la machine
+   pousse vers le haut de l'écran, 3/4 FACE quand elle va vers le bas.
+   Il MARCHE (2 frames de jambes). TOUT en pixel art, zéro lissage :
+   le « volume » Overcooked 2 est APPROCHÉ en 2.5D — choix stylistique.
+   Le gameplay (collisions, BFS, traces) est INTACT.
    ================================================================ */
 const MACH_COULS = {
   châssis: "#c9c9c9", châssisClair: "#e2e2e2", châssisFoncé: "#9d9d9d",
@@ -1871,108 +1971,211 @@ const MACH_COULS = {
 const SPR_MACHINE = [];   /* cache des sprites pré-rendus par teinte+orientation */
 function clefSprite(m){ return m.couleur + "|" + (m.mode === MODE_PUSHED ? "P" : "A"); }
 
-/* dessine LA machine dans g (un canvas 92×92, centre 46,46) pointant vers le BAS ;
-   les autres orientations seront obtenues par rotation au blit. */
-function spriteMachineBase(g, teinte, pushed){
-  const X = 46, Y = 52;     /* centre du châssis dans le sprite (timon au-dessus) */
-  const r = (a,b,w,h,c) => { g.fillStyle = c; g.fillRect(a,b,w,h); };
-  /* ── TIMON (tube + manette + console) : pointe vers le HAUT du sprite ── */
-  const tx = X - 4, tl = 24;
-  g.fillStyle = MACH_COULS.timon;
-  g.fillRect(tx, Y-14-tl, 8, tl);                  /* tube */
-  g.fillStyle = MACH_COULS.timonClair;
-  g.fillRect(tx+1, Y-14-tl, 2, tl);                /* reflet tube */
-  /* console de contrôle sur le timon (petit écran) */
-  g.fillStyle = MACH_COULS.noir;
-  g.fillRect(tx-3, Y-14-tl+5, 14, 7);
-  g.fillStyle = "#7dff9a";
-  g.fillRect(tx-2, Y-14-tl+6, 12, 3);              /* écran LED vert */
-  g.fillStyle = MACH_COULS.noir;
-  g.fillRect(tx-2, Y-14-tl+10, 12, 1);             /* séparateur */
-  /* manette noire au bout */
-  g.fillStyle = MACH_COULS.noir;
-  g.fillRect(tx-2, Y-16-tl, 12, 6);
-  g.fillStyle = "#0c0e12";
-  g.fillRect(tx, Y-16-tl+1, 8, 3);
-  /* ── RACLETTE (squeegee) à l'arrière = BAS du sprite (sous le châssis,
-        dépasse légèrement : barre grise + liseré caoutchouc) ── */
-  g.fillStyle = "#6d7680";
-  g.fillRect(X-12, Y+17, 24, 3);
-  g.fillStyle = "#3d444d";
-  g.fillRect(X-12, Y+20, 24, 1);
-  /* ── CHÂSSIS : arrondi simulé par rects empilés, liseré sombre ── */
-  r(X-17, Y-11, 34, 28, MACH_COULS.liseré);            /* liseré sombre extérieur */
-  r(X-15, Y-9, 30, 24, MACH_COULS.châssis);            /* corps gris clair */
-  r(X-15, Y-9, 30, 3, MACH_COULS.châssisClair);        /* face éclairée haut */
-  r(X-15, Y+13, 30, 2, MACH_COULS.châssisFoncé);       /* face sombre bas */
-  /* ── ROUES visible sur les côtés (tricycle SC370 : 1 avant + 2 arrière —
-        en top-down on voit les 3 pads noirs qui dépassent du liseré) ── */
-  g.fillStyle = MACH_COULS.noir;
-  g.fillRect(X-19, Y+8, 4, 8);                    /* roue arrière gauche */
-  g.fillRect(X+15, Y+8, 4, 8);                    /* roue arrière droite */
-  g.fillRect(X-2, Y-13, 4, 3);                    /* castor avant (sous timon) */
-  /* ── BAC "tank-in-tank" VISIBLE dessus : 2 réservoirs ── */
-  r(X-12, Y-6, 24, 15, MACH_COULS.liseré);            /* cadre bac */
-  r(X-12, Y-6, 24, 2, teinte);                           /* bande teinte du joueur */
-  r(X-11, Y-5, 22, 13, "#aab4bd");                        /* fond bac */
-  /* bac solution (gauche, rempli selon niveau d'eau au blit — ici plein) */
-  r(X-10, Y-4, 9, 11, MACH_COULS.eau);
-  r(X-10, Y-4, 9, 3, MACH_COULS.eauClair);
-  /* bac récupération (droite) : bord + intérieur plus sombre */
-  r(X+1, Y-4, 9, 11, "#7d8791");
-  r(X+2, Y-3, 7, 9, "#5d6770");
-  /* bouchon-couvercle jaune du tank */
-  r(X-6, Y-7, 5, 3, MACH_COULS.jaune);
-  r(X-6, Y-7, 5, 1, MACH_COULS.jauneFoncé);
-  /* ── plaque générique sous le bac (AUCUNE marque) ── */
-  r(X-9, Y+11, 18, 4, "#8a8f98");
-  r(X-9, Y+14, 18, 1, MACH_COULS.jauneFoncé);
-  /* étoile + 3 pixels de "lettrage" (stylisé, illisible à cette taille : OK) */
-  g.fillStyle = MACH_COULS.noir;
-  g.fillRect(X-7, Y+12, 2, 2);
-  for (let i=0;i<4;i++) g.fillRect(X-3 + i*4, Y+12, 2, 2);
-  /* ── LED d'état par joueur (coin haut-droit) ── */
-  r(X+10, Y-7, 3, 3, teinte);
-  /* ── DIFFÉRENCES PAR MODE ── */
-  if (pushed){
-    /* POUSSÉE : la machine est un "chariot poussé" — châssis plus large,
-       tampon central visible au sol (frottement large 3 cases) */
-    r(X-6, Y+15, 12, 4, "#e8dcc0");       /* tampon serpillière sous raclette */
-    r(X-6, Y+18, 12, 1, "#c9bda0");
-  } else {
-    /* AUTO-TRACÉE : cockpit vitré à l'avant + volant visible par-dessus */
-    g.fillStyle = "#0d1117";
-    g.fillRect(X-9, Y-11, 18, 5);         /* baie vitrée avant */
-    g.fillStyle = "#3d4d63";
-    g.fillRect(X-8, Y-10, 16, 2);         /* reflet vitre */
-    g.fillStyle = MACH_COULS.noir;
-    g.fillRect(X-3, Y-8, 7, 5);           /* volant (moucheté) */
-    g.fillStyle = "#20242b";
-    g.fillRect(X-3, Y-6, 7, 1);
+/* ── helpers pixel 3/4 (aucun anti-aliasing : fillRect uniquement) ── */
+function pvPave(g, x, y, w, h, coul){
+  g.fillStyle = coul; g.fillRect(x, y, w, h);
+}
+/* ellipse 3/4 dessinée en pixels (bandes horizontales) — pixel art strict */
+function pvEllipse(g, cx, cy, rx, ry, coul){
+  g.fillStyle = coul;
+  for (let i=-ry; i<=ry; i++){
+    const t = 1 - (i*i)/(ry*ry);
+    const w = Math.max(1, Math.round(rx*Math.sqrt(Math.max(0, t))));
+    if (t <= 0) continue;
+    g.fillRect(cx - w, cy + i, w*2, 1);
   }
-  /* ── BROSSE cylindrique : en top-down elle est SOUS la machine ;
-        on dessine ses poils qui dépassent des 2 côtés (avant) ── */
-  g.fillStyle = "#b8873a";
-  g.fillRect(X-14, Y+14, 6, 3);          /* touffe brosse gauche dépassant */
-  g.fillRect(X+8, Y+14, 6, 3);           /* touffe brosse droite */
 }
 
-/* pré-rend 4 orientations pour une teinte ; renvoie [canvas bas, gauche, haut, droite] */
+/* ── le PUSSEUR (perso derrière la machine), pixel 3/4, 2 frames de jambes ──
+   dir : direction vers laquelle la MACHINE pousse (0=N/bas-écran... ).
+   Retour : côté d'accroche (dx,dy) = décalage du centre du perso par
+   rapport au pied machine. Dessiné DIRECTEMENT dans g.                */
+const POUSSEUR = { corps: "#e8863c", corpsClair: "#ffa96b", corpsFoncé: "#b85f22",
+  casque: "#ffd45a", casqueClair: "#fff3b0", peau: "#e8b98c", gant: "#3d444d" };
+function pvPusseur(g, cx, cy, dirx, diry, frame){
+  /* frame 0/1 = jambes alternées (marche) */
+  const j = frame === 0 ? 1 : -1;
+  const nord = diry < -0.5, sud = diry > 0.5, est_ = dirx > 0.5, ouest_ = dirx < -0.5;
+  /* 3/4 FACE (machine va vers le bas de l'écran, pusseur avalant) :
+     visage visible. Sinon 3/4 ARRIÈRE (nuque/dos) — ou profil. */
+  const deFace = sud;
+  /* jambes (sous la machine, dépassent sous le châssis si de face) */
+  g.fillStyle = "#2c3e50";
+  if (deFace){ g.fillRect(cx-5, cy+2, 3, 5); g.fillRect(cx+2, cy+2-(j>0?1:0), 3, 5+(j>0?1:0)); }
+  else { g.fillRect(cx-6+j, cy+1, 3, 5); g.fillRect(cx+3-j, cy+1, 3, 5); }
+  /* chaussures */
+  g.fillStyle = "#171a20";
+  if (deFace){ g.fillRect(cx-6, cy+6, 5, 2); g.fillRect(cx+1, cy+5, 5, 2); }
+  else { g.fillRect(cx-7+j, cy+5, 5, 2); g.fillRect(cx+2-j, cy+5, 5, 2); }
+  /* torse (veste fluo) — contour sombre pour la silhouette */
+  pvPave(g, cx-8, cy-9, 16, 12, "#141821");
+  pvPave(g, cx-7, cy-8, 14, 10, POUSSEUR.corps);
+  pvPave(g, cx-7, cy-8, 14, 3, POUSSEUR.corpsClair);       /* épaules éclairées */
+  pvPave(g, cx-1, cy-8, 2, 10, POUSSEUR.corpsFoncé);       /* bande dorsale */
+  /* bras : vers la machine (2 px de manche + main gantée) */
+  pvPave(g, cx-9, cy-6, 3, 6, POUSSEUR.corpsClair);
+  pvPave(g, cx+6, cy-6, 3, 6, POUSSEUR.corpsClair);
+  pvPave(g, cx-9, cy-1, 3, 3, POUSSEUR.gant);
+  pvPave(g, cx+6, cy-1, 3, 3, POUSSEUR.gant);
+  /* tête : CONTOUR sombre (silhouette lisible) puis casque/casquette */
+  pvPave(g, cx-7, cy-18, 14, 10, "#141821");            /* silhouette */
+  pvPave(g, cx-5, cy-17, 10, 8, POUSSEUR.casque);
+  pvPave(g, cx-5, cy-17, 10, 3, POUSSEUR.casqueClair);
+  /* visière blanche de la casquette (1 px net, lisible à petite échelle) */
+  pvPave(g, cx-6, cy-10, 12, 2, "#f6f8fb");
+  if (deFace){
+    /* visage : peau + 2 yeux + lunette du casque */
+    pvPave(g, cx-4, cy-11, 8, 4, POUSSEUR.peau);
+    pvPave(g, cx-4, cy-13, 8, 3, POUSSEUR.casque);         /* visière relevée */
+    g.fillStyle = "#171a20";
+    g.fillRect(cx-3, cy-10, 2, 2); g.fillRect(cx+1, cy-10, 2, 2);
+    if (est_)  g.fillRect(cx+2, cy-10, 1, 2);              /* regard 3/4 E */
+    if (ouest_) g.fillRect(cx-3, cy-10, 1, 2);             /* regard 3/4 O */
+  } else {
+    /* nuque + oreiller du casque (dos visible) */
+    pvPave(g, cx-3, cy-10, 6, 2, POUSSEUR.peau);
+    pvPave(g, cx-4, cy-11, 8, 2, "#c09213");               /* attache du casque */
+    if (est_){ pvPave(g, cx+4, cy-14, 3, 4, POUSSEUR.peau); g.fillStyle="#171a20"; g.fillRect(cx+5, cy-13, 2, 2); }
+    if (ouest_){ pvPave(g, cx-7, cy-14, 3, 4, POUSSEUR.peau); g.fillStyle="#171a20"; g.fillRect(cx-7, cy-13, 2, 2); }
+  }
+  /* badge LED de la team sur le torse (teinte machine) */
+  pvPave(g, cx-2, cy-6, 4, 2, MACH_COULS.teinte);
+}
+
+/* ── dessine LA machine dans g (canvas 112×112, centre 56,56) en VOLUME 3/4,
+     orientation dir=(dx,dy) : le dessus du bac + la face avant du côté
+     opposé au pusseur ; le pusseur est dessiné DERRIÈRE (il pousse).
+     Les 4 pré-rendus par (teinte, mode) sont fixes : S, O, N, E. ── */
+/* ── DESSUS de la machine (volume 3/4) : silhouette, couvercle, un seul
+      panneau de contrôle (pas de « visage ») ── */
+function pvDessus(g, cx, cyTop, demiL, demiP, diry){
+  /* v0.5.3 : couvercle RECTANGULAIRE à coins coupés — une ellipse se lisait
+     comme un cockpit (« le perso est assis dedans »). Une masse poussée. */
+  const L = demiL - 1, P = demiP;
+  const y0 = cyTop - P + 2, h = 2*P - 4;
+  /* silhouette sombre */
+  pvPave(g, cx - L, y0 + 1, 2*L, h, "#151a26");
+  pvPave(g, cx - L + 1, y0, 2*L - 2, 1, "#151a26");
+  pvPave(g, cx - L + 1, y0 + h, 2*L - 2, 1, "#151a26");
+  /* couvercle */
+  pvPave(g, cx - L + 1, y0 + 1, 2*L - 2, h - 1, MACH_COULS.liseré);
+  pvPave(g, cx - L + 3, y0 + 2, 2*L - 6, h - 3, MACH_COULS.châssis);
+  /* face supérieure éclairée + arête brillante */
+  pvPave(g, cx - L + 4, y0 + 2, 2*L - 8, 4, MACH_COULS.châssisClair);
+  pvPave(g, cx - L + 6, y0 + 2, 2*L - 12, 1, "#f2f5fa");
+  /* évents latéraux sombres (pas de « vitrages » = pas de lecture cabine) */
+  for (let i=0;i<3;i++){
+    pvPave(g, cx - L + 5 + i*3, y0 + 3, 1, 2, "#39424f");
+    pvPave(g, cx + L - 8 + i*3, y0 + 3, 1, 2, "#39424f");
+  }
+  /* panneau de contrôle (un seul, pas de « yeux ») */
+  pvPave(g, cx - 12, y0 + 7, 24, 6, "#1b2230");
+  pvPave(g, cx - 10, y0 + 8, 20, 4, "#39516b");
+  pvPave(g, cx - 8,  y0 + 9, 7, 2, "#8fd4f0");
+  pvPave(g, cx + 3,  y0 + 9, 4, 2, "#f5c218");
+}
+function spriteMachineBase(g, teinte, pushed, idx){
+  const X = 56, Y = 60;               /* pied machine au centre du canvas */
+  /* idx : 0=S (pusseur au NORD, de face), 1=O, 2=N (pusseur au SUD, de dos
+     devant la face avant : tête émerge au-dessus du capot), 3=E */
+  const dirx = idx === 1 ? -1 : idx === 3 ? 1 : 0;
+  const diry = idx === 2 ? -1 : idx === 0 ? 1 : 0;
+  /* géométrie 3/4 : le corps de la machine = un pavé ; le DESSUS est une
+     ellipse décalée vers le HAUT-écran, la face avant est dessinée du
+     côté de la direction. La profondeur (perspective légère) : le dessus
+     est réduit de ~8% par rapport à l'empreinte au sol. */
+  const demiL = 24, demiP = 14;       /* v0.5.1 : machine plus large (lecture 3/4) */
+  const hautVolume = 20;              /* v0.5.1 : flancs plus hauts (volume marqué) */
+  const cx = X, cySol = Y;
+  const cyTop = cySol - hautVolume - 4;
+  /* le pusseur est TOUJOURS du côté opposé à la direction */
+  const px = cx - dirx*(demiL + 2), py = cySol - diry*(demiP + 3) - (diry < 0 ? hautVolume : 0);
+  /* ordre : le pusseur d'ARRIÈRE-plan s'il est plus haut à l'écran que la machine */
+  const pusseurDerriere = py < cySol - hautVolume;
+  /* ombre douce sous toute la machine */
+  const om = ctx;   /* (l'ombre est posée par dessinerMachine, pas ici) */
+  /* ── DESSUS de la machine (factorisé : sert aussi à MASQUER le torse
+        du pusseur quand il est derrière) ── */
+  pvDessus(g, cx, cyTop, demiL, demiP, diry);
+  /* bouchon-couvercle jaune du tank */
+  pvEllipse(g, cx - 2, cyTop - 9, 3, 2, MACH_COULS.jaune);
+  /* LED d'état par joueur (teinte) sur le bord du dessus */
+  g.fillStyle = teinte;
+  g.fillRect(cx + demiL - 9, cyTop - 6, 3, 3);
+  /* ── FACE AVANT : du côté DE la direction (grille/rouleau visible) ── */
+  const faceX = cx - demiL + 2, faceW = demiL*2 - 4;
+  if (diry > 0.5){                      /* face avant = BAS de l'écran (S) */
+    pvPave(g, faceX - 1, cyTop + 1, faceW + 2, hautVolume + 4, "#151a26");   /* contour */
+    pvPave(g, faceX, cyTop + 2, faceW, hautVolume + 2, MACH_COULS.châssisFoncé);
+    pvPave(g, faceX, cyTop + 2, faceW, 4, MACH_COULS.châssis);               /* haut de face éclairé */
+    /* grille centrale de la brosse + rouleau clair (contraste fort) */
+    pvPave(g, cx - 14, cyTop + 9, 28, 9, MACH_COULS.noir);
+    for (let i=0;i<6;i++) pvPave(g, cx - 12 + i*5, cyTop + 10, 2, 7, "#8fa3bd");
+    pvPave(g, cx - 15, cyTop + hautVolume - 2, 30, 3, "#f2f5fa");            /* rouleau brillant */
+    pvPave(g, faceX, cyTop + hautVolume + 1, faceW, 2, "#0d1220");           /* ombre bas de face */
+  } else if (diry < -0.5){              /* machine va vers le NORD : face = HAUT,
+       cachée par le pusseur vu de 3/4 arrière (il la couvre en partie) */
+    pvPave(g, faceX, cyTop - 4, faceW, 6, MACH_COULS.châssisFoncé);
+  } else {                              /* profil E/O : face latérale visible */
+    const cote = dirx > 0.5 ? 1 : -1;   /* la face est du côté de la direction */
+    pvPave(g, cx + cote*demiL - cote*9, cyTop + 2, 9, hautVolume + 2, MACH_COULS.châssis);
+    pvPave(g, cx + cote*demiL - cote*9, cyTop + 2, 9, 3, MACH_COULS.châssisClair);
+    pvPave(g, cx + cote*demiL - cote*7, cyTop + 8, 5, 6, MACH_COULS.noir);
+  }
+  /* ── flancs latéraux sombres (volume) ── */
+  if (dirx === 0){
+    pvPave(g, cx - demiL, cyTop + 2, 4, hautVolume, MACH_COULS.châssisFoncé);
+    pvPave(g, cx + demiL - 4, cyTop + 2, 4, hautVolume, MACH_COULS.châssisFoncé);
+  }
+  /* tampon serpillière au sol du côté AVANT (poussé : déjà large 3 cases) */
+  if (diry > 0.5 || dirx !== 0 || pushed){
+    const ty = cySol + (diry > 0.5 ? demiP - 2 : 4);
+    pvPave(g, cx - 12, ty, 24, 3, "#c9bda0");
+  }
+  /* ── PUSSEUR ──
+     • machine vers S/E/O → dessiné APRÈS, visage/épaules devant le châssis ;
+     • machine vers N (pusseurDerriere) → dessiné APRÈS mais DÉCALÉ vers le
+       haut : sa TÊTE émerge au-dessus du capot (règle Overcooked), puis on
+       redessine le dessus de la machine pour masquer son torse. */
+  if (pushed && !pusseurDerriere){
+    pvPusseur(g, px, py, dirx, diry, 0);
+    /* mains gantées sur le rebord côté caméra */
+    pvPave(g, cx - 10, cyTop + hautVolume - 1, 4, 3, POUSSEUR.gant);
+    pvPave(g, cx + 6,  cyTop + hautVolume - 1, 4, 3, POUSSEUR.gant);
+  }
+  if (pushed && pusseurDerriere){
+    /* tête ENTIÈREMENT au-dessus du bord arrière du couvercle : le torse
+       est masqué par la machine, seules les mains touchent le rebord */
+    const yRear = cyTop - demiP + 2;
+    const pyHead = yRear + 8;             /* tête = cy-17..cy-9 → juste au-dessus du rebord */
+    pvPusseur(g, px, pyHead, dirx, diry, 0);
+    /* MAINS GANTÉES agrippant le rebord arrière du capot (contact lisible) */
+    pvPave(g, cx - 10, yRear - 1, 5, 4, POUSSEUR.gant);
+    pvPave(g, cx + 5,  yRear - 1, 5, 4, POUSSEUR.gant);
+    pvPave(g, cx - 10, yRear - 1, 5, 1, "#6b7382");
+    pvPave(g, cx + 5,  yRear - 1, 5, 1, "#6b7382");
+    /* le capot repasse devant : torse masqué, seule la TÊTE dépasse
+       (règle Overcooked : le chef émerge derrière le plan de travail) */
+    pvDessus(g, cx, cyTop, demiL, demiP, diry);
+  }
+  /* mode AUTO : casquette du cockpit — le pusseur est remplacé par le
+     volant visible sur le couvert (l'auto-tracée roule seule) */
+  if (!pushed){
+    pvEllipse(g, cx, cyTop + (diry > 0.5 ? 4 : -6), 6, 3, MACH_COULS.noir);
+    pvEllipse(g, cx, cyTop + (diry > 0.5 ? 4 : -7), 4, 2, "#3d4d63");
+  }
+}
+
+/* pré-rend les 4 orientations pour une teinte ; [canvas bas, gauche, haut, droite] */
 function prerenderMachine(teinte, pushed){
-  const base = document.createElement("canvas");
-  base.width = 92; base.height = 92;
-  spriteMachineBase(base.getContext("2d"), teinte, pushed);
+  const angles = [0, 1, 2, 3];       /* idx : S, O, N, E */
   const out = [];
-  /* dir (0,1)=S/bas → angle 0 · (−1,0)=O/gauche · (0,−1)=N/haut · (1,0)=E/droite */
-  const angles = [0, -Math.PI/2, Math.PI, Math.PI/2];
-  for (const a of angles){
+  for (const idx of angles){
     const c2 = document.createElement("canvas");
-    c2.width = 92; c2.height = 92;
+    c2.width = 112; c2.height = 112;
     const g2 = c2.getContext("2d");
     g2.imageSmoothingEnabled = false;
-    g2.translate(46, 46);
-    g2.rotate(a);
-    g2.drawImage(base, -46, -46);
+    spriteMachineBase(g2, teinte, pushed, idx);
     out.push(c2);
   }
   return out;
@@ -1984,67 +2187,47 @@ function spriteMachine(m){
   return SPR_MACHINE[clef][idx];
 }
 
-/* ── DESSIN COMPLET DE LA MACHINE (ombre, brosse vue de dessus, sprite,
-      niveau d'eau dans le bac, cœurs, recharges, câlin, drift) ── */
+/* ── DESSIN COMPLET DE LA MACHINE (v0.5 : ombre douce, sprite volume 3/4
+      ancré au PIED (y-sort), pusseur qui MARCHE (2 frames), jauge d'eau,
+      cœurs, recharges, câlin, drift) ── */
 function dessinerMachine(m){
   const x = Math.round(m.x), y = Math.round(m.y);
   const pushing = m.vitesseActuelle > 1;
-  /* squish & stretch : scaleY quand on accélère, scaleX quand on démarre */
-  let sx = 1, sy = 1;
-  if (pushing && m.mode === MODE_AUTO){ sy = 1.06; sx = 0.96; }
-  else if (pushing){ sy = 0.95; sx = 1.05; }
-  /* ombre portée */
-  ombreEntite(x, y, 15, 9);
+  /* v0.5 : frame de MARCHE du pusseur (2 frames, ~5 pas/s en poussant) */
+  const frameMarche = pushing
+    ? (((performance.now()/190)|0) % 2)
+    : (((performance.now()/600)|0) % 2);
+  /* le sprite pré-rendu ne peut pas animer le pusseur : on re-dessine un
+     pusseur DESSUS au blit quand la machine est poussée — cheap & pixel. */
+  const idx = m.dir.y > 0.5 ? 0 : m.dir.x < -0.5 ? 1 : m.dir.y < -0.5 ? 2 : 3;
+  /* ombre douce au sol SOUS la machine (2 couches, plongée 55°) */
+  dessinerOmbreDouce(x, y, 20, 10 * CAM_PLONGEE * 2.2, 0.38);
   /* ── trace d'eau en arc derrière la machine (particules continues) ── */
   if (pushing && m.reservoir > 0 && Math.random() < 0.35){
     const bx = x - m.dir.x*18 + (Math.random()*10-5);
     const by = y - m.dir.y*18 + (Math.random()*10-5);
     bulles.push({x: bx, y: by, vie: 0.6 + Math.random()*0.4, t: 0});
   }
-  /* ── BROSSE ROTATIVE : 3 frames d'ombre rotative sur les bords ── */
-  const fr = (performance.now()/90)|0;
-  const bx0 = x - m.dir.x*14, by0 = y - m.dir.y*14;   /* centre brosse (avant?) —
-     en fait la brosse est SOUS le châssis : on la dessine comme une bande
-     qui dépasse de part et d'autre, animée de gauche à droite */
-  ctx.fillStyle = "rgba(0,0,0,.28)";
-  if (m.dir.x !== 0){       /* déplacement horizontal : brosse verticale sous châssis */
-    const oy = (fr%3) - 1;
-    ctx.fillRect(bx0-2, y-13+oy, 3, 4);
-    ctx.fillRect(bx0-1, y-4, 3, 8);
-    ctx.fillRect(bx0-2, y+5-oy, 3, 4);
-  } else {                  /* déplacement vertical : brosse horizontale */
-    const ox = (fr%3) - 1;
-    ctx.fillRect(x-14+ox, by0-2, 4, 3);
-    ctx.fillRect(x-6, by0-1, 8, 3);
-    ctx.fillRect(x+6-ox, by0-2, 4, 3);
-  }
-  /* poils clairs de la brosse qui scintillent (frame sur 2) */
-  if (fr % 2 === 0){
-    ctx.fillStyle = "rgba(255,220,140,.7)";
-    ctx.fillRect(bx0-1, by0-1, 2, 2);
-  }
-  /* ── SPRITE ── */
+  /* ── SPRITE VOLUME 3/4 ancré au PIED (pied machine = ligne de y-sort) ── */
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(sx, sy);
-  ctx.drawImage(spriteMachine(m), -46, -46 - (m.mode === MODE_PUSHED ? 0 : 0));
+  ctx.drawImage(spriteMachine(m), -56, -60);       /* centre sprite = (56,60) = pied */
   ctx.restore();
-  /* ── NIVEAU D'EAU IN-GAME : le liquide du bac solution BAISSANT ── */
-  const lvl = m.reservoir / RESERVOIR_MAX;
-  /* jauge IN-GAME : le liquide du bac solution BAISSANT — dessinée quand le
-     sprite pointe vers le bas ; la barre sous la machine reste la jauge
-     gameplay fiable toutes orientations. */
-  if (lvl < 0.999 && m.dir.y > 0.5){
-    const bacY = y - 4;
-    const hMax = 11, hL = hMax * lvl;
-    ctx.fillStyle = "rgba(20,25,32,.75)";
-    ctx.fillRect(x - 10, bacY + hL, 9, hMax - hL + 1);
-    ctx.fillStyle = lvl < 0.15 ? MACH_COULS.jauneFoncé : MACH_COULS.eau;
-    ctx.fillRect(x - 10, bacY, 9, Math.max(1, hL)|0);
-    ctx.fillStyle = "rgba(255,255,255,.5)";
-    ctx.fillRect(x - 10, bacY, 9, 1);
+  /* ── pusseur qui MARCHE : 2e frame redessinée par-dessus le sprite ──
+     (le pré-rendu est figé frame 0 : on masque la frame 0 par la frame 1
+      en redessinant le perso à la même accroche) */
+  if (m.mode === MODE_PUSHED && frameMarche === 1){
+    const dirx = m.dir.x < -0.5 ? -1 : m.dir.x > 0.5 ? 1 : 0;
+    const diry = m.dir.y < -0.5 ? -1 : m.dir.y > 0.5 ? 1 : 0;
+    const demiL = 21, demiP = 13, hautVolume = 16;
+    const px = x - dirx*(demiL + 2);
+    const py = y - diry*(demiP + 3) - (diry < 0 ? hautVolume : 0);
+    ctx.save();
+    pvPusseur(ctx, px, py, dirx, diry, 1);
+    ctx.restore();
   }
-  /* barre fine d'état sous la machine (complète le bac) */
+  /* ── barre fine d'état sous la machine (jauge gameplay, inchangée) ── */
+  const lvl = m.reservoir / RESERVOIR_MAX;
   ctx.fillStyle = "#10202c";
   ctx.fillRect(x-11, y+19, 22, 3);
   ctx.fillStyle = m.reservoir < 0.15 ? "#e74c3c" : "#3fa9f5";
@@ -2055,7 +2238,7 @@ function dessinerMachine(m){
     ctx.fillRect(x+10, y-7, 3, 3);
   }
   /* ── nom de la machine au-dessus (identité lisible) ── */
-  pfDraw(x, y-32, m.nom, m.couleur, 2, 0, 1);
+  pfDraw(x, y-52, m.nom, m.couleur, 2, 0, 1);   /* v0.5.1 : décalée au-dessus du volume */
   /* ── cœurs de loutre au-dessus ── */
   for (let i=0;i<m.coeurs;i++) dessinerCoeur(x-11+i*9, y-24, 3);
   /* barre de recharge au-dessus */
@@ -2782,12 +2965,20 @@ function dessiner(){
   ctx.save();
   ctx.translate(Math.round(shake.x), Math.round(shake.y));
 
-  /* tuiles : sol, saleté, traînée, murs, fontaine */
+  /* tuiles : sol, saleté, traînée, murs, fontaine
+     v0.5 : les murs DRESSÉS (nord/ouest) ne sont PAS dessinés ici —
+     ils attendent le y-sort après les entités (une machine devant un
+     mur nord passe DESSOUS, sinon DESSUS). Les murs coupés (sud/est)
+     restent dessinés au sol, derrière toute l'action (Overcooked). */
   for (let l=0;l<LIGNES;l++){
     for (let c=0;c<COLONNES;c++){
       const x = MARGE_X + c*TUILE, y = MARGE_Y + l*TUILE;
       const t = grille[l][c];
-      if (t === T_MUR){ dessinerMur(x, y); continue; }
+      if (t === T_MUR){
+        if (murDresse(l, c) && !(l > 1)) continue;   // dressé : y-sort plus bas
+        dessinerMur(x, y, c, l);                     // coupé (sud/est) ou interne : au sol
+        continue;
+      }
       dessinerSol(x, y, c, l);
       if (t === T_FONTAINE){ dessinerFontaine(x, y); continue; }
       if (propre[l][c] === 1) dessinerTrainee(c, l, x, y);
@@ -2802,9 +2993,14 @@ function dessiner(){
   if (torpilleBonus) dessinerTorpille(torpilleBonus);
   for (const pc of pieces) dessinerPiece(pc);
 
-  /* entités triées par y */
-  const ents = [...loutres, ...marmottes, joueur, ia, ...(bot2?[bot2]:[])].sort((a,b)=>a.y-b.y);
+  /* v0.5 · Y-SORT : murs dressés mélangés aux entités (pied machine =
+     y-sort de l'ensemble machine+perso ; la face basse d'un mur est
+     sa ligne y + TUILE). Une machine devant un mur SUD passe DESSUS,
+     devant un mur NORD passe DESSOUS : exactement la maison de poupée. */
+  const ents = [...loutres, ...marmottes, joueur, ia, ...(bot2?[bot2]:[]),
+    ...mursPourYSort()].sort((a,b)=>a.y - b.y);
   for (const e of ents){
+    if (e.__mur){ dessinerMur(e.x, e.y, e.c, e.l); continue; }
     if (e === joueur || e === ia) dessinerMachine(e);
     else if (loutres.indexOf(e) >= 0) dessinerLoutre(e);
     else dessinerMarmotte(e);
