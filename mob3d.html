@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOB RACER 3D — prototype WebGL</title>
+<style>
+  html,body{margin:0;height:100%;background:#06070a;overflow:hidden;font-family:monospace}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #stage{position:relative;width:1280px;height:720px;transform-origin:center center;background:#06070a}
+  canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+  #gl{image-rendering:pixelated;image-rendering:crisp-edges}
+  #hud{image-rendering:pixelated;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="gl" width="1280" height="720"></canvas>
+  <canvas id="hud" width="640" height="360"></canvas>
+</div></div>
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   MOB RACER 3D — WebGL 1.0 brut, zéro bibliothèque.
+   Scène rendue dans un FBO 640x360 puis agrandie NEAREST (×2 entier).
+   ========================================================= */
+
+/* ---------- 1. MATHS 4x4 (colonne-major) ---------- */
+function m4(){ return new Float32Array(16); }
+function ident(){ var m=m4(); m[0]=m[5]=m[10]=m[15]=1; return m; }
+function mulM(a,b){
+  var o=m4();
+  for(var c=0;c<4;c++){
+    for(var r=0;r<4;r++){
+      o[c*4+r] = a[r]*b[c*4] + a[4+r]*b[c*4+1] + a[8+r]*b[c*4+2] + a[12+r]*b[c*4+3];
+    }
+  }
+  return o;
+}
+function persp(fovy,aspect,near,far){
+  var f=1/Math.tan(fovy*0.5), nf=1/(near-far), o=m4();
+  o[0]=f/aspect; o[5]=f; o[10]=(far+near)*nf; o[11]=-1; o[14]=2*far*near*nf;
+  return o;
+}
+function sub3(a,b){ return [a[0]-b[0],a[1]-b[1],a[2]-b[2]]; }
+function cross3(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function dot3(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function norm3(a){ var l=Math.sqrt(dot3(a,a))||1; return [a[0]/l,a[1]/l,a[2]/l]; }
+function lookAt(eye,ctr,up){
+  var z=norm3(sub3(eye,ctr));
+  var x=norm3(cross3(up,z));
+  var y=cross3(z,x);
+  var o=m4();
+  o[0]=x[0]; o[1]=y[0]; o[2]=z[0]; o[3]=0;
+  o[4]=x[1]; o[5]=y[1]; o[6]=z[1]; o[7]=0;
+  o[8]=x[2]; o[9]=y[2]; o[10]=z[2]; o[11]=0;
+  o[12]=-dot3(x,eye); o[13]=-dot3(y,eye); o[14]=-dot3(z,eye); o[15]=1;
+  return o;
+}
+/* translation * rotationY * scale */
+function trs(x,y,z,sx,sy,sz,ry){
+  var c=Math.cos(ry||0), s=Math.sin(ry||0), o=m4();
+  o[0]=c*sx; o[1]=0; o[2]=-s*sx; o[3]=0;
+  o[4]=0;    o[5]=sy;o[6]=0;     o[7]=0;
+  o[8]=s*sz; o[9]=0; o[10]=c*sz; o[11]=0;
+  o[12]=x;   o[13]=y;o[14]=z;    o[15]=1;
+  return o;
+}
+/* mat3 (colonne-major) pour les normales : partie rotation*echelle */
+function nmat(model){
+  return new Float32Array([
+    model[0],model[1],model[2],
+    model[4],model[5],model[6],
+    model[8],model[9],model[10]
+  ]);
+}
+
+/* ---------- 2. ETAT GLOBAL / CONSTANTES ---------- */
+var COLS=15, ROWS=13;
+var GW=640, GH=360;          // resolution interne (pixel art) — 640x360 → x2 EXACT vers 1280x720
+var OW=1280, OH=720;         // canvas final
+
+var glCanvas=document.getElementById('gl');
+var hudCanvas=document.getElementById('hud');
+var hud=hudCanvas.getContext('2d');
+var stage=document.getElementById('stage');
+
+var gl = glCanvas.getContext('webgl',{antialias:false,alpha:false,depth:true,preserveDrawingBuffer:true})
+      || glCanvas.getContext('experimental-webgl',{antialias:false,alpha:false,preserveDrawingBuffer:true});
+if(!gl){ document.body.innerHTML='<p style="color:#fff;font:16px monospace;padding:20px">WebGL indisponible.</p>'; return; }
+
+/* ---------- 3. SHADERS ---------- */
+var VS = [
+'attribute vec3 aPos;',
+'attribute vec3 aNor;',
+'attribute vec2 aUV;',
+'uniform mat4 uMVP;',
+'uniform mat3 uNMat;',
+'uniform vec2 uUvScale;',
+'varying vec3 vNor;',
+'varying vec2 vUV;',
+'void main(){',
+'  gl_Position = uMVP * vec4(aPos,1.0);',
+'  vNor = normalize(uNMat * aNor);',
+'  vUV = aUV * uUvScale;',
+'}'
+].join('\n');
+
+var FS = [
+'precision mediump float;',
+'uniform sampler2D uTex;',
+'uniform float uUseTex;',
+'uniform float uUnlit;',
+'uniform float uEmit;',
+'uniform float uAlpha;',
+'uniform vec3 uColor;',
+'uniform vec3 uLight;',
+'uniform float uVig;',
+'varying vec3 vNor;',
+'varying vec2 vUV;',
+'void main(){',
+'  vec4 t = (uUseTex > 0.5) ? texture2D(uTex, vUV) : vec4(1.0);',
+'  vec3 n = normalize(vNor);',
+'  float d = max(dot(n, uLight), 0.0);',
+'  float shade = 0.40 + 0.60 * d;',
+'  shade = mix(shade, 1.0, uUnlit);',
+'  shade = mix(shade, 1.0, uEmit);',
+'  vec3 col = uColor * t.rgb * shade;',
+'  if(uVig > 0.5){',
+'    vec2 q = (gl_FragCoord.xy - vec2(640.0,360.0)) / vec2(640.0,360.0);',
+'    float d = length(q * vec2(0.92,1.0));',
+'    col *= 1.0 - 0.34 * smoothstep(0.42,1.14,d);',
+'  }',
+'  gl_FragColor = vec4(col, t.a * uAlpha);',
+'}'
+].join('\n');
+
+function compile(type,src){
+  var s=gl.createShader(type);
+  gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){
+    throw new Error('shader: '+gl.getShaderInfoLog(s));
+  }
+  return s;
+}
+var prog=gl.createProgram();
+gl.attachShader(prog,compile(gl.VERTEX_SHADER,VS));
+gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,FS));
+gl.bindAttribLocation(prog,0,'aPos');
+gl.bindAttribLocation(prog,1,'aNor');
+gl.bindAttribLocation(prog,2,'aUV');
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error('link: '+gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+var U = {
+  mvp: gl.getUniformLocation(prog,'uMVP'),
+  nmat: gl.getUniformLocation(prog,'uNMat'),
+  uvScale: gl.getUniformLocation(prog,'uUvScale'),
+  tex: gl.getUniformLocation(prog,'uTex'),
+  useTex: gl.getUniformLocation(prog,'uUseTex'),
+  unlit: gl.getUniformLocation(prog,'uUnlit'),
+  emit: gl.getUniformLocation(prog,'uEmit'),
+  alpha: gl.getUniformLocation(prog,'uAlpha'),
+  color: gl.getUniformLocation(prog,'uColor'),
+  light: gl.getUniformLocation(prog,'uLight'),
+  vig: gl.getUniformLocation(prog,'uVig')
+};
+gl.uniform3f(U.light, 0.42, 0.84, 0.34);
+gl.uniform1i(U.tex, 0);
+
+/* ---------- 4. TEXTURES PROCEDURALES ---------- */
+function texCanvas(w,h,fn){
+  var c=document.createElement('canvas');
+  c.width=w; c.height=h;
+  var g=c.getContext('2d');
+  g.imageSmoothingEnabled=false;
+  fn(g,w,h);
+  return c;
+}
+function px(g,x,y,c,w,h){ g.fillStyle=c; g.fillRect(x,y,w===undefined?1:w,h===undefined?1:h); }
+function rnd(a,b){ return a+Math.random()*(b-a); }
+
+function texTileClean(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#77837d',w,h);            // joint
+    px(g,1,1,'#d8dfd9',30,30);          // carreau
+    px(g,1,1,'#eef4ee',30,1);           // bevel haut
+    px(g,1,1,'#eef4ee',1,30);           // bevel gauche
+    px(g,1,30,'#c0c9c3',30,1);          // ombre bas
+    px(g,30,1,'#c0c9c3',1,30);
+    for(var i=0;i<22;i++){
+      var x=3+((i*11)%26), y=3+((i*7)%25);
+      px(g,x,y,'rgba(150,168,158,0.55)');
+    }
+    px(g,6,7,'rgba(255,255,255,0.35)',3,1);
+  });
+}
+
+function texTileDirty(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#6c6357',w,h);
+    px(g,1,1,'#b9b2a2',30,30);
+    px(g,1,1,'#c9c2b1',30,1);
+    px(g,1,1,'#b3ac9c',1,30);
+    px(g,1,30,'#9a9384',30,1);
+    px(g,30,1,'#9a9384',1,30);
+    // taches
+    var stains=[[4,7,11,9],[18,4,9,7],[20,18,9,9],[7,20,8,7],[13,12,5,4]];
+    for(var i=0;i<stains.length;i++){
+      var s=stains[i];
+      px(g,s[0],s[1],'rgba(104,84,52,0.55)',s[2],s[3]);
+      px(g,s[0]+1,s[1]+1,'rgba(78,60,36,0.55)',Math.max(1,s[2]-2),Math.max(1,s[3]-2));
+    }
+    for(var k=0;k<30;k++){
+      var x=(k*13)%30+1, y=(k*17)%30+1;
+      px(g,x,y,'rgba(70,56,35,0.45)');
+    }
+    px(g,12,0,'rgba(60,48,30,0.25)',2,32);   // coulure
+    px(g,3,14,'rgba(255,255,255,0.10)',6,2);
+  });
+}
+
+function texTileTrail(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#7d8a84',w,h);
+    px(g,1,1,'#e7efe9',30,30);
+    px(g,1,1,'#ffffff',30,1);
+    px(g,1,1,'#ffffff',1,30);
+    px(g,1,30,'#cfe0d8',30,1);
+    px(g,30,1,'#cfe0d8',1,30);
+    // legere brillance
+    px(g,4,9,'rgba(205,250,240,0.35)',10,1);
+    px(g,16,20,'rgba(205,250,240,0.28)',8,1);
+    px(g,6,6,'rgba(255,255,255,0.55)',3,1);
+    px(g,21,17,'rgba(185,240,255,0.35)',4,1);
+    // etincelles
+    px(g,9,7,'#ffffff',2,2);
+    px(g,23,22,'#c9fff4',2,2);
+    px(g,15,25,'#eafffb',1,1);
+  });
+}
+
+function texBrick(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#4c4a48',w,h);
+    var cols=['#a85c46','#9b5340','#b2694f','#8f4c3b'];
+    for(var row=0;row<4;row++){
+      var off=(row%2)?16:0;
+      for(var bx=-1;bx<3;bx++){
+        var x=off+bx*32, y=row*16;
+        var c=cols[(row*3+bx+5)%4];
+        px(g,x+1,y+1,c,30,14);
+        px(g,x+1,y+1,'rgba(255,255,255,0.16)',30,2);
+        px(g,x+1,y+13,'rgba(0,0,0,0.22)',30,2);
+        px(g,x+1+((row*5+bx*7)%20),y+4,'rgba(0,0,0,0.12)',5,3);
+      }
+    }
+    for(var k=0;k<40;k++){
+      px(g,(k*23)%64,(k*29)%64,'rgba(0,0,0,0.10)');
+    }
+    px(g,0,0,'rgba(255,255,255,0.05)',64,64);
+  });
+}
+
+function texMetal(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#98a0a6',w,h);
+    px(g,0,0,'#b7bfc4',w,3);
+    px(g,0,20,'#8d959b',w,1);
+    px(g,0,42,'#8d959b',w,1);
+    px(g,0,58,'#767e84',w,6);
+    for(var k=0;k<7;k++){
+      px(g,4+k*9,5,'#6d757b',3,3);
+      px(g,4+k*9,5,'#cdd5da',2,1);
+    }
+    for(var k2=0;k2<5;k2++){
+      px(g,6+k2*12,48,'#6d757b',2,2);
+    }
+    px(g,2,10,'rgba(255,255,255,0.18)',60,1);
+    px(g,14,26,'rgba(0,0,0,0.12)',18,2);
+    px(g,40,34,'rgba(0,0,0,0.10)',12,1);
+  });
+}
+
+function texBasin(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#2b62c4',w,h);
+    px(g,0,0,'#3d7be0',w,6);
+    px(g,0,0,'#5c9bf0',w,2);
+    for(var i=1;i<4;i++) px(g,i*16,0,'#20509f',1,h);
+    px(g,0,14,'rgba(120,190,255,0.35)',w,2);
+    px(g,0,44,'rgba(0,0,30,0.22)',w,3);
+    for(var k=0;k<26;k++){
+      px(g,(k*19)%62+1,(k*31)%40+18,'rgba(255,255,255,0.10)',2,1);
+    }
+    px(g,0,60,'#1b3f80',w,4);
+  });
+}
+
+function texPanel(){
+  return texCanvas(64,32,function(g,w,h){
+    px(g,0,0,'#1a1e26',w,h);
+    px(g,1,1,'#2b323d',w-2,h-2);
+    px(g,2,2,'#3a4350',w-4,2);
+    px(g,4,6,'#0d1116',40,8);              // ecran
+    px(g,7,9,'#37e6ee',30,2);              // LED cyan
+    px(g,7,12,'#1f8f9a',18,1);
+    px(g,48,7,'#3ce07a',6,5);
+    px(g,56,7,'#e04a4a',5,5);
+    px(g,48,16,'#e0b13a',6,4);
+    px(g,56,16,'#8a949e',5,4);
+    for(var k=0;k<6;k++) px(g,4+k*3,22,'#4b5662',2,1);
+  });
+}
+
+function texSuds(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#dff2ff',w,h);
+    for(var k=0;k<26;k++){
+      var x=(k*11)%27+1, y=(k*17)%27+1, r=(k%3)+1;
+      px(g,x,y,'rgba(255,255,255,0.9)',r+1,r+1);
+      px(g,x,y,'rgba(160,225,255,0.5)',1,1);
+    }
+    px(g,4,4,'#ffffff',3,3);
+    px(g,18,9,'#ffffff',2,2);
+  });
+}
+
+function texFur(){
+  return texCanvas(64,64,function(g,w,h){
+    px(g,0,0,'#6b4a2e',w,h);
+    for(var k=0;k<90;k++){
+      var x=(k*13)%63, y=(k*29)%63;
+      var c=(k%3===0)?'rgba(140,102,64,0.55)':'rgba(58,38,22,0.55)';
+      px(g,x,y,c,1,2+((k%3)));
+    }
+    px(g,0,0,'rgba(160,120,80,0.20)',w,4);
+  });
+}
+
+function texNoise(){
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#ffffff',w,h);
+    for(var k=0;k<80;k++){
+      var x=(k*7)%32, y=(k*11)%32;
+      px(g,x,y,'rgba(0,0,0,0.07)');
+    }
+    px(g,0,0,'rgba(255,255,255,0.5)',w,1);
+  });
+}
+
+function texShadow(){
+  /* v0.7 : ombre TRAMÉE (matrice de Bayer 4×4) — un dégradé lisse jurait
+     avec le pixel art. Chaque texel est allumé/éteint selon le motif. */
+  var BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  return texCanvas(32,32,function(g,w,h){
+    g.clearRect(0,0,w,h);
+    for(var y=0;y<h;y++){
+      for(var x=0;x<w;x++){
+        var dx=(x+0.5)/w*2-1, dy=(y+0.5)/h*2-1;
+        var r=Math.sqrt(dx*dx+dy*dy);
+        if(r>1) continue;
+        var dens=1-r*r;                     /* densité au centre */
+        var seuil=(BAYER[y%4][x%4]+0.5)/16;
+        if(dens>seuil){
+          g.fillStyle='rgba(0,0,0,0.92)';
+          g.fillRect(x,y,1,1);
+        }
+      }
+    }
+  });
+}
+
+function makeTex(canvas,repeat){
+  var t=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  return t;
+}
+
+var T = {
+  tile:  makeTex(texTileClean(),false),
+  dirty: makeTex(texTileDirty(),false),
+  trail: makeTex(texTileTrail(),false),
+  brick: makeTex(texBrick(),true),
+  metal: makeTex(texMetal(),false),
+  basin: makeTex(texBasin(),false),
+  panel: makeTex(texPanel(),false),
+  suds:  makeTex(texSuds(),false),
+  fur:   makeTex(texFur(),false),
+  noise: makeTex(texNoise(),true),
+  shadow:makeTex(texShadow(),false)
+};
+
+/* ---------- 5. GEOMETRIE ---------- */
+var STRIDE=8; // x,y,z, nx,ny,nz, u,v
+
+function buildCube(){
+  var v=[], idx=[];
+  function face(n, pts, uvs){
+    var base=v.length/STRIDE;
+    for(var i=0;i<4;i++){
+      v.push(pts[i][0],pts[i][1],pts[i][2], n[0],n[1],n[2], uvs[i][0],uvs[i][1]);
+    }
+    idx.push(base,base+1,base+2, base,base+2,base+3);
+  }
+  var uv=[[0,0],[1,0],[1,1],[0,1]];
+  // +X
+  face([1,0,0],[[0.5,-0.5,0.5],[0.5,-0.5,-0.5],[0.5,0.5,-0.5],[0.5,0.5,0.5]],uv);
+  // -X
+  face([-1,0,0],[[-0.5,-0.5,-0.5],[-0.5,-0.5,0.5],[-0.5,0.5,0.5],[-0.5,0.5,-0.5]],uv);
+  // +Y
+  face([0,1,0],[[-0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,-0.5],[-0.5,0.5,-0.5]],uv);
+  // -Y
+  face([0,-1,0],[[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[0.5,-0.5,0.5],[-0.5,-0.5,0.5]],uv);
+  // +Z
+  face([0,0,1],[[-0.5,-0.5,0.5],[0.5,-0.5,0.5],[0.5,0.5,0.5],[-0.5,0.5,0.5]],uv);
+  // -Z
+  face([0,0,-1],[[0.5,-0.5,-0.5],[-0.5,-0.5,-0.5],[-0.5,0.5,-0.5],[0.5,0.5,-0.5]],uv);
+  return {
+    buf: makeBuf(new Float32Array(v)),
+    idx: makeIdx(new Uint16Array(idx)),
+    count: idx.length
+  };
+}
+function buildQuad(along){
+  // quad unitaire dans le plan XZ (along='xz') ou XY (along='xy'), normale +Y ou +Z
+  var v, idx=[0,1,2,0,2,3];
+  if(along==='xy'){
+    v=new Float32Array([
+      -1,-1,0, 0,0,1, 0,0,
+       1,-1,0, 0,0,1, 1,0,
+       1, 1,0, 0,0,1, 1,1,
+      -1, 1,0, 0,0,1, 0,1
+    ]);
+  } else {
+    v=new Float32Array([
+      -1,0, 1, 0,1,0, 0,0,
+       1,0, 1, 0,1,0, 1,0,
+       1,0,-1, 0,1,0, 1,1,
+      -1,0,-1, 0,1,0, 0,1
+    ]);
+  }
+  return { buf: makeBuf(v), idx: makeIdx(new Uint16Array(idx)), count:6 };
+}
+function makeBuf(arr){
+  var b=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,arr,gl.STATIC_DRAW);
+  return b;
+}
+function makeIdx(arr){
+  var b=gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,arr,gl.STATIC_DRAW);
+  return b;
+}
+var CUBE = buildCube();
+var QUAD_XZ = buildQuad('xz');
+var QUAD_XY = buildQuad('xy');
+
+function bindMesh(m){
+  gl.bindBuffer(gl.ARRAY_BUFFER,m.buf);
+  gl.enableVertexAttribArray(0);
+  gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(0,3,gl.FLOAT,false,STRIDE*4,0);
+  gl.vertexAttribPointer(1,3,gl.FLOAT,false,STRIDE*4,12);
+  gl.vertexAttribPointer(2,2,gl.FLOAT,false,STRIDE*4,24);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,m.idx);
+}
+
+var PV = null; // projection * vue, calculee une fois
+
+function drawMesh(m, model, tex, color, opt){
+  opt = opt || {};
+  var mvp = mulM(PV, model);
+  gl.uniformMatrix4fv(U.mvp,false,mvp);
+  gl.uniformMatrix3fv(U.nmat,false,nmat(model));
+  gl.uniform2f(U.uvScale, opt.uvScale?opt.uvScale[0]:1, opt.uvScale?opt.uvScale[1]:1);
+  gl.uniform1f(U.useTex, tex?1:0);
+  gl.uniform1f(U.unlit, opt.unlit?1:0);
+  gl.uniform1f(U.emit, opt.emit||0);
+  gl.uniform1f(U.alpha, opt.alpha===undefined?1:opt.alpha);
+  gl.uniform3f(U.color, color[0],color[1],color[2]);
+  gl.uniform1f(U.vig, opt.vig?1:0);
+  if(tex){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex); }
+  bindMesh(m);
+  gl.drawElements(gl.TRIANGLES,m.count,gl.UNSIGNED_SHORT,0);
+}
+function box(x,y,z,sx,sy,sz,tex,color,opt){
+  drawMesh(CUBE, trs(x,y,z,sx,sy,sz,(opt&&opt.ry)||0), tex, color, opt);
+}
+
+/* ---------- 6. FBO BASSE RESOLUTION ---------- */
+var fbTex=gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D,fbTex);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,GW,GH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+
+var fbDepth=gl.createRenderbuffer();
+gl.bindRenderbuffer(gl.RENDERBUFFER,fbDepth);
+gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,GW,GH);
+
+var fbo=gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,fbTex,0);
+gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,fbDepth);
+var fbOK = (gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE);
+gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+/* ---------- 7. CAMERA ---------- */
+// plongee ~55 deg, arene entiere visible
+var EYE=[0,16.0,11.65], TARGET=[0,0.3,0.8], FOV=45*Math.PI/180;
+var PROJ = persp(FOV, GW/GH, 2.0, 120);
+PROJ[9] = 0.090;   // decalage vertical (laisse la place aux barres HUD)
+PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
+
+/* ---------- 8. ETAT DU JEU ---------- */
+var cells = new Uint8Array(COLS*ROWS);   // 0 sale, 1 propre, 2 trainee brillante
+var marmots = [ {gx:3,gy:4},{gx:11,gy:8},{gx:6,gy:2} ];
+var dirtyLeft=0, totalCleanable=0;
+var timeLeft=75, mode='play', score=0, botScore=0;
+var soundOn=true, audioCtx=null, SHADOWS=true;
+
+var player = newMach(7,9,0);
+var bot    = newMach(7,4,1);
+player.basinTint=[0.62,0.86,1.0];
+bot.basinTint   =[0.55,1.0,0.72];
+player.suit=[1.0,0.52,0.16];
+bot.suit   =[0.92,0.28,0.30];
+
+function newMach(gx,gy,id){
+  return {
+    id:id, gx:gx, gy:gy, fx:gx, fy:gy, t:1, moving:false,
+    angle:0, dx:0, dz:1, wx:0, wz:0, queued:-1, bob:0
+  };
+}
+
+function idxAt(gx,gy){ return gy*COLS+gx; }
+function isMarmot(gx,gy){
+  for(var i=0;i<marmots.length;i++) if(marmots[i].gx===gx&&marmots[i].gy===gy) return true;
+  return false;
+}
+function canEnter(gx,gy,who){
+  if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
+  if(isMarmot(gx,gy)) return false;
+  var other = (who===player)?bot:player;
+  if(other.gx===gx && other.gy===gy) return false;
+  if(other.moving && other.fx===gx && other.fy===gy) return false;
+  return true;
+}
+
+function resetGame(){
+  cells.fill(0);
+  for(var i=0;i<cells.length;i++){
+    if(Math.random()<0.34) cells[i]=1;
+  }
+  for(var m=0;m<marmots.length;m++) cells[idxAt(marmots[m].gx,marmots[m].gy)]=0;
+  function resetMach(mm,gx,gy,ang){
+    mm.gx=gx; mm.gy=gy; mm.fx=gx; mm.fy=gy; mm.t=1; mm.moving=false;
+    mm.angle=ang; mm.dx=0; mm.dz=1; mm.queued=-1;
+    mm.wx=gx-7; mm.wz=gy-6;
+    cells[idxAt(gx,gy)] = 2;
+  }
+  resetMach(player,5,9,0);
+  resetMach(bot,10,4,0);
+  score=0; botScore=0; timeLeft=75; mode='play';
+  recomputeCounts();
+  buildFloor();
+}
+
+function recomputeCounts(){
+  totalCleanable=0; dirtyLeft=0;
+  for(var i=0;i<cells.length;i++){
+    if(!isMarmot(i%COLS,(i/COLS)|0)) totalCleanable++;
+    if(cells[i]===0) dirtyLeft++;
+  }
+}
+
+/* ---------- 9. SOL : buffers par texture ---------- */
+var floorBuf = {0:null,1:null,2:null};
+var floorCnt = {0:0,1:0,2:0};
+
+function buildFloor(){
+  var arrs={0:[],1:[],2:[]};
+  for(var gy=0;gy<ROWS;gy++){
+    for(var gx=0;gx<COLS;gx++){
+      var st=cells[idxAt(gx,gy)];
+      var a=arrs[st];
+      var x0=gx-7.5, x1=x0+1;
+      var z0=gy-6.5, z1=z0+1;
+      var N=[0,1,0];
+      pushV(a,x0,0,z1,N,0,0);
+      pushV(a,x1,0,z1,N,1,0);
+      pushV(a,x1,0,z0,N,1,1);
+      pushV(a,x0,0,z1,N,0,0);
+      pushV(a,x1,0,z0,N,1,1);
+      pushV(a,x0,0,z0,N,0,1);
+    }
+  }
+  for(var k=0;k<3;k++){
+    floorCnt[k]=arrs[k].length/STRIDE;
+    var f=new Float32Array(arrs[k]);
+    if(!floorBuf[k]){
+      floorBuf[k]=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,floorBuf[k]);
+      gl.bufferData(gl.ARRAY_BUFFER,f,gl.DYNAMIC_DRAW);
+    } else {
+      gl.bindBuffer(gl.ARRAY_BUFFER,floorBuf[k]);
+      gl.bufferData(gl.ARRAY_BUFFER,f,gl.DYNAMIC_DRAW);
+    }
+  }
+  floorMeshes=[0,1,2].map(function(k){
+    return {buf:floorBuf[k], idx:null, count:floorCnt[k]};
+  });
+}
+function pushV(a,x,y,z,n,u,v){
+  a.push(x,y,z,n[0],n[1],n[2],u,v);
+}
+var floorMeshes=[];
+
+function drawFloorMesh(m,tex){
+  gl.bindBuffer(gl.ARRAY_BUFFER,m.buf);
+  gl.enableVertexAttribArray(0);
+  gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(0,3,gl.FLOAT,false,STRIDE*4,0);
+  gl.vertexAttribPointer(1,3,gl.FLOAT,false,STRIDE*4,12);
+  gl.vertexAttribPointer(2,2,gl.FLOAT,false,STRIDE*4,24);
+  var mvp=PV; // deja en espace monde
+  gl.uniformMatrix4fv(U.mvp,false,mvp);
+  gl.uniformMatrix3fv(U.nmat,false,new Float32Array([1,0,0,0,1,0,0,0,1]));
+  gl.uniform2f(U.uvScale,1,1);
+  gl.uniform1f(U.useTex,1);
+  gl.uniform1f(U.unlit,0);
+  gl.uniform1f(U.emit,0);
+  gl.uniform1f(U.alpha,1);
+  gl.uniform3f(U.color,1,1,1);
+  gl.uniform1f(U.vig,0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.drawArrays(gl.TRIANGLES,0,m.count);
+}
+
+/* ---------- 10. DESSIN DE LA SCENE ---------- */
+function drawShadow(x,z,size,alpha){
+  drawMesh(QUAD_XZ, trs(x,0.025,z,size*0.5,1,size*0.5,0), T.shadow, [0,0,0],
+    {unlit:true, alpha:alpha===undefined?0.7:alpha});
+}
+
+function drawMarmot(m){
+  var x=m.gx-7, z=m.gy-6;
+  var fur=[1.22,1.02,0.80], dark=[0.86,0.68,0.48], light=[1.85,1.70,1.45];
+  box(x,0.16,z, 0.44,0.32,0.36, T.fur, fur);
+  box(x,0.40,z-0.02, 0.28,0.24,0.26, T.fur, fur);
+  box(x,0.34,z+0.13, 0.14,0.10,0.10, T.noise, light);       // museau
+  box(x-0.10,0.55,z-0.03, 0.10,0.12,0.07, T.fur, dark);      // oreilles
+  box(x+0.10,0.55,z-0.03, 0.10,0.12,0.07, T.fur, dark);
+  box(x-0.10,0.58,z-0.02, 0.06,0.06,0.02, T.noise, light);   // interieur oreille
+  box(x+0.10,0.58,z-0.02, 0.06,0.06,0.02, T.noise, light);
+  box(x,0.14,z+0.19, 0.22,0.18,0.03, T.noise, light);        // ventre
+  box(x-0.05,0.42,z+0.11, 0.04,0.04,0.03, null, [0.12,0.09,0.07]); // yeux
+  box(x+0.05,0.42,z+0.11, 0.04,0.04,0.03, null, [0.12,0.09,0.07]);
+}
+
+function localToWorld(x,z,ry,lx,lz){
+  return [ x + lx*Math.cos(ry) + lz*Math.sin(ry),
+           z - lx*Math.sin(ry) + lz*Math.cos(ry) ];
+}
+function drawMachine(m){
+  var x=m.wx, z=m.wz, ry=m.angle;
+  var o={ry:ry};
+  var p;
+  // jupe / châssis
+  box(x,0.05,z, 0.94,0.10,0.94, T.metal, [0.45,0.47,0.50], o);
+  box(x,0.27,z, 0.86,0.40,0.86, T.metal, m.id===0?[1,1,1]:[0.90,1.0,0.94], o);
+  // bandeau avant clair
+  p=localToWorld(x,z,ry,0,0.43);
+  box(p[0],0.42,p[1], 0.72,0.07,0.03, T.noise, [0.62,0.68,0.72], o);
+  // bac (volume bleu)
+  box(x,0.66,z, 0.72,0.40,0.72, T.basin, m.basinTint, o);
+  box(x,0.875,z, 0.80,0.07,0.80, T.metal, [1,1,1], o);
+  // ecume
+  drawMesh(QUAD_XZ, trs(x,0.905,z,0.33,1,0.33,0), T.suds, [1,1,1], {unlit:true});
+  // panneau de controle
+  p=localToWorld(x,z,ry,0,0.47);
+  box(p[0],0.50,p[1], 0.32,0.22,0.06, T.panel, [1,1,1], {ry:ry, emit:0.55});
+  // poignee (arceau) : signe visuel de la machine
+  p=localToWorld(x,z,ry,-0.30,-0.40);
+  box(p[0],0.72,p[1], 0.07,0.64,0.07, T.metal, [0.9,0.9,0.9], o);
+  p=localToWorld(x,z,ry, 0.30,-0.40);
+  box(p[0],0.72,p[1], 0.07,0.64,0.07, T.metal, [0.9,0.9,0.9], o);
+  p=localToWorld(x,z,ry,0,-0.40);
+  box(p[0],1.00,p[1], 0.68,0.07,0.07, T.metal, [1,1,1], o);
+  // flexible / tambour lateral
+  p=localToWorld(x,z,ry,0.47,0.05);
+  box(p[0],0.30,p[1], 0.10,0.30,0.30, T.metal, [0.55,0.60,0.66], o);
+  // (ombre dessinee dans la passe alpha de drawScene)
+}
+
+function drawPusher(m){
+  var rx=Math.sin(m.angle), rz=Math.cos(m.angle);
+  // derriere la machine par rapport a l'avancee : -direction * 0.56
+  var px_ = m.wx - rx*0.56;
+  var pz_ = m.wz - rz*0.62;
+  var bob = m.moving ? Math.sin(m.t*Math.PI)*0.045 : 0;
+  var y0 = bob;
+  var suit=m.suit;
+  var dark=[0.19,0.17,0.22], pants=[0.28,0.33,0.46];
+  // chaussures
+  box(px_-0.13,y0+0.045,pz_+0.03, 0.18,0.09,0.26, T.noise, dark, {ry:m.angle});
+  box(px_+0.13,y0+0.045,pz_-0.03, 0.18,0.09,0.26, T.noise, dark, {ry:m.angle});
+  // jambes
+  box(px_-0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
+  box(px_+0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
+  // torse (combinaison)
+  box(px_,y0+0.68,pz_, 0.42,0.42,0.32, T.noise, suit, {ry:m.angle});
+  // bretelles
+  box(px_-0.11,y0+0.80,pz_+0.17, 0.07,0.20,0.02, T.noise, [0.97,0.97,0.94], {ry:m.angle});
+  box(px_+0.11,y0+0.80,pz_+0.17, 0.07,0.20,0.02, T.noise, [0.97,0.97,0.94], {ry:m.angle});
+  // bras tendus vers la machine
+  box(px_-0.27,y0+0.66,pz_+0.11, 0.12,0.34,0.12, T.noise, suit, {ry:m.angle});
+  box(px_+0.27,y0+0.66,pz_+0.11, 0.12,0.34,0.12, T.noise, suit, {ry:m.angle});
+  // mains
+  box(px_-0.28,y0+0.85,pz_+0.24, 0.11,0.10,0.10, T.noise, [0.96,0.75,0.58], {ry:m.angle});
+  box(px_+0.28,y0+0.85,pz_+0.24, 0.11,0.10,0.10, T.noise, [0.96,0.75,0.58], {ry:m.angle});
+  // tete
+  box(px_,y0+1.04,pz_, 0.28,0.26,0.26, T.noise, [0.97,0.76,0.58], {ry:m.angle});
+  // yeux
+  var ex=Math.sin(m.angle), ez=Math.cos(m.angle);
+  var ox=Math.cos(m.angle)*0.06, oz=-Math.sin(m.angle)*0.06;
+  box(px_+ex*0.14+ox, y0+1.06, pz_+ez*0.14+oz, 0.05,0.06,0.03, null, [0.13,0.11,0.12], {ry:m.angle});
+  box(px_+ex*0.14-ox, y0+1.06, pz_+ez*0.14-oz, 0.05,0.06,0.03, null, [0.13,0.11,0.12], {ry:m.angle});
+  // nez
+  box(px_+ex*0.15, y0+1.02, pz_+ez*0.15, 0.05,0.05,0.03, null, [0.90,0.66,0.48], {ry:m.angle});
+  // casquette
+  /* v0.7 : casquette BLANCHE + bandeau de couleur équipe (une casquette
+     orange/rouge se lisait comme un gyrophare sur le toit de la machine) */
+  var teamCol = m.id===0 ? [1.0,0.55,0.16] : [0.94,0.28,0.28];
+  box(px_,y0+1.20,pz_, 0.33,0.11,0.31, T.noise, [0.96,0.95,0.90], {ry:m.angle});   // calotte blanche
+  box(px_,y0+1.145,pz_, 0.34,0.05,0.32, T.noise, teamCol, {ry:m.angle});           // bandeau équipe
+  box(px_+ex*0.19, y0+1.20, pz_+ez*0.19, 0.30,0.06,0.16, T.noise, [0.99,0.98,0.94], {ry:m.angle}); // visière
+  box(px_+ex*0.17, y0+1.185, pz_+ez*0.17, 0.29,0.05,0.15, T.noise, teamCol.map(function(c){return c*0.72;}), {ry:m.angle});
+  // col / cheveux
+  box(px_,y0+0.885,pz_, 0.26,0.06,0.26, T.noise, [0.22,0.18,0.16], {ry:m.angle});
+}
+
+function drawScene(){
+  gl.disable(gl.BLEND);
+  gl.depthMask(true);
+
+  // sol exterieur (decor)
+  drawMesh(QUAD_XZ, trs(0,-0.02,0,40,1,34,0), T.metal, [0.28,0.32,0.38], {uvScale:[56,56]});
+
+  // sol de l'arene : 3 batches
+  drawFloorMesh(floorMeshes[0], T.dirty);
+  drawFloorMesh(floorMeshes[1], T.tile);
+  drawFloorMesh(floorMeshes[2], T.trail);
+
+  // ombres portees (alpha)
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  for(var i=0;i<marmots.length;i++){ /* ombre dessinee dans drawMarmot */ }
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+
+  // murs (vrais volumes)
+  var WH=1.95;
+  box(0,WH/2,-6.95, 16.2,WH,0.7, T.brick, [0.92,0.92,0.92], {uvScale:[13,2]});
+  box(-8.0,WH/2,0, 0.7,WH,15.0, T.brick, [0.80,0.80,0.80], {uvScale:[12,2]});
+  box( 8.0,WH/2,0, 0.7,WH,15.0, T.brick, [0.80,0.80,0.80], {uvScale:[12,2]});
+  // mur sud bas (cutaway)
+  box(0,0.20,6.85, 16.2,0.40,0.45, T.brick, [0.98,0.98,0.98], {uvScale:[13,1]});
+  // plinthes sombres au pied des murs (lisibilite du volume)
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  drawMesh(QUAD_XZ, trs(0,0.03,-6.30, 8.1,1,0.75,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
+  drawMesh(QUAD_XZ, trs(-7.45,0.03,0, 0.75,1,7.5,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
+  drawMesh(QUAD_XZ, trs( 7.45,0.03,0, 0.75,1,7.5,0), T.shadow, [0,0,0], {unlit:true,alpha:0.55});
+  drawMesh(QUAD_XZ, trs(0,0.03,6.35, 8.1,1,0.45,0), T.shadow, [0,0,0], {unlit:true,alpha:0.5});
+  gl.depthMask(true); gl.disable(gl.BLEND);
+
+  // marmottes (statiques) + ombres
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  for(var s=0;s<marmots.length;s++) drawShadow(marmots[s].gx-7, marmots[s].gy-6, 1.05, 0.90);
+  if(SHADOWS) drawShadow(bot.wx,bot.wz,1.70,0.85);
+  if(SHADOWS) drawShadow(player.wx,player.wz,1.70,0.85);
+  var prx=Math.sin(player.angle), prz=Math.cos(player.angle);
+  drawShadow(player.wx-prx*0.56, player.wz-prz*0.56, 1.0, 0.7);
+  var brx=Math.sin(bot.angle), brz=Math.cos(bot.angle);
+  drawShadow(bot.wx-brx*0.56, bot.wz-brz*0.56, 1.0, 0.7);
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+
+  for(var k=0;k<marmots.length;k++) drawMarmot(marmots[k]);
+  drawMachine(player); drawPusher(player);
+  drawMachine(bot);    drawPusher(bot);
+}
+
+function drawBlit(){
+  var id=ident();
+  gl.uniformMatrix4fv(U.mvp,false,id);
+  gl.uniformMatrix3fv(U.nmat,false,new Float32Array([1,0,0,0,1,0,0,0,1]));
+  gl.uniform2f(U.uvScale,1,1);
+  gl.uniform1f(U.useTex,1);
+  gl.uniform1f(U.unlit,1);
+  gl.uniform1f(U.emit,0);
+  gl.uniform1f(U.alpha,1);
+  gl.uniform3f(U.color,1,1,1);
+  gl.uniform1f(U.vig,1);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D,fbTex);
+  bindMesh(QUAD_XY);
+  gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);
+}
+
+/* ---------- 11. LOGIQUE ---------- */
+var MOVE_TIME=0.135;
+var DIRS=[[0,-1],[0,1],[1,0],[-1,0]]; // haut bas droite gauche
+
+function startMove(m,di){
+  var d=DIRS[di];
+  var nx=m.gx+d[0], ny=m.gy+d[1];
+  if(!canEnter(nx,ny,m)) return false;
+  m.fx=m.gx; m.fy=m.gy;
+  m.gx=nx;  m.gy=ny;
+  m.dx=d[0]; m.dz=d[1];
+  m.angle=Math.atan2(d[0],d[1]);
+  m.t=0; m.moving=true;
+  if(m===player) beep(220,0.03,0.03);
+  return true;
+}
+
+function arrive(m){
+  var i=idxAt(m.gx,m.gy);
+  if(cells[i]===0){
+    if(m===player){ cells[i]=2; score++; }
+    else { cells[i]=1; botScore++; }
+    buildFloor();
+    recomputeCounts();
+    m._dirty=true;
+  } else if(m===player && cells[i]===1){
+    cells[i]=2; buildFloor();
+  }
+
+  if(dirtyLeft<=0) mode='win';
+}
+
+function updateMachines(dt){
+  var list=[player,bot];
+  for(var i=0;i<2;i++){
+    var m=list[i];
+    if(m.moving){
+      m.t += dt/MOVE_TIME;
+      if(m.t>=1){
+        m.t=1; m.moving=false;
+        arrive(m);
+        // input maintenu / file d'attente
+        var next = (m===player) ? player.queued : -1;
+        if(m===player) player.queued=-1;
+        if(next>=0) startMove(m,next);
+        else if(m===player && heldDir>=0) startMove(m,heldDir);
+      }
+      var e=m.t*m.t*(3-2*m.t);
+      var ax=lerp(m.fx,m.gx,e), az=lerp(m.fy,m.gy,e);
+      m.wx=ax-7; m.wz=az-6;
+    } else {
+      m.wx=m.gx-7; m.wz=m.gy-6;
+    }
+  }
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+var heldDir=-1;
+var botTimer=0;
+
+function botThink(dt){
+  if(bot.moving) return;
+  botTimer-=dt;
+  if(botTimer>0) return;
+  botTimer=0.26;
+  // cherche la case sale la plus proche
+  var best=-1,bx=0,by=0,bd=1e9;
+  for(var gy=0;gy<ROWS;gy++){
+    for(var gx=0;gx<COLS;gx++){
+      if(cells[idxAt(gx,gy)]!==0) continue;
+      var d=Math.abs(gx-bot.gx)+Math.abs(gy-bot.gy);
+      if(d>0 && d<bd){ bd=d; bx=gx; by=gy; best=0; }
+    }
+  }
+  var opts=[];
+  for(var k=0;k<4;k++){
+    var nx=bot.gx+DIRS[k][0], ny=bot.gy+DIRS[k][1];
+    if(!canEnter(nx,ny,bot)) continue;
+    if(best===0){
+      var nd=Math.abs(bx-nx)+Math.abs(by-ny);
+      if(nd<bd) opts.push(k);
+    } else opts.push(k);
+  }
+  if(!opts.length){
+    for(var k2=0;k2<4;k2++){
+      var nx2=bot.gx+DIRS[k2][0], ny2=bot.gy+DIRS[k2][1];
+      if(canEnter(nx2,ny2,bot)) opts.push(k2);
+    }
+  }
+  if(opts.length) startMove(bot, opts[(Math.random()*opts.length)|0]);
+}
+
+/* ---------- 12. SON (optionnel) ---------- */
+function beep(freq,dur,vol){
+  if(!soundOn) return;
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type='square'; o.frequency.value=freq;
+    g.gain.value=vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    var t=audioCtx.currentTime;
+    g.gain.setValueAtTime(vol,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.01);
+  }catch(e){ /* son non bloquant */ }
+}
+
+/* ---------- 13. ENTREES ---------- */
+var keyMap={ArrowUp:0,ArrowDown:1,ArrowRight:2,ArrowLeft:3,w:0,s:1,d:2,a:3,W:0,S:1,D:2,A:3};
+window.addEventListener('keydown',function(e){
+  if(e.key==='r'||e.key==='R'){ resetGame(); return; }
+  if(e.key==='m'||e.key==='M'){ soundOn=!soundOn; return; }
+  var di=keyMap[e.key];
+  if(di===undefined) return;
+  e.preventDefault();
+  heldDir=di;
+  if(mode!=='play') return;
+  if(!player.moving) startMove(player,di);
+  else player.queued=di;
+});
+window.addEventListener('keyup',function(e){
+  var di=keyMap[e.key];
+  if(di!==undefined && di===heldDir) heldDir=-1;
+});
+
+/* ---------- 14. HUD CANVAS 2D ---------- */
+function hudText(s,x,y,size,color,align,weight){
+  hud.font=(weight||'bold')+' '+size+'px "Courier New",monospace';
+  hud.textAlign=align||'left';
+  hud.textBaseline='middle';
+  hud.fillStyle='rgba(0,0,0,0.65)';
+  hud.fillText(s,x+2,y+2);
+  hud.fillStyle=color||'#eaf6ff';
+  hud.fillText(s,x,y);
+}
+
+function drawHUD(){
+  hud.clearRect(0,0,640,360);
+
+  /* --- barre haute --- */
+  hud.fillStyle='rgba(6,9,13,0.92)'; hud.fillRect(0,0,640,42);
+  hud.fillStyle='rgba(90,230,250,0.10)'; hud.fillRect(0,0,640,2);
+  hud.fillStyle='rgba(90,230,250,0.42)'; hud.fillRect(0,41,640,1);
+
+  hudText('MOB RACER',12,17,20,'#eafcff');
+  hudText('SALLE DE NETTOYAGE · 3D',13,33,7,'#5fd8ec');
+
+  /* propre % + barre */
+  var pct = totalCleanable? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable):0;
+  hudText('PROPRE',196,10,8,'#7f96a3');
+  hudText(pct+'%',236,10,9,'#6ff0c8');
+  var bx=196,by=18,bw=150,bh=8;
+  hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(bx,by,bw,bh);
+  var fill=Math.max(0,Math.min(1,(totalCleanable-dirtyLeft)/totalCleanable));
+  hud.fillStyle='#3ce0a0';
+  for(var i=0;i<Math.round(fill*bw/2)*2;i+=2) hud.fillRect(bx+i,by,2,bh);
+  hud.strokeStyle='rgba(255,255,255,0.22)'; hud.lineWidth=1; hud.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
+
+  hud.fillStyle='#f0a83c'; hud.fillRect(196,31,6,6);
+  hudText('TOI '+score,206,35,8,'#eafcff');
+  hud.fillStyle='#e05555'; hud.fillRect(258,31,6,6);
+  hudText('BOT '+botScore,268,35,8,'#eafcff');
+
+  /* chrono */
+  var tl=Math.max(0,Math.ceil(timeLeft));
+  var urgent = tl<=10 && mode==='play';
+  hudText('TEMPS',470,10,8,'#7f96a3');
+  var blink = urgent ? ((Math.floor(performance.now()/250)%2)?'#ff5a5a':'#ffb0b0') : '#ffd24a';
+  hudText(tl+' s',628,26,22,blink,'right');
+
+  /* --- barre basse --- */
+  hud.fillStyle='rgba(6,9,13,0.88)'; hud.fillRect(0,340,640,20);
+  hud.fillStyle='rgba(90,230,250,0.30)'; hud.fillRect(0,340,640,1);
+  hudText('FLECHES / WASD  DEPLACER     R  REJOUER     M  SON',320,351,8,'rgba(190,215,225,0.80)','center');
+
+  if(mode==='over'||mode==='win'){
+    hud.fillStyle='rgba(4,7,10,0.76)';
+    hud.fillRect(0,0,640,360);
+    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,140,30,mode==='win'?'#5cf0b0':'#ffd24a','center');
+    hudText('CASES NETTOYEES : '+score+' / '+totalCleanable,320,186,12,'#eafcff','center');
+    hudText('BOT : '+botScore+' CASES',320,208,10,'#ff9a7a','center');
+    hudText('R  POUR REJOUER',320,250,14,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
+  }
+}
+/* ---------- 15. BOUCLE ---------- */
+var last=performance.now(), fpsFrames=0, fpsT=last, fpsReported=0;
+var cpuMs=0, cpuN=0, tFrame=0;
+
+function resizeStage(){
+  var s=Math.min(window.innerWidth/OW, window.innerHeight/OH);
+  stage.style.transform='scale('+s+')';
+}
+window.addEventListener('resize',resizeStage);
+
+function frame(now){
+  tFrame=performance.now();
+  var dt=(now-last)/1000; last=now;
+  if(dt>0.05) dt=0.05;
+
+  if(mode==='play'){
+    timeLeft-=dt;
+    if(timeLeft<=0){ timeLeft=0; mode='over'; }
+  }
+  updateMachines(dt);
+  if(mode==='play') botThink(dt);
+
+  // --- passe scene -> FBO basse res ---
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+  gl.viewport(0,0,GW,GH);
+  gl.clearColor(0.045,0.055,0.070,1);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.disable(gl.CULL_FACE);
+  drawScene();
+
+  // --- passe upscale NEAREST -> canvas ---
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,OW,OH);
+  gl.disable(gl.DEPTH_TEST);
+  gl.clearColor(0,0,0,1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  drawBlit();
+
+  drawHUD();
+  cpuMs += performance.now()-tFrame; cpuN++;
+
+  fpsFrames++;
+  if(now-fpsT>=1000){
+    var f=Math.round(1000*fpsFrames/(now-fpsT));
+    if(fpsReported<12 || fpsReported%5===0) console.log('FPS: '+f+' ('+fpsFrames+' frames / '+Math.round(now-fpsT)+' ms)');
+    fpsReported++;
+    fpsFrames=0; fpsT=now;
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- 16. DEMARRAGE ---------- */
+resetGame();
+resizeStage();
+requestAnimationFrame(frame);
+
+// petit garde-fou : verifie que le FBO est complet
+if(!fbOK) console.error('FBO incomplet');
+window.__mob = {
+  get state(){
+    return { mode:mode, score:score, botScore:botScore, timeLeft:Math.round(timeLeft*10)/10,
+             px:player.wx, pz:player.wz, gx:player.gx, gy:player.gy,
+             botx:bot.wx, botz:bot.wz, dirtyLeft:dirtyLeft, fboOK:fbOK,
+             glErr:gl.getError(),
+             cpuMs: cpuN?Math.round(cpuMs/cpuN*100)/100:0 };
+  },
+  reset: resetGame,
+  setShadows: function(v){ SHADOWS=!!v; },
+  setTime: function(v){ timeLeft=v; },
+  project: function(x,y,z){
+    var v=[x,y,z,1], o=[0,0,0,0];
+    for(var r=0;r<4;r++) o[r]=PV[r]*v[0]+PV[4+r]*v[1]+PV[8+r]*v[2]+PV[12+r]*v[3];
+    var ix=o[0]/o[3], iy=o[1]/o[3];
+    return [Math.round((ix*0.5+0.5)*OW), Math.round((1-(iy*0.5+0.5))*OH)];
+  },
+  pos: function(){
+    return { player:{x:player.wx,z:player.wz,a:player.angle}, bot:{x:bot.wx,z:bot.wz,a:bot.angle} };
+  }
+};
+})();
+</script>
+</body>
+</html>
