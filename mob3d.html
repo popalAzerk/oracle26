@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v0.13 — manette calibree mobile</title>
+<title>MOB RACER 3D v0.14 — traces bleu/vert, choix perso et machine</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -687,6 +687,23 @@ function texFloor(pal,state){
       px(g,17,19,'rgba(240,252,255,0.50)',8,2);
       px(g,8,12,'#ffffff',2,2);
       px(g,22,8,'rgba(255,255,255,0.85)',1,1);
+    } else if(state==='trailBot'){
+      /* v0.14 : TRACE VERTE du bot — le joueur laisse du bleu, Laya laisse
+         du vert : on lit au sol qui a nettoyé quoi (et qui gagne). */
+      px(g,0,0,'#1f5c34',w,h);
+      for(var tyB=0;tyB<2;tyB++){
+        for(var txB=0;txB<2;txB++){
+          var cg=((txB+tyB)%2) ? '#5fd07a' : '#78dd8e';
+          px(g,txB*16+1,tyB*16+1,cg,14,14);
+          px(g,txB*16+1,tyB*16+1,'#b6f5c2',14,1);
+          px(g,txB*16+1,tyB*16+1,'#b6f5c2',1,14);
+          px(g,txB*16+14,tyB*16+1,'#37904f',1,14);
+          px(g,txB*16+1,tyB*16+14,'#37904f',14,1);
+        }
+      }
+      px(g,3,6,'rgba(226,255,232,0.55)',10,2);
+      px(g,17,19,'rgba(226,255,232,0.45)',8,2);
+      px(g,8,12,'#ffffff',2,2);
     } else if(state==='dirty'){
       var st=[[3,4,11,9],[18,6,10,8],[6,19,12,8],[20,20,9,7]];
       for(var i=0;i<st.length;i++){
@@ -707,6 +724,7 @@ function buildFloorSet(pal){
   return {
     clean: makeTex(texFloor(pal,'clean'),false),
     trail: makeTex(texFloor(pal,'trail'),false),
+    trailBot: makeTex(texFloor(pal,'trailBot'),false),
     dirty: makeTex(texFloor(pal,'dirty'),false),
     nest:  makeTex(texFloor(pal,'nest'),false)
   };
@@ -1187,6 +1205,53 @@ var POLL_DESC ={
   museum:'POLLUEURS : TOURISTES · RATONS LAVEURS · CHIENS'
 };
 
+/* ═════════ v0.14 : PERSONNAGES & VEHICULES DE NETTOYAGE ═════════
+   Chaque personnage a un look ET un petit avantage réel (appliqué dans le jeu).
+   Chaque véhicule change la couleur de la machine, sa vitesse et son inertie. */
+var CHARS=[
+  { id:'stg',  name:'LE STAGIAIRE',   tag:'TOUT JUSTE SORTI DE FORMATION',
+    desc:'Combinaison orange vif. Rapide sur ses pieds, un peu naif.',
+    suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
+    perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
+  { id:'chef', name:'LA CHEF D EQUIPE', tag:'20 ANS DE CARRELAGE',
+    desc:'Combinaison violette, gestes surs. Son savon tient plus longtemps.',
+    suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
+    perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
+  { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
+    desc:'Vert de travail. Sa torpille laveuse couvre une zone plus large.',
+    suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
+    perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
+  { id:'rob',  name:'L APPRENTI ROBOT', tag:'NE PREND JAMAIS DE PAUSE',
+    desc:'Blanc brillant. Ne derape presque pas, meme savonne.',
+    suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
+    perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
+];
+var VEHICLES=[
+  { id:'auto', name:'AUTOLAVEUSE 3000', tag:'LA CLASSIQUE',
+    desc:'Equilibree : vitesse et tenue de route moyennes.',
+    chassis:[1,1,1], basin:[0.60,0.86,1.0], accent:[0.60,0.86,1.0], spd:1.0,  inertia:1.0 },
+  { id:'mono', name:'MONOBROSSE XL',    tag:'RAPIDE MAIS GLISSANTE',
+    desc:'La plus rapide du parc, mais elle glisse dans les virages.',
+    chassis:[1.0,0.96,0.88], basin:[1.0,0.72,0.30], accent:[1.0,0.72,0.30], spd:1.16, inertia:1.7 },
+  { id:'indus',name:'L INDUSTRIEL',     tag:'LOURD ET STABLE',
+    desc:'Lente, mais elle ne derape jamais : ideale en patinoire.',
+    chassis:[0.86,0.90,0.94], basin:[0.52,0.62,0.72], accent:[0.52,0.62,0.72], spd:0.90, inertia:0.35 },
+  { id:'mini', name:'LE MINI',          tag:'PETIT GABARIT',
+    desc:'Un peu plus vive que la moyenne et bien plus maniable.',
+    chassis:[1.04,1.04,1.06], basin:[0.72,1.0,0.62], accent:[0.72,1.0,0.62], spd:1.08, inertia:0.75 }
+];
+var charIdx=0, vehIdx=0;
+function applyLoadout(){
+  var C=CHARS[charIdx], V=VEHICLES[vehIdx];
+  player.suit=C.suit; player.pants=C.pants||[0.28,0.33,0.46]; player.skinC=C.skin; player.capC=C.cap;
+  player.machChassis=V.chassis; player.basinTint=V.basin; player.machAccent=V.accent;
+  player.speedMul = V.spd * C.spd;                 /* v0.14 : vitesse du véhicule × du personnage */
+  player.moveTime = MOVE_TIME / player.speedMul;
+  player.inertiaMul = V.inertia * C.inertiaMul;
+  player.soapMul = C.soapMul;
+  player.torpBonus = C.torpBonus;
+}
+
 var player = newMach(7,9,0);
 var bot    = newMach(7,4,1);
 player.basinTint=[0.62,0.86,1.0];
@@ -1309,6 +1374,7 @@ function resetGame(mode0){
   }
   resetMach(player,7,9,0);
   resetMach(bot,7,4,0);
+  applyLoadout();          /* v0.14 : applique personnage + machine choisis */
 
   /* nids, savon, torpille, grand-mere, pollueurs */
   nests=[]; soap=null; torp=null; wave=null; coins=[]; parts=[];
@@ -1428,7 +1494,7 @@ function soilCell(gx,gy,kind){
   if(gx<0||gy<0||gx>=COLS||gy>=ROWS) return false;
   var i=idxAt(gx,gy);
   if(blocked[i]) return false;
-  if(cells[i]!==1 && cells[i]!==2) return false;      /* deja sale / nid : rien a salir */
+  if(cells[i]!==1 && cells[i]!==2 && cells[i]!==4) return false;  /* deja sale / nid : rien a salir */
   cells[i]=0; detW[i]=0; detHits[i]=0; cleanHits[i]=0;
   dirtyByPolluters++;
   addMark(gx,gy,kind);
@@ -1444,7 +1510,7 @@ function pickCleanCell(fromX,fromZ,minD,maxD){
     for(var gx=1;gx<COLS-1;gx++){
       var i=idxAt(gx,gy);
       if(blocked[i]) continue;
-      if(cells[i]!==1 && cells[i]!==2) continue;
+      if(cells[i]!==1 && cells[i]!==2 && cells[i]!==4) continue;   /* v0.14 : le vert est salissable */
       var d=Math.abs((gx-7)-fromX)+Math.abs((gy-6)-fromZ);
       if(d<minD||d>maxD) continue;
       cand.push([gx,gy]);
@@ -1570,7 +1636,7 @@ var floorBuf = {0:null,1:null,2:null,3:null};
 var floorCnt = {0:0,1:0,2:0,3:0};
 
 function buildFloor(){
-  var arrs={0:[],1:[],2:[],3:[]};
+  var arrs={0:[],1:[],2:[],3:[],4:[]};   /* v0.14 : +4 = trace du bot */
   for(var gy=0;gy<ROWS;gy++){
     for(var gx=0;gx<COLS;gx++){
       var st=cells[idxAt(gx,gy)];
@@ -1586,7 +1652,7 @@ function buildFloor(){
       pushV(a,x0,0,z0,N,0,1);
     }
   }
-  for(var k=0;k<4;k++){
+  for(var k=0;k<5;k++){
     floorCnt[k]=arrs[k].length/STRIDE;
     var f=new Float32Array(arrs[k]);
     if(!floorBuf[k]){
@@ -1598,7 +1664,7 @@ function buildFloor(){
       gl.bufferData(gl.ARRAY_BUFFER,f,gl.DYNAMIC_DRAW);
     }
   }
-  floorMeshes=[0,1,2,3].map(function(k){
+  floorMeshes=[0,1,2,3,4].map(function(k){
     return {buf:floorBuf[k], idx:null, count:floorCnt[k]};
   });
 }
@@ -2197,7 +2263,7 @@ function drawMachine(m){
   var p;
   // jupe / châssis
   box(x,0.05,z, 0.94,0.10,0.94, T.metal, [0.45,0.47,0.50], o);
-  box(x,0.27,z, 0.86,0.40,0.86, T.metal, m.id===0?[1,1,1]:[0.90,1.0,0.94], o);
+  box(x,0.27,z, 0.86,0.40,0.86, T.metal, (m.id===0 && m.machChassis)? m.machChassis : (m.id===0?[1,1,1]:[0.90,1.0,0.94]), o);
   // bac (volume bleu)
   box(x,0.66,z, 0.72,0.40,0.72, T.basin, m.basinTint, o);
   box(x,0.875,z, 0.80,0.07,0.80, T.metal, [1,1,1], o);
@@ -2227,7 +2293,8 @@ function drawPusher(m){
   var bob = m.moving ? Math.sin(m.t*Math.PI)*0.045 : 0;
   var y0 = bob;
   var suit=m.suit;
-  var dark=[0.19,0.17,0.22], pants=[0.28,0.33,0.46];
+  var dark=[0.19,0.17,0.22], pants=(m.pants||[0.28,0.33,0.46]);
+  var skinC=(m.skinC||[0.97,0.76,0.58]);
   // jambes
   box(px_-0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
   box(px_+0.12,y0+0.27,pz_, 0.15,0.40,0.15, T.noise, pants, {ry:m.angle});
@@ -2243,7 +2310,7 @@ function drawPusher(m){
   box(px_-0.28,y0+0.85,pz_+0.24, 0.11,0.10,0.10, T.noise, [0.96,0.75,0.58], {ry:m.angle});
   box(px_+0.28,y0+0.85,pz_+0.24, 0.11,0.10,0.10, T.noise, [0.96,0.75,0.58], {ry:m.angle});
   // tete
-  box(px_,y0+1.04,pz_, 0.28,0.26,0.26, T.noise, [0.97,0.76,0.58], {ry:m.angle});
+  box(px_,y0+1.04,pz_, 0.28,0.26,0.26, T.noise, skinC, {ry:m.angle});
   // yeux
   var ex=Math.sin(m.angle), ez=Math.cos(m.angle);
   var ox=Math.cos(m.angle)*0.06, oz=-Math.sin(m.angle)*0.06;
@@ -2275,6 +2342,7 @@ function drawScene(){
   if(floorCnt[1]) drawFloorMesh(floorMeshes[1], FL.clean);
   if(floorCnt[2]) drawFloorMesh(floorMeshes[2], FL.trail);
   if(floorCnt[3]) drawFloorMesh(floorMeshes[3], FL.nest);
+  if(floorCnt[4]) drawFloorMesh(floorMeshes[4], FL.trailBot);   /* v0.14 : trace verte du bot */
 
   // ombres portees (alpha)
   gl.enable(gl.BLEND);
@@ -2460,7 +2528,7 @@ function startMove(m,di){
   m.angle=Math.atan2(d[0],d[1]);
   m.t=0; m.moving=true;
   /* v0.8 : savon x1,6 / colere de la grand-mere x0,5 */
-  var sp=(m.soapT>0?SAVON_VITESSE_MUL:1)*(m.slowT>0?0.5:1);
+  var sp=(m.soapT>0?SAVON_VITESSE_MUL:1)*(m.slowT>0?0.5:1)*(m.speedMul||1);
   m.moveTime=MOVE_TIME/sp;
   if(m===player) beep(220,0.03,0.03);
   return true;
@@ -2488,15 +2556,17 @@ function arrive(m){
     if(cleanHits[i]>=LV.passes){
       cleanHits[i]=0;
       if(m===player){ cells[i]=2; score++; }
-      else { cells[i]=1; botScore++; }
+      else { cells[i]=4; botScore++; }   /* v0.14 : trace verte */
       m._dirty=true;
     } else {
       burst(m.wx,m.wz,3,[0.72,0.78,0.72]);   /* premier passage : la crasse part a moitie */
     }
     buildFloor();
     recomputeCounts();
-  } else if(m===player && cells[i]===1){
-    cells[i]=2; buildFloor();
+  } else if(m===player && (cells[i]===1||cells[i]===4)){
+    cells[i]=2; buildFloor();   /* le joueur repasse en bleu sur du vert */
+  } else if(m!==player && (cells[i]===1||cells[i]===2)){
+    cells[i]=4; buildFloor();   /* le bot repasse en vert */
   }
   if(dirtyLeft<=0 && mode==='play') mode='win';
 }
@@ -2592,7 +2662,7 @@ function updateParticles(dt){
 function pickSoap(m){
   if(!soap) return;
   if(Math.abs(m.wx-(soap.gx-7))>0.62 || Math.abs(m.wz-(soap.gy-6))>0.62) return;
-  m.soapT=SAVON_DUREE;
+  m.soapT=SAVON_DUREE*(m===player && player.soapMul? player.soapMul : 1);
   burst(m.wx,m.wz,12,[1.6,1.35,1.5]);
   soap=null;
   soapTimer=SAVON_REAPPARITION;
@@ -2615,7 +2685,8 @@ function fireTorpille(m){
   m.torpCharge=0;
   var cx=m.gx, cy=m.gy;
   wave={cx:cx,cy:cy,t:0};
-  var r0=TORPILLE_ZONE>>1, nids=0;
+  var zone = TORPILLE_ZONE + ((m===player && player.torpBonus)?player.torpBonus:0);
+  var r0=zone>>1, nids=0;
   for(var dl=-r0;dl<=r0;dl++){
     for(var dc=-r0;dc<=r0;dc++){
       var cc=cx+dc, ll=cy+dl;
@@ -2623,11 +2694,11 @@ function fireTorpille(m){
       if(blocked[idxAt(cc,ll)]) continue;
       var k=idxAt(cc,ll);
       if(cells[k]===3){
-        cells[k]=2; detW[k]=0; detHits[k]=0; removeNest(cc,ll); removeMarkAt(cc,ll);
+        cells[k]=(m===player)?2:4; detW[k]=0; detHits[k]=0; removeNest(cc,ll); removeMarkAt(cc,ll);
         if(m===player) score+=DETRITUS_MULT; else botScore+=DETRITUS_MULT;
         nids++;
       } else if(cells[k]===0){
-        cells[k]=2; cleanHits[k]=0; removeMarkAt(cc,ll);
+        cells[k]=(m===player)?2:4; cleanHits[k]=0; removeMarkAt(cc,ll);
         if(m===player) score++; else botScore++;
       }
     }
@@ -2804,6 +2875,28 @@ var keyMap={ArrowUp:0,ArrowDown:1,ArrowRight:2,ArrowLeft:3,w:0,s:1,d:2,a:3,W:0,S
 window.addEventListener('keydown',function(e){
   var k=e.key;
 
+  /* --- v0.14 : CHOIX DU PERSONNAGE / DE LA MACHINE --- */
+  if(mode==='charPick'||mode==='vehPick'){
+    var list = (mode==='charPick')?CHARS:VEHICLES;
+    var isChar = (mode==='charPick');
+    var cur = isChar?charIdx:vehIdx;
+    if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); cur=(cur%2===0)?Math.min(cur+1,list.length-1):cur-1; }
+    else if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); cur=(cur%2===1)?cur-1:Math.min(cur+1,list.length-1); }
+    else if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); cur=Math.min(cur+2,list.length-1); }
+    else if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); cur=Math.max(cur-2,0); }
+    else if(k==='Enter'||k===' '){
+      e.preventDefault();
+      if(isChar){ charIdx=cur; mode='vehPick'; beep(720,0.07,0.04); }
+      else { vehIdx=cur; mode='select'; selIdx=levelIdx; beep(880,0.08,0.04); }
+      return;
+    }
+    else if(k==='Escape'){ e.preventDefault(); resetGame('attract'); return; }
+    else return;
+    if(isChar) charIdx=cur; else vehIdx=cur;
+    beep(520,0.04,0.03);
+    return;
+  }
+
   /* --- v0.9 : ECRAN DE SELECTION DES NIVEAUX --- */
   if(mode==='select'){
     if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); navSel(1,0); beep(520,0.04,0.03); return; }
@@ -2819,13 +2912,13 @@ window.addEventListener('keydown',function(e){
   /* --- ENTREE : titres / resultats / niveau suivant --- */
   if(k==='Enter'||k===' '){
     e.preventDefault();
-    if(mode==='attract'){ mode='select'; selIdx=0; beep(660,0.08,0.05); return; }
+    if(mode==='attract'){ mode='charPick'; beep(660,0.08,0.05); return; }
     if(mode==='over'||mode==='win'){ nextLevel(); return; }
     return;
   }
   if(k==='Escape'){
     e.preventDefault();
-    if(mode==='play'||mode==='over'||mode==='win'){ recordHighScore(); mode='select'; selIdx=levelIdx; beep(300,0.07,0.04); }
+    if(mode==='play'||mode==='over'||mode==='win'){ recordHighScore(); mode='charPick'; beep(300,0.07,0.04); }
     return;
   }
   if(k==='r'||k==='R'){
@@ -2855,7 +2948,7 @@ window.addEventListener('keydown',function(e){
   if(!player.moving){
     /* pendant la glisse du savon, pas de pivot sur place —
        la machine glisse encore une case avant de tourner (inertie) */
-    if(player.soapT>0 && di!==player.dirIdx){
+    if(player.soapT>0 && di!==player.dirIdx && (player.inertiaMul===undefined||player.inertiaMul>0.6)){
       if(startMove(player,player.dirIdx)){ player.queued=di; return; }
     }
     startMove(player,di);
@@ -2919,6 +3012,55 @@ function hudStars(x,y,n,on){
   hud.fillStyle= on ? (n>=4?'#ff6a5a':(n===3?'#ffb04a':(n===2?'#ffd45a':'#6ff0c8'))) : 'rgba(190,215,225,0.55)';
   hud.fillText(s,x,y);
 }
+
+/* ═════════ v0.14 : ECRAN DE CHOIX DU PERSONNAGE ═════════ */
+function drawPickGrid(title, subtitle, items, idx, kind){
+  var t=performance.now()/1000;
+  hud.fillStyle='rgba(4,7,12,0.94)'; hud.fillRect(0,0,640,360);
+  drawStripeBorder();
+  hudText('MOB RACER',320,26,24,'#eafcff','center');
+  hudText(title,320,50,13,'#ffd45a','center');
+  hudText(subtitle,320,66,8,'#8fa6b4','center','normal');
+  var CW=286, CH=118, GX=26, GY=80;
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    var cx=GX+(i%2)*(CW+12), cy=GY+((i/2)|0)*(CH+8);
+    var on=(i===idx);
+    hud.fillStyle = on ? 'rgba(26,44,58,0.98)' : 'rgba(11,16,23,0.94)';
+    hud.fillRect(cx,cy,CW,CH);
+    hud.fillStyle = on ? (Math.floor(t*4)%2?'#ffd45a':'#ffeaa0') : 'rgba(120,150,170,0.5)';
+    hud.fillRect(cx,cy,CW,3); hud.fillRect(cx,cy+CH-3,CW,3);
+    hud.fillRect(cx,cy,3,CH); hud.fillRect(cx,cx+CW-3,3,CH);
+    /* aperçu : personnage ou machine */
+    var px0=cx+30, py0=cy+CH-26;
+    if(kind==='char'){
+      hud.fillStyle='rgb('+Math.round(it.suit[0]*190)+','+Math.round(it.suit[1]*190)+','+Math.round(it.suit[2]*190)+')';
+      hud.fillRect(px0-9,py0-30,18,20);                       /* combinaison */
+      hud.fillStyle='rgb('+Math.round(it.skin[0]*190)+','+Math.round(it.skin[1]*190)+','+Math.round(it.skin[2]*190)+')';
+      hud.fillRect(px0-6,py0-40,12,10);                        /* tête */
+      hud.fillStyle='rgb('+Math.round(it.cap[0]*190)+','+Math.round(it.cap[1]*190)+','+Math.round(it.cap[2]*190)+')';
+      hud.fillRect(px0-8,py0-44,16,5);                         /* casquette */
+      hud.fillStyle='rgb('+Math.round(it.pants[0]*190)+','+Math.round(it.pants[1]*190)+','+Math.round(it.pants[2]*190)+')';
+      hud.fillRect(px0-9,py0-10,18,10);                        /* jambes */
+    } else {
+      hud.fillStyle='rgb('+Math.round(it.chassis[0]*150)+','+Math.round(it.chassis[1]*150)+','+Math.round(it.chassis[2]*150)+')';
+      hud.fillRect(px0-18,py0-16,36,16);                       /* châssis */
+      hud.fillStyle='rgb('+Math.round(it.basin[0]*190)+','+Math.round(it.basin[1]*190)+','+Math.round(it.basin[2]*190)+')';
+      hud.fillRect(px0-12,py0-28,24,12);                       /* bac */
+      hud.fillStyle='rgba(255,255,255,0.85)';
+      hud.fillRect(px0-2,py0-36,4,8);                          /* arceau */
+    }
+    hudText(it.name,cx+56,cy+22,11,on?'#ffffff':'#c3d5e0');
+    hudText(it.tag,cx+56,cy+38,7,on?'#7ad8f0':'#6d8492','left','normal');
+    var lines=hudWrap(it.desc,52);
+    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+56,cy+54+d*9,7,on?'#cfe3ff':'#8ea3b0','left','normal');
+    hudText(it.perk,cx+12,cy+CH-14,8,on?'#9fe0b0':'#6d8492');
+    if(on) hudText('▶',cx+CW-14,cy+16,12,'#ffd45a','center');
+  }
+  hudText('FLECHES : CHOISIR   ·   ENTREE : VALIDER   ·   ECHAP : TITRE',320,338,8,'#cfe3ff','center','normal');
+}
+function drawCharPick(){ drawPickGrid('CHOISIS TON PERSONNAGE','CHAQUE EQUIPIER A UN VRAI AVANTAGE', CHARS, charIdx, 'char'); }
+function drawVehPick(){ drawPickGrid('CHOISIS TA MACHINE','VITESSE ET TENUE DE ROUTE', VEHICLES, vehIdx, 'veh'); }
 
 /* v0.9 : ECRAN DE SELECTION DES NIVEAUX (4 cartes, fleches + Entree) */
 function drawSelect(){
@@ -3050,6 +3192,8 @@ function drawHUD(){
   /* v0.9 : ecrans plein HUD */
   if(mode==='attract'){ drawAttract(); return; }
   if(mode==='select'){ drawSelect(); return; }
+  if(mode==='charPick'){ drawCharPick(); return; }
+  if(mode==='vehPick'){ drawVehPick(); return; }
   var pct = totalCleanable? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable):0;
 
   /* --- barre haute --- */
@@ -3070,10 +3214,11 @@ function drawHUD(){
   for(var i=0;i<Math.round(fill*bw/2)*2;i+=2) hud.fillRect(bx+i,by,2,bh);
   hud.strokeStyle='rgba(255,255,255,0.22)'; hud.lineWidth=1; hud.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
 
-  hud.fillStyle='#f0a83c'; hud.fillRect(196,31,6,6);
-  hudText('TOI '+score,206,35,8,'#eafcff');
-  hud.fillStyle='#e05555'; hud.fillRect(258,31,6,6);
-  hudText('BOT '+botScore,268,35,8,'#eafcff');
+  /* v0.14 : code couleur cohérent avec les traces au sol — BLEU = toi, VERT = Laya */
+  hud.fillStyle='#5fbdf0'; hud.fillRect(196,31,6,6);
+  hudText('TOI '+score,206,35,8,'#bfe6ff');
+  hud.fillStyle='#5fd07a'; hud.fillRect(258,31,6,6);
+  hudText('LAYA '+botScore,268,35,8,'#bff5c8');
 
   /* v0.9 : pollueurs actifs + cases resalies (remplace les coeurs) */
   hudText('POLLUEURS '+polluters.length,336,10,8,'#7f96a3');
@@ -3141,14 +3286,25 @@ function drawHUD(){
   if(mode==='over'||mode==='win'){
     hud.fillStyle='rgba(4,7,10,0.82)';
     hud.fillRect(0,0,640,360);
-    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,108,30,mode==='win'?'#5cf0b0':'#ffd24a','center');
-    hudText('NIVEAU '+LV.num+' · '+LV.name,320,142,11,'#7ad8f0','center');
-    hudText('TON SCORE : '+score+'   ·   BOT : '+botScore,320,176,13,'#eafcff','center');
-    hudText('PROPRE : '+pct+'%   ·   SALI PAR LES POLLUEURS : '+dirtyByPolluters+'   ·   PIECES : '+player.coins,320,200,10,'#cfe3ff','center','normal');
-    hudText('HIGH SCORE '+LV.name+' : '+(highScores[LV.id]||0),320,222,10,HUD_ACC,'center','normal');
+    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,92,28,mode==='win'?'#5cf0b0':'#ffd24a','center');
+    hudText('NIVEAU '+LV.num+' · '+LV.name,320,120,11,'#7ad8f0','center');
+    /* v0.14 : LE VAINQUEUR = CELUI QUI A NETTOYE LE PLUS DE CASES */
+    var gagne = score>botScore, egal = (score===botScore);
+    var vTxt = egal ? 'EGALITE PARFAITE' : (gagne ? 'TU GAGNES !' : 'LAYA GAGNE');
+    var vCol = egal ? '#ffd24a' : (gagne ? '#7fd8ff' : '#5fd07a');   /* bleu = toi, vert = Laya */
+    hud.fillStyle = egal ? 'rgba(60,50,10,0.55)' : (gagne ? 'rgba(12,44,64,0.55)' : 'rgba(10,58,34,0.55)');
+    hud.fillRect(130,134,380,34);
+    hudText(vTxt,320,151,20,vCol,'center');
+    /* compteurs de CASES (bleu = toi, vert = Laya) */
+    hud.fillStyle='rgba(90,180,240,0.85)'; hud.fillRect(150,178,12,12);
+    hudText('TOI  '+score+' CASES',168,184,11,'#bfe6ff','left');
+    hud.fillStyle='rgba(95,208,122,0.85)';  hud.fillRect(330,178,12,12);
+    hudText('LAYA '+botScore+' CASES',348,184,11,'#bff5c8','left');
+    hudText('PROPRE : '+pct+'%   ·   SALI PAR LES POLLUEURS : '+dirtyByPolluters+'   ·   PIECES : '+player.coins,320,206,9,'#cfe3ff','center','normal');
+    hudText('HIGH SCORE '+LV.name+' : '+(highScores[LV.id]||0),320,226,9,HUD_ACC,'center','normal');
     var nx=LEVELS[(levelIdx+1)%LEVELS.length];
-    hudText('ENTREE = NIVEAU SUIVANT  ('+nx.name+')',320,256,13,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
-    hudText('R = REJOUER   ·   ECHAP = CHOIX DES SALLES',320,282,9,'#8fa6b4','center','normal');
+    hudText('ENTREE = NIVEAU SUIVANT  ('+nx.name+')',320,258,12,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
+    hudText('R = REJOUER   ·   ECHAP = CHOIX DES SALLES',320,282,8,'#8fa6b4','center','normal');
   }
 }
 /* ---------- 15. HIGH SCORE (localStorage) ---------- */
@@ -3348,6 +3504,13 @@ stickEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   });
 })();
 
+window.__endRound = function(){ timeLeft=0.01; };
+window.__cellStates = function(){
+  var c=[0,0,0,0,0];
+  for(var i=0;i<cells.length;i++) c[cells[i]]++;
+  return { sale:c[0], propre:c[1], bleuToi:c[2], nids:c[3], vertLaya:c[4] };
+};
+window.__loadout = function(){ return { char:CHARS[charIdx].id, veh:VEHICLES[vehIdx].id, speedMul:player.speedMul, moveTime:player.moveTime, inertia:player.inertiaMul, soapMul:player.soapMul, torpBonus:player.torpBonus, suit:player.suit, basin:player.basinTint }; };
 window.__padState = function(){ return { on:PAD_ON, touch:isTouch, cls:padEl.className }; };
 detectTouch();
 
