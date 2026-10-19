@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v1.5 — moteur optimisé + écrans borne</title>
+<title>MOB RACER 3D v1.6 — conducteurs 3D, caméra oblique</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -1169,12 +1169,12 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 /* v0.17 : caméra DIAGONALE — on pivote l'axe de visée de 24° autour de la salle
    pour retrouver la lecture « diorama » des JRPG 3D pixel (Breath of Fire IV) :
    les murs fuient en biais au lieu d'être strictement parallèles à l'écran. */
-var CAM_ROT=0, CAM_DIST=1.12;     /* v1.1 : retour à la VUE CLASSIQUE (pas de rotation), cadrage ajusté */
+var CAM_ROT=0, CAM_DIST=1.06;   /* v1.6 : recul ajusté à la nouvelle plongée (~42°) */     /* v1.1 : retour à la VUE CLASSIQUE (pas de rotation), cadrage ajusté */
 function rotAroundY(p, a, k){
   var c=Math.cos(a), sn=Math.sin(a);
   return [ (p[0]*c + p[2]*sn)*k, p[1]*k, (-p[0]*sn + p[2]*c)*k ];
 }
-var EYE_0=[0,13.35,9.72], TARGET_0=[0,0.25,0.75];
+var EYE_0=[0,11.20,12.40], TARGET_0=[0,0.25,1.30];   /* v1.6 : plongée ~42° (au lieu de 54°) — les volumes verticaux redeviennent lisibles */
 var EYE = rotAroundY(EYE_0, CAM_ROT, CAM_DIST);
 var TARGET = rotAroundY(TARGET_0, CAM_ROT, CAM_DIST);
 var FOV=45*Math.PI/180;
@@ -2784,6 +2784,78 @@ function spriteTex(who, dir){
   return SPR[key];
 }
 /* billboard : quad vertical orienté vers la caméra */
+
+/* ═════════ v1.6 : CONDUCTEUR EN 3D ASSIS SUR LA MACHINE ═════════
+   Le sprite billboard 2D est ABANDONNÉ en jeu (trop grand, à plat, étranger au
+   volume de la scène — retour de José). Le personnage est un vrai modèle 3D
+   low-poly, assis sur la selle, mains sur le volant, à l'ÉCHELLE de la machine :
+   la référence montre un conducteur dont la partie visible (torse + tête) fait
+   ~⅓ de la hauteur totale machine + homme, la machine étant ~2× plus longue
+   qu'un homme debout. On ne modélise donc que ce qui dépasse : jambes repliées,
+   torse, bras, tête, casquette. Hauteur totale ≈ 1,02 unité pour une machine
+   de 0,90 de long. */
+function drawRider(m){
+  /* ═════════ v1.6.1 : CONDUCTEUR 3D LISIBLE À NOTRE ÉCHELLE ═════════
+     Contrainte mesurée : notre caméra montre 15×13 cases dans 640×360, soit
+     ~18 px par case — un volume vertical de 0,55 unité ne projette que ~7 px :
+     illisible. On dimensionne donc le conducteur pour qu'il LISE à cette
+     échelle (partie visible ≈ 0,9 unité, soit ~13 px en 640 et ~28 px dans le
+     canvas 1440), tout en gardant la pose assise et l'ancrage sur la machine. */
+  var C  = (m===player) ? CHARS[charIdx]
+                        : { suit:[0.86,0.24,0.22], pants:[0.24,0.26,0.34], skin:[0.90,0.70,0.52], cap:[0.96,0.95,0.90] };
+  var team = (m===player) ? [0.32,0.70,1.05] : [0.40,0.92,0.55];
+  var ry = m.angle, A={ry:ry};
+  var cx = m.wx+m.kox, cz = m.wz+m.koz;
+  var deck = 0.66;                                   /* assise au bord arrière */
+  var bob  = m.moving ? Math.sin(m.t*Math.PI*2)*0.018 : 0;
+  var y    = deck + bob;
+  function at(lx,lz){ return localToWorld(cx,cz,ry,lx,lz); }
+  var seat = at(0,-0.50), hip = at(0,-0.44);
+  var fx=Math.sin(ry), fz=Math.cos(ry), pxv=Math.cos(ry), pzv=-Math.sin(ry);
+
+  /* siège + dossier */
+  box(seat[0], deck-0.05, seat[1], 0.44,0.10,0.40, T.noise, [0.14,0.16,0.20], A);
+  box(seat[0]-fx*0.20, deck+0.20, seat[1]-fz*0.20, 0.40,0.42,0.08, T.noise, [0.16,0.18,0.23], A);
+
+  /* jambes repliées + pieds */
+  var l1=at(0.13,0.02), l2=at(-0.13,0.02);
+  box(l1[0], y+0.16, l1[1], 0.15,0.22,0.30, T.noise, C.pants, A);
+  box(l2[0], y+0.16, l2[1], 0.15,0.22,0.30, T.noise, C.pants, A);
+  var f1=at(0.13,0.28), f2=at(-0.13,0.28);
+  box(f1[0], y+0.04, f1[1], 0.16,0.11,0.20, T.noise, [0.10,0.10,0.13], A);
+  box(f2[0], y+0.04, f2[1], 0.16,0.11,0.20, T.noise, [0.10,0.10,0.13], A);
+
+  /* silhouette sombre puis torse, plastron, bretelles */
+  box(hip[0]-fx*0.02, y+0.42, hip[1]-fz*0.02, 0.38,0.58,0.30, T.noise, [0.06,0.07,0.09], A);
+  box(hip[0], y+0.44, hip[1], 0.34,0.54,0.26, T.noise, C.suit, A);
+  box(at(0.20,0.02)[0]-fx*0.02, y+0.62, at(0.20,0.02)[1]-fz*0.02, 0.12,0.12,0.20, T.noise, C.suit, A);  /* epaule G */
+  box(at(-0.20,0.02)[0]-fx*0.02, y+0.62, at(-0.20,0.02)[1]-fz*0.02, 0.12,0.12,0.20, T.noise, C.suit, A); /* epaule D */
+  box(at(0,0.12)[0], y+0.38, at(0,0.12)[1], 0.30,0.34,0.05, T.noise, [1.30,1.34,1.40], A);
+  box(at(0.11,0.10)[0], y+0.56, at(0.11,0.10)[1], 0.07,0.22,0.03, T.noise, team, A);
+  box(at(-0.11,0.10)[0], y+0.56, at(-0.11,0.10)[1], 0.07,0.22,0.03, T.noise, team, A);
+
+  /* bras + gants sur les poignées */
+  var s1=at(0.24,0.04), s2=at(-0.24,0.04), h1=at(0.20,0.30), h2=at(-0.20,0.30);
+  box(s1[0], y+0.48, s1[1], 0.13,0.32,0.13, T.noise, C.suit, A);
+  box(s2[0], y+0.48, s2[1], 0.13,0.32,0.13, T.noise, C.suit, A);
+  box(h1[0], y+0.32, h1[1], 0.12,0.24,0.12, T.noise, C.skin, A);
+  box(h2[0], y+0.32, h2[1], 0.12,0.24,0.12, T.noise, C.skin, A);
+  box(h1[0], y+0.22, h1[1], 0.14,0.10,0.14, T.noise, [1.40,1.15,0.32], A);
+  box(h2[0], y+0.22, h2[1], 0.14,0.10,0.14, T.noise, [1.40,1.15,0.32], A);
+
+  /* cou, tête, visage */
+  var head = at(0,-0.44);
+  box(head[0], y+0.63, head[1], 0.15,0.10,0.15, T.noise, C.skin, A);
+  box(head[0]-fx*0.02, y+0.80, head[1]-fz*0.02, 0.26,0.24,0.24, T.noise, [0.06,0.07,0.09], A);
+  box(head[0], y+0.80, head[1], 0.22,0.21,0.21, T.noise, C.skin, A);
+  box(head[0]+fx*0.105+pxv*0.055, y+0.815, head[1]+fz*0.105+pzv*0.055, 0.05,0.06,0.03, T.noise, [0.08,0.08,0.10], A);
+  box(head[0]+fx*0.105-pxv*0.055, y+0.815, head[1]+fz*0.105-pzv*0.055, 0.05,0.06,0.03, T.noise, [0.08,0.08,0.10], A);
+
+  /* casquette : calotte, bandeau d'équipe, visière */
+  box(head[0], y+0.955, head[1], 0.27,0.09,0.26, T.noise, C.cap, A);          /* calotte */
+  box(head[0], y+0.925, head[1], 0.28,0.045,0.27, T.noise, team, A);          /* bandeau */
+  box(head[0]+fx*0.185, y+0.918, head[1]+fz*0.185, 0.25,0.035,0.14, T.noise, [0.07,0.09,0.13], A); /* visière */
+}
 function drawCharSprite(m){
   var who = (m===player) ? 'you' : 'bot';
   var dir = 0;
@@ -3321,10 +3393,8 @@ function drawPusher(m){
   if(!window.__hideMachine){ drawMachine(player); }
   if(!window.__hideMachine){ drawMachine(bot); }
   markPhase('machines');
-  /* v0.17 : personnages en SPRITES 2D pixel (billboard), plus en volumes 3D */
-  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
-  drawCharSprite(player); drawCharSprite(bot);
-  gl.depthMask(true); gl.disable(gl.BLEND);
+  /* v1.6 : CONDUCTEURS EN 3D (retour de José : les sprites 2D étaient trop grands) */
+  drawRider(player); drawRider(bot);
 
   markPhase('entities');   /* bonus, pollueurs, sprites */
   drawFoamParticles();   /* v1.2 : gerbe de mousse autour des brosses (apres props et machines) */
@@ -5325,13 +5395,7 @@ window.__spriteBox = function(){
   return {x0:Math.round(r.left+a.x*kx), y0:Math.round(r.top+a.y*ky),
           x1:Math.round(r.left+b.x*kx), y1:Math.round(r.top+b.y*ky)};
 };
-window.__playerScreen = function(){
-  var p=hudProject(player.wx, 0.6, player.wz);
-  if(!p) return null;
-  var r=document.getElementById('stage').getBoundingClientRect();
-  var s=r.width/OW;
-  return { x: Math.round(r.left + p.x*(OW/GW)*s), y: Math.round(r.top + p.y*(OH/GH)*s) };
-};
+window.__playerScreen = function(){ return hudProject(player.wx+player.kox, 0.95, player.wz+player.koz); };
 window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
 window.__hudProjectRaw = function(x,y,z){ return hudProject(x,y,z); };
