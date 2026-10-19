@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v0.17 — supermarché de nuit, stations, sprites 2D</title>
+<title>MOB RACER 3D v1.0 — moteur hi-bit, HUD borne, supermarché</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -168,7 +168,7 @@
   <div id="safeProbe"></div>
   <div id="stage">
     <canvas id="gl" width="1440" height="810"></canvas>
-    <canvas id="hud" width="960" height="540"></canvas>
+    <canvas id="hud" width="1440" height="810"></canvas>
   </div>
   <button class="mini" id="btnFull" title="Plein écran">⛶</button>
   <div id="pad">
@@ -260,7 +260,7 @@ function nmat(model){
 
 /* ---------- 2. ETAT GLOBAL / CONSTANTES ---------- */
 var COLS=15, ROWS=13;
-var GW=960, GH=540;          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
+var GW=1440, GH=810;          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
 var OW=1440, OH=810;         // canvas final (960×540 → ×1,5)
 
 var glCanvas=document.getElementById('gl');
@@ -733,6 +733,14 @@ function texFloor(pal,state){
       px(g,17,19,'rgba(240,252,255,0.50)',8,2);
       px(g,8,12,'#ffffff',2,2);
       px(g,22,8,'rgba(255,255,255,0.85)',1,1);
+      /* v1.0 : MOUSSE et BULLES — la trace se lit comme du sol lessivé */
+      var bub=[[4,5,3],[10,3,2],[15,6,2],[6,12,2],[12,13,3],[21,4,2],[25,10,3],[18,18,2],[3,18,2],[26,18,2],[27,4,2],[9,21,2]];
+      for(var bi=0;bi<bub.length;bi++){
+        px(g,bub[bi][0],bub[bi][1],'rgba(255,255,255,0.95)',bub[bi][2],bub[bi][2]);
+        px(g,bub[bi][0],bub[bi][1],'rgba(150,210,255,0.90)',1,1);
+      }
+      px(g,7,9,'rgba(255,255,255,0.50)',9,2);
+      px(g,19,15,'rgba(255,255,255,0.42)',7,2);
     } else if(state==='trailBot'){
       /* v0.14 : TRACE VERTE du bot — le joueur laisse du bleu, Laya laisse
          du vert : on lit au sol qui a nettoyé quoi (et qui gagne). */
@@ -1111,7 +1119,13 @@ var LEVELS=[
            {k:'gondola',gx:9,gy:8},{k:'gondola',gx:10,gy:8},{k:'gondola',gx:11,gy:8},{k:'gondola',gx:12,gy:8},
            /* ── CAISSES (bas) ── */
            {k:'checkout',gx:2,gy:11},{k:'checkout',gx:5,gy:11},{k:'checkout',gx:9,gy:11},{k:'checkout',gx:12,gy:11},
-           {k:'bin',gx:7,gy:11}],
+           {k:'bin',gx:7,gy:11},
+           /* ── DENSITÉ : cartons, bidons d'eau, micro-déchets dans les allées ── */
+           {k:'carton',gx:1,gy:4,v:0},{k:'carton',gx:6,gy:2,v:1},{k:'carton',gx:10,gy:2,v:2},
+           {k:'carton',gx:13,gy:5,v:0},{k:'carton',gx:6,gy:10,v:1},{k:'carton',gx:13,gy:10,v:2},
+           {k:'jug',gx:1,gy:6},{k:'jug',gx:13,gy:6},{k:'jug',gx:6,gy:4},{k:'jug',gx:8,gy:4},
+           {k:'debris',gx:2,gy:5},{k:'debris',gx:12,gy:2},{k:'debris',gx:4,gy:10},{k:'debris',gx:10,gy:10},
+           {k:'debris',gx:1,gy:9},{k:'debris',gx:13,gy:3}],
     extras:[{k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.20,0.22,0.30]},
             {k:'neon', x:-6.2, z:-8.8, c:[0.45,0.85,1.55]},
             {k:'neon', x:6.2, z:-8.8, c:[1.45,0.90,0.35]},
@@ -2201,14 +2215,31 @@ function drawProps(){
       box(x-0.18,0.28,z-0.04, 0.40,0.06,0.38, T.noise, [2.35,2.10,1.60]);   /* liseré clair */
       box(x+0.22,0.24,z+0.06, 0.34,0.24,0.32, T.wood, [1.72,1.42,1.02]);
       box(x+0.02,0.56,z-0.02, 0.30,0.24,0.28, T.wood, [2.05,1.72,1.26]);
+    } else if(p.k==='carton'){
+      /* ── CARTON éparpillé (obstacle) ── */
+      var ch2 = 0.30 + ((p.v||0)%3)*0.08;
+      box(x,ch2/2,z, 0.62,ch2,0.52, T.wood, [1.55,1.18,0.72], {ry:ry});
+      box(x,ch2,z, 0.64,0.05,0.54, T.wood, [1.95,1.55,1.02], {ry:ry});
+      box(x,ch2*0.62,z+0.27, 0.30,0.05,0.02, T.noise, [1.10,0.82,0.50], {ry:ry});   /* ruban */
+      box(x-0.10,ch2+0.03,z-0.06, 0.24,0.04,0.20, T.noise, [2.20,1.85,1.30], {ry:ry}); /* rabat ouvert */
+    } else if(p.k==='jug'){
+      /* ── BIDON D'EAU bleu à croix blanche (ramassable visuellement) ── */
+      box(x,0.22,z, 0.34,0.44,0.34, T.metal, [0.42,0.72,1.25]);
+      box(x,0.46,z, 0.20,0.10,0.20, T.metal, [0.85,0.92,1.05]);
+      box(x,0.24,z+0.18, 0.22,0.06,0.02, T.noise, [2.3,2.3,2.3]);
+      box(x,0.24,z+0.18, 0.06,0.22,0.02, T.noise, [2.3,2.3,2.3]);
+    } else if(p.k==='debris'){
+      /* ── micro-déchet : papier / canette ── */
+      box(x,0.035,z, 0.26,0.02,0.20, T.noise, [2.35,2.30,2.10], {ry:ry});
+      box(x+0.10,0.055,z+0.06, 0.09,0.09,0.09, T.metal, [1.30,0.35,0.30], {ry:ry});
     } else if(p.k==='recharge'){
-      if(!SIGN_TEX.recharge) SIGN_TEX.recharge=makeSignTex('RECHARGE','rgba(8,30,50,0.92)','#6fd4ff');
-      drawMesh(QUAD_XY, trs(x, 1.30, z-0.05, 1.55, 0.40, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.recharge, [1,1,1], {unlit:true});
+      if(!SIGN_TEX.recharge) SIGN_TEX.recharge=makeSignTex('RECHARGE / WATER','rgba(8,30,50,0.94)','#45c8ea');
+      drawMesh(QUAD_XY, trs(x, 1.36, z-0.05, 2.00, 0.34, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.recharge, [1,1,1], {unlit:true});
       box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
       box(x,0.028,z, 0.99,0.012,0.99, T.noise, [0.25,0.70,1.20], {emit:0.35});
     } else if(p.k==='vidange'){
-      if(!SIGN_TEX.vidange) SIGN_TEX.vidange=makeSignTex('VIDANGE','rgba(48,24,6,0.92)','#ffb03c');
-      drawMesh(QUAD_XY, trs(x, 1.30, z-0.05, 1.55, 0.40, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.vidange, [1,1,1], {unlit:true});
+      if(!SIGN_TEX.vidange) SIGN_TEX.vidange=makeSignTex('VIDANGE / DRAIN','rgba(48,24,6,0.94)','#f0a030');
+      drawMesh(QUAD_XY, trs(x, 1.36, z-0.05, 2.00, 0.34, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.vidange, [1,1,1], {unlit:true});
       box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
       box(x,0.028,z, 0.99,0.012,0.99, T.noise, [1.55,0.80,0.20], {emit:0.35});
       /* ── STATION DE RECHARGE D'EAU (zone au sol, traversable) ── */
@@ -2422,12 +2453,12 @@ function drawPolluters(t){
    face, dos, profil (le profil est miroité pour aller à gauche). */
 /* ── v0.17 : ENSEIGNES 3D (RECHARGE / VIDANGE) dessinées sur canvas ── */
 function makeSignTex(label, bg, fg){
-  var cv=document.createElement('canvas'); cv.width=192; cv.height=48;
+  var cv=document.createElement('canvas'); cv.width=288; cv.height=48;
   var g=cv.getContext('2d');
-  g.fillStyle=bg; g.fillRect(0,0,192,48);
-  g.strokeStyle=fg; g.lineWidth=4; g.strokeRect(2,2,188,44);
-  g.font='bold 26px "Courier New",monospace'; g.textAlign='center'; g.textBaseline='middle';
-  g.fillStyle=fg; g.fillText(label,96,26);
+  g.fillStyle=bg; g.fillRect(0,0,288,48);
+  g.strokeStyle=fg; g.lineWidth=4; g.strokeRect(2,2,284,44);
+  g.font='bold 24px "Courier New",monospace'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillStyle=fg; g.fillText(label,144,26);
   return makeTex(cv,false);
 }
 var SIGN_TEX={};
@@ -3843,7 +3874,7 @@ function drawAttract(){
 }
 
 function drawHUD(){
-  hud.setTransform(1.5,0,0,1.5,0,0);
+  hud.setTransform(2.25,0,0,2.25,0,0);
   /* v0.17 : filtre CRT discret (lignes paires assombries) */
   function crtScanlines(){
     hud.fillStyle='rgba(0,0,0,0.10)';
@@ -3884,40 +3915,55 @@ function drawHUD(){
   if(mode==='vehPick'){ drawVehPick(); return; }
   var pct = totalCleanable? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable):0;
 
-  /* --- barre haute --- */
-  hud.fillStyle='rgba(6,9,13,0.92)'; hud.fillRect(0,0,640,42);
-  hud.fillStyle='rgba(90,230,250,0.10)'; hud.fillRect(0,0,640,2);
-  hud.fillStyle='rgba(90,230,250,0.42)'; hud.fillRect(0,41,640,1);
+  /* ═════════ v1.0 : BARRE HAUTE façon borne d'arcade ═════════ */
+  hud.fillStyle='#151a23'; hud.fillRect(0,0,640,26);
+  hud.fillStyle='rgba(120,200,255,0.16)'; hud.fillRect(0,26,640,1);
+  hud.fillStyle='#3a4356'; hud.fillRect(0,27,640,1);
+  hudText('PROPRETE / CLEAN : '+pct+'%', 12, 13, 11, '#f2f4f8');
+  (function(){
+    var tl=Math.max(0,Math.ceil(timeLeft));
+    var mm=Math.floor(tl/60), ss=tl%60;
+    var txt=(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss;
+    var px0=272, py0=3, pw=96, ph=20, c=6;
+    hud.beginPath();
+    hud.moveTo(px0+c,py0); hud.lineTo(px0+pw-c,py0); hud.lineTo(px0+pw,py0+c);
+    hud.lineTo(px0+pw,py0+ph-c); hud.lineTo(px0+pw-c,py0+ph); hud.lineTo(px0+c,py0+ph);
+    hud.lineTo(px0,py0+ph-c); hud.lineTo(px0,py0+c); hud.closePath();
+    hud.fillStyle='#0d1119'; hud.fill();
+    hud.strokeStyle=(timeLeft<=10&&mode==='play')?'#ff5a5a':'#3a4356'; hud.lineWidth=1; hud.stroke();
+    hudText(txt, px0+pw/2, py0+ph/2+1, 13,
+            (timeLeft<=10&&mode==='play')?'#ff7a6a':'#f2f4f8','center');
+  })();
+  hudText('J1 : '+score+' pts', 392, 13, 11, '#f2a93b');
+  hudText('J2 : '+botScore+' pts', 512, 13, 11, '#dfe3ea');
+  hud.fillStyle='rgba(6,9,13,0.96)'; hud.fillRect(0,28,640,14);
+  hudText(LV.num+'/'+LEVELS.length+' · '+LV.name, 12, 35, 7, '#5fd8ec');
+  hudText('POLLUEURS '+polluters.length, 214, 35, 7, '#7f96a3');
+  hudText('RESALIES '+dirtyByPolluters, 292, 35, 7, dirtyByPolluters>0?'#ff9a7a':'#6d8492');
+  hudText('NIDS '+nests.length, 372, 35, 7, HUD_ACC);
+  hudText('x'+player.coins, 424, 35, 7, HUD_ACC);
 
-  hudText('MOB RACER',12,16,18,'#eafcff');
-  hudText(LV.num+'/'+LEVELS.length+' · '+LV.name,13,32,7,'#5fd8ec');
-
-  /* propre % + barre */
-  hudText('PROPRE',196,10,8,'#7f96a3');
-  hudText(pct+'%',236,10,9,'#6ff0c8');
-  var bx=196,by=18,bw=150,bh=8;
-  hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(bx,by,bw,bh);
-  var fill=Math.max(0,Math.min(1,(totalCleanable-dirtyLeft)/totalCleanable));
-  hud.fillStyle='#3ce0a0';
-  for(var i=0;i<Math.round(fill*bw/2)*2;i+=2) hud.fillRect(bx+i,by,2,bh);
-  hud.strokeStyle='rgba(255,255,255,0.22)'; hud.lineWidth=1; hud.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
-
-  /* v0.14 : code couleur cohérent avec les traces au sol — BLEU = toi, VERT = Laya */
-  /* v0.16 : JAUGE D'EAU (le réservoir se vide à chaque case lavée) */
-  var wx0=196, wy0=298;
-  var gxE=120;
-  hudText('EAU',gxE,wy0+6,8,'#9fd8f0');
-  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(gxE+30,wy0,76,9);
+  /* ═════════ v1.0 : jauges EAU / WATER et CRASSE / GRIME (labels au-dessus) ═════════ */
+  var gxE=120, gW=150, wy0=298;
+  hudText('EAU / WATER', gxE, 294, 8, '#9fd8f0');
+  hud.fillStyle='rgba(255,255,255,0.16)'; hud.fillRect(gxE, 300, gW, 9);
   hud.fillStyle = player.water>0.35 ? '#3fb6f0' : (player.water>0 ? '#f0a83c' : '#e05555');
-  hud.fillRect(gxE+30,wy0,Math.round(76*player.water),9);
-  for(var wl=1;wl<4;wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(gxE+30+Math.round(76*wl/4),wy0,1,9); }
-  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.lineWidth=1; hud.strokeRect(gxE+30.5,wy0+0.5,75,8);
-  /* v0.17 : bac à crasse (VIDANGE quand plein) */
-  hudText('CRASSE',gxE,wy0+20,8,'#e8c08a');
-  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(gxE+46,wy0+14,60,8);
-  var dirtC = player.dirt>0.75 ? '#e05555' : '#c08a3c';
-  hud.fillStyle=dirtC; hud.fillRect(gxE+46,wy0+14,Math.round(60*player.dirt),8);
-  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.strokeRect(gxE+46.5,wy0+14.5,59,7);
+  hud.fillRect(gxE, 300, Math.round(gW*player.water), 9);
+  for(var wl=1; wl<4; wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(gxE+Math.round(gW*wl/4), 300, 1, 9); }
+  hud.strokeStyle='rgba(255,255,255,0.30)'; hud.lineWidth=1; hud.strokeRect(gxE+0.5, 300.5, gW-1, 8);
+  hudText('CRASSE / GRIME', gxE, 316, 8, '#e8c08a');
+  hud.fillStyle='rgba(255,255,255,0.22)'; hud.fillRect(gxE, 322, gW, 9);
+  hud.fillStyle = player.dirt>0.75 ? '#ff5a4a' : '#e0a03c';
+  hud.fillRect(gxE, 322, Math.round(gW*player.dirt), 9);
+  hud.strokeStyle='rgba(255,255,255,0.30)'; hud.strokeRect(gxE+0.5, 322.5, gW-1, 8);
+  if(player.dirt>=0.999){
+    hudText('PLEIN !', gxE+gW+8, 326, 8, (Math.floor(performance.now()/300)%2)?'#ff5a4a':'#ffd45a');
+  }
+  if(player.rocketT>0){
+    hud.fillStyle='rgba(255,170,50,0.9)';
+    hud.fillRect(gxE+gW+8, 300, Math.round(46*Math.min(1,player.rocketT/FUSEE_DUREE)), 9);
+    hudText('FUSEE', gxE+gW+58, 305, 7, '#ffd45a');
+  }
 
   /* v0.17 : MINI-CARTE de l'arène (bas gauche) */
   (function(){
@@ -3963,25 +4009,8 @@ function drawHUD(){
     hudText('FUSEE',306,wy0+6,8,'#ffd45a');
   }
 
-  hud.fillStyle='#5fbdf0'; hud.fillRect(196,31,6,6);
-  hudText('TOI '+score,206,35,8,'#bfe6ff');
-  hud.fillStyle='#5fd07a'; hud.fillRect(258,31,6,6);
-  hudText('LAYA '+botScore,268,35,8,'#bff5c8');
-
-  /* v0.9 : pollueurs actifs + cases resalies (remplace les coeurs) */
-  hudText('POLLUEURS '+polluters.length,336,10,8,'#7f96a3');
-  hudText('SALES '+dirtyByPolluters,336,31,8,dirtyByPolluters>0?'#ff9a7a':'#6d8492');
-
-  /* pieces */
-  hud.fillStyle=HUD_ACC; hud.fillRect(424,9,6,6);
-  hudText('x'+player.coins,433,13,8,HUD_ACC);
-
-  /* chrono */
-  var tl=Math.max(0,Math.ceil(timeLeft));
-  var urgent = tl<=10 && mode==='play';
-  hudText('TEMPS',470,10,8,'#7f96a3');
-  var blink = urgent ? ((Math.floor(performance.now()/250)%2)?'#ff5a5a':'#ffb0b0') : '#ffd24a';
-  hudText(tl+' s',628,26,22,blink,'right');
+  /* v1.0 : compteurs regroupés sur la ligne secondaire de la barre du haut */
+  /* v1.0 : le chrono, les scores et les compteurs sont dans la barre du haut */
 
   /* bulle de la grand-mere « 1… 2… 3… » (billboard HUD) */
   if(gm && mode==='play'){
@@ -4011,7 +4040,7 @@ function drawHUD(){
   hud.fillStyle='rgba(90,230,250,0.30)'; hud.fillRect(0,340,640,1);
 
   /* savon : jauge de glisse */
-  hudText('SAVON',12,350,8,player.soapT>0?'#ffb6cf':'#5f7078');
+  hudText('SAVON / SOAP',12,350,8,player.soapT>0?'#ffb6cf':'#9fb0b8');
   hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(44,346,58,7);
   if(player.soapT>0){
     hud.fillStyle='#ff9ec2'; hud.fillRect(44,346,Math.round(58*player.soapT/SAVON_DUREE),7);
@@ -4303,6 +4332,7 @@ window.__playerScreen = function(){
 };
 window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
+window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
 window.__state = function(){
   return {
     mode: mode,
