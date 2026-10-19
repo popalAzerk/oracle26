@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v1.1 — vue classique, modélisation 3D étendue</title>
+<title>MOB RACER 3D v1.5 — moteur optimisé + écrans borne</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -84,7 +84,7 @@
   .abtn span{ font-size:min(5.5vw,21px); text-shadow:0 1px 2px rgba(0,0,0,.5); }
   .abtn.down{ transform:translateY(2px) scale(.97); filter:brightness(1.15); }
   .mini{
-    position:absolute; top:6px; right:6px; z-index:30;
+    position:absolute; bottom:8px; right:8px; z-index:30;   /* v1.5 : hors du cadre hachuré des menus */
     pointer-events:auto; width:34px; height:34px; border-radius:8px;
     background:linear-gradient(#3b4048,#22262c); color:#dfe9f2; border:2px solid #0c0d10;
     font-size:15px; padding:0; box-shadow:inset 0 2px 0 rgba(255,255,255,.16), 0 4px 10px rgba(0,0,0,.5);
@@ -741,6 +741,17 @@ function texFloor(pal,state){
       }
       px(g,7,9,'rgba(255,255,255,0.50)',9,2);
       px(g,19,15,'rgba(255,255,255,0.42)',7,2);
+    } else if(state==='trailBotFade'){
+      /* v1.2 : la trace VERTE de Laya s'estompe en vert pâle (et non en bleu) */
+      px(g,0,0,'rgba(170,240,195,0.30)',w,h);
+      px(g,3,6,'rgba(235,255,240,0.26)',10,2);
+      px(g,17,19,'rgba(235,255,240,0.20)',8,2);
+    } else if(state==='trailFade'){
+      /* v1.2 : MOUSSE QUI S'ESTOMPE — meme carreau, voile bleu pale, sans bulles :
+         le sol reprend son motif propre a travers un film d'eau tres leger. */
+      px(g,0,0,'rgba(170,215,245,0.30)',w,h);
+      px(g,3,6,'rgba(240,252,255,0.28)',10,2);
+      px(g,17,19,'rgba(240,252,255,0.22)',8,2);
     } else if(state==='trailBot'){
       /* v0.14 : TRACE VERTE du bot — le joueur laisse du bleu, Laya laisse
          du vert : on lit au sol qui a nettoyé quoi (et qui gagne). */
@@ -779,6 +790,8 @@ function buildFloorSet(pal){
     clean: makeTex(texFloor(pal,'clean'),false),
     trail: makeTex(texFloor(pal,'trail'),false),
     trailBot: makeTex(texFloor(pal,'trailBot'),false),
+    trailFade: makeTex(texFloor(pal,'trailFade'),false),   /* v1.2 : mousse qui s'estompe */
+    trailBotFade: makeTex(texFloor(pal,'trailBotFade'),false), /* v1.2 : idem, version verte (LAYA) */
     dirty: makeTex(texFloor(pal,'dirty'),false),
     nest:  makeTex(texFloor(pal,'nest'),false)
   };
@@ -848,6 +861,7 @@ function texGlassWall(){
   });
 }
 
+var texSeq=0;   /* v1.4 : compteur d'identifiants de texture, déclaré AVANT la création de T */
 function makeTex(canvas,repeat){
   var t=gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D,t);
@@ -858,6 +872,7 @@ function makeTex(canvas,repeat){
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  t.__id = ++texSeq;   /* v1.4 : identifiant pour le regroupement en lots */
   return t;
 }
 
@@ -869,6 +884,18 @@ function texGlow(){
   rg.addColorStop(0.35,'rgba(235,248,255,0.72)');
   rg.addColorStop(0.70,'rgba(200,230,255,0.26)');
   rg.addColorStop(1.00,'rgba(180,220,255,0.00)');
+  g.fillStyle=rg; g.fillRect(0,0,128,128);
+  return c;
+}
+/* v1.2 : tache de contact — degrade radial sombre (centre ~0.55 -> bord 0) */
+function texContactShadow(){
+  var c=document.createElement('canvas'); c.width=c.height=128;
+  var g=c.getContext('2d');
+  var rg=g.createRadialGradient(64,64,0,64,64,62);
+  rg.addColorStop(0.00,'rgba(0,0,0,0.55)');
+  rg.addColorStop(0.45,'rgba(0,0,0,0.38)');
+  rg.addColorStop(0.80,'rgba(0,0,0,0.12)');
+  rg.addColorStop(1.00,'rgba(0,0,0,0.00)');
   g.fillStyle=rg; g.fillRect(0,0,128,128);
   return c;
 }
@@ -884,6 +911,7 @@ var T = {
   fur:   makeTex(texFur(),false),
   noise: makeTex(texNoise(),true),
   glow:  makeTex(texGlow(),false),
+  cshadow:makeTex(texContactShadow(),false),   /* v1.2 */
   shadow:makeTex(texShadow(),false),
   nest:  makeTex(texNest(),false),
   soap:  makeTex(texSoap(),false),
@@ -934,7 +962,8 @@ function buildCube(){
   return {
     buf: makeBuf(new Float32Array(v)),
     idx: makeIdx(new Uint16Array(idx)),
-    count: idx.length
+    count: idx.length,
+    __v: new Float32Array(v), __i: new Uint16Array(idx)   /* v1.4 : copie CPU pour la cuisson statique */
   };
 }
 function buildQuad(along){
@@ -997,7 +1026,8 @@ function buildCyl(n){
     v.push(x0,-0.5,z0, 0,-1,0, 1,0);
     idx.push(d,d+1,d+2);
   }
-  return { buf: makeBuf(new Float32Array(v)), idx: makeIdx(new Uint16Array(idx)), count: idx.length };
+  return { buf: makeBuf(new Float32Array(v)), idx: makeIdx(new Uint16Array(idx)), count: idx.length,
+           __v: new Float32Array(v), __i: new Uint16Array(idx) };
 }
 var CYL10 = buildCyl(10);
 
@@ -1014,12 +1044,86 @@ function bindMesh(m){
 
 var PV = null; // projection * vue, calculee une fois
 var drawCalls = 0;   // compteur de boites/draws par frame (budget < 250)
+var drawBreak={floor:0,props:0,machines:0,entities:0,particles:0,other:0}, _phaseMark=0;
+var BAKE_PROBE=false, bakeKeys={}, bakeTotal=0;
+/* ═════════ v1.4 : CUISSON DE LA GÉOMÉTRIE STATIQUE ═════════
+   Les props du niveau ne bougent jamais. Plutôt que d'émettre ~700 draw calls par frame
+   (une boîte = un draw), on transforme une fois leurs sommets en coordonnées MONDE et on
+   les regroupe en lots par (texture, couleur, options). Chaque lot = 1 seul draw call.
+   Gain mesuré : 699 draw calls de props → quelques dizaines. */
+var BAKE=false, bakeBuckets={}, bakeOrder=[], STATIC_PROPS=null, staticPropDraws=0;
+
+function bakeMesh(m, model, tex, color, opt){
+  if(!m.__v){ return; }                    /* pas de copie CPU : on ignore */
+  var key = (tex?tex.__id:0)+'|'+color[0].toFixed(2)+','+color[1].toFixed(2)+','+color[2].toFixed(2)
+          + '|'+(opt.emit||0)+'|'+(opt.alpha===undefined?1:opt.alpha)+'|'+(opt.unlit?1:0)
+          + '|'+(opt.uvScale?opt.uvScale[0]+','+opt.uvScale[1]:'1,1')
+          + '|'+(opt.vig?1:0);
+  var b = bakeBuckets[key];
+  if(!b){
+    b = bakeBuckets[key] = {tex:tex, color:color, opt:opt, v:[], i:[], n:0};
+    bakeOrder.push(b);
+  }
+  var nv=m.__v, ni=m.__i, base=b.n;
+  for(var k=0;k<nv.length;k+=STRIDE){
+    var x=nv[k], y=nv[k+1], z=nv[k+2], nx=nv[k+3], ny=nv[k+4], nz=nv[k+5], u=nv[k+6], w=nv[k+7];
+    var px=model[0]*x+model[4]*y+model[8]*z+model[12];
+    var py=model[1]*x+model[5]*y+model[9]*z+model[13];
+    var pz=model[2]*x+model[6]*y+model[10]*z+model[14];
+    var ax=model[0]*nx+model[4]*ny+model[8]*nz;
+    var ay=model[1]*nx+model[5]*ny+model[9]*nz;
+    var az=model[2]*nx+model[6]*ny+model[10]*nz;
+    var L=Math.sqrt(ax*ax+ay*ay+az*az)||1;
+    b.v.push(px,py,pz, ax/L,ay/L,az/L, u,w);
+    b.n++;
+  }
+  for(var q=0;q<ni.length;q++) b.i.push(ni[q]+base);
+}
+
+function buildStaticProps(){
+  BAKE=true; bakeBuckets={}; bakeOrder.length=0;
+  drawProps();
+  BAKE=false;
+  STATIC_PROPS=[];
+  for(var b=0;b<bakeOrder.length;b++){
+    var bk=bakeOrder[b];
+    if(!bk.n) continue;
+    var mesh={ buf: makeBuf(new Float32Array(bk.v)), idx: makeIdx(new Uint16Array(bk.i)), count: bk.i.length };
+    STATIC_PROPS.push({mesh:mesh, tex:bk.tex, color:bk.color, opt:bk.opt});
+  }
+  staticPropDraws=STATIC_PROPS.length;
+}
+
+function drawStaticProps(){
+  if(!STATIC_PROPS){ drawProps(); return; }
+  var I=[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+  for(var i=0;i<STATIC_PROPS.length;i++){
+    var s2=STATIC_PROPS[i], o=s2.opt||{};
+    gl.uniformMatrix4fv(U.mvp,false,PV);
+    gl.uniformMatrix3fv(U.nmat,false,nmat(I));
+    gl.uniform2f(U.uvScale, o.uvScale?o.uvScale[0]:1, o.uvScale?o.uvScale[1]:1);
+    gl.uniform1f(U.useTex, s2.tex?1:0);
+    gl.uniform1f(U.unlit, o.unlit?1:0);
+    gl.uniform1f(U.emit, o.emit||0);
+    gl.uniform1f(U.alpha, o.alpha===undefined?1:o.alpha);
+    gl.uniform3f(U.color, s2.color[0],s2.color[1],s2.color[2]);
+    gl.uniform1f(U.vig, o.vig?1:0);
+    if(s2.tex){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,s2.tex); }
+    bindMesh(s2.mesh);
+    drawCalls++;
+    gl.drawElements(gl.TRIANGLES,s2.mesh.count,gl.UNSIGNED_SHORT,0);
+  }
+}
 var maxDrawCalls = 0;
 var drawClipped = 0; // nb de draws ignorés par le garde-fou budget (effets de fin)
 var DRAW_BUDGET = 1000;   /* marge de securite sous 250 */
 
+function markPhase(name){ if(name) drawBreak[name]=drawCalls-_phaseMark; _phaseMark=drawCalls; }
+
 function drawMesh(m, model, tex, color, opt){
   opt = opt || {};
+  if(BAKE){ bakeMesh(m, model, tex, color, opt); return; }
+  if(BAKE_PROBE){ var _k=(tex&&tex.__id!==undefined?tex.__id:'?')+'|'+color[0].toFixed(2)+','+color[1].toFixed(2)+','+color[2].toFixed(2)+'|'+(opt.emit||0)+'|'+(opt.alpha||1)+'|'+(opt.unlit?1:0); bakeKeys[_k]=(bakeKeys[_k]||0)+1; bakeTotal++; }
   if(drawCalls>=DRAW_BUDGET){ drawClipped++; return; }  /* garde-fou : on coupe les effets de fin */
   drawCalls++;
   var mvp = mulM(PV, model);
@@ -1235,7 +1339,7 @@ var LEVELS=[
   /* ─────────── 5. APPLE STORE — plan reel + BACK OF HOUSE ─────────── */
   { id:'apple', num:5, name:'APPLE STORE', tag:'TABLES ALIGNEES & RESERVE',
     desc:'Tables en bois alignees, Genius Bar, murs d accessoires et ARRIERE-BOUTIQUE (back of house).',
-    coef:1.85, diffLabel:'EXPERT', stars:4, nests:8, passes:2,
+    coef:1.85, diffLabel:'EXPERT', stars:5, nests:8, passes:2,
     floor:'apple', wall:'wallApple', wallCol:[1.06,1.06,1.05], wallH:1.95,
     accent:[0.82,0.90,1.00], sky:[0.075,0.095,0.165], ground:[0.62,0.62,0.60],
     /* cloison de la RESERVE : mur vertical en gx=11, porte en gy=3 */
@@ -1287,7 +1391,17 @@ var cleanHits = new Uint8Array(COLS*ROWS); /* v0.9 : passages de lavage sur une 
 var blocked = new Uint8Array(COLS*ROWS); // 1 = prop solide (obstacle du niveau)
 var dirtyLeft=0, totalCleanable=0;
 var timeLeft=NIVEAU_DUREE, mode='attract', score=0, botScore=0;
-var soundOn=true, audioCtx=null, SHADOWS=false;   /* v0.9.3 : ombres coupées (José) */
+var soundOn=true, audioCtx=null;
+var SHADOWS = true;   /* v1.2 : taches de contact COURTES (drawContactShadows) ; false = aucune ombre */
+
+/* v1.2 : MOUSSE TEMPORAIRE — secondes restantes de la trace de lavage, par case.
+   0 = pas de minuterie (case jamais lavee, ou deja redevenue propre). */
+var FOAM_LIFE = 7.0;            /* duree totale de la trace (s) */
+var FOAM_FADE_AT = 2.5;         /* sous ce seuil : mousse qui s'estompe (batch trailFade) */
+var FOAM_REBUILD_MIN = 0.25;    /* au plus 4 reconstructions du sol par seconde pour la dissipation */
+var foamT = new Float32Array(COLS*ROWS);
+var floorDirty = false;         /* un palier de mousse a change : le sol doit etre reconstruit */
+var lastFloorBuild = 0;
 
 /* v0.9 : niveaux + pollueurs */
 var levelIdx=0, LV=LEVELS[0], selIdx=0;
@@ -1326,16 +1440,16 @@ var CHARS=[
     desc:'Jeune, vif, un peu naif. Il court plus vite que les autres.',
     suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
     perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
-  { id:'chef', name:'LA CHEF D EQUIPE', tag:'20 ANS DE CARRELAGE',
-    desc:'Gestes surs. Son savon tient 35% plus longtemps.',
+  { id:'chef', name:"LA CHEF D'EQUIPE", tag:'20 ANS DE CARRELAGE',
+    desc:'Gestes sûrs. Son savon tient 35 % plus longtemps.',
     suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
     perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
   { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
     desc:'Sa torpille laveuse couvre une zone plus large.',
     suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
     perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
-  { id:'rob',  name:'L APPRENTI ROBOT', tag:'NE PREND JAMAIS DE PAUSE',
-    desc:'Ne derape presque pas, meme sur sol savonne.',
+  { id:'rob',  name:"L'APPRENTI ROBOT", tag:'NE PREND JAMAIS DE PAUSE',
+    desc:"Ne dérape presque pas, même sur sol savonneux.",
     suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
     perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
 ];
@@ -1452,7 +1566,8 @@ function resetGame(mode0){
   if(mode==='attract') levelIdx = demoRound % LEVELS.length;
   LV = LEVELS[levelIdx];
 
-  cells.fill(0); detW.fill(0); detHits.fill(0); cleanHits.fill(0); blocked.fill(0);
+  cells.fill(0); foamT.fill(0); floorDirty=false; fpReset(); detW.fill(0); detHits.fill(0); cleanHits.fill(0); blocked.fill(0);
+  STATIC_PROPS=null; buildStaticProps();   /* v1.4 : cuisson des props du niveau (1 lot = 1 draw) */
   soilMarks=[]; dirtyByPolluters=0;
 
   /* props du niveau : chaque prop bloque sa case */
@@ -1661,7 +1776,7 @@ function soilCell(gx,gy,kind){
   var i=idxAt(gx,gy);
   if(blocked[i]) return false;
   if(cells[i]!==1 && cells[i]!==2 && cells[i]!==4) return false;  /* deja sale / nid : rien a salir */
-  cells[i]=0; detW[i]=0; detHits[i]=0; cleanHits[i]=0;
+  cells[i]=0; detW[i]=0; detHits[i]=0; cleanHits[i]=0; foamT[i]=0;
   dirtyByPolluters++;
   addMark(gx,gy,kind);
   buildFloor(); recomputeCounts();
@@ -1801,14 +1916,22 @@ function recomputeCounts(){
 }
 
 /* ---------- 9. SOL : buffers par texture ---------- */
-var floorBuf = {0:null,1:null,2:null,3:null};
-var floorCnt = {0:0,1:0,2:0,3:0};
+var floorBuf = {0:null,1:null,2:null,3:null,4:null,5:null};
+var floorCnt = {0:0,1:0,2:0,3:0,4:0,5:0};
 
+var floorBuilds = 0, floorBuildMs = 0;   /* v1.2 : compteurs de diagnostic (cout des reconstructions) */
 function buildFloor(){
-  var arrs={0:[],1:[],2:[],3:[],4:[]};   /* v0.14 : +4 = trace du bot */
+  var tb0=performance.now();
+  var arrs={0:[],1:[],2:[],3:[],4:[],5:[],6:[]};  /* +4 trace bot ; +5 bleu estompé ; +6 vert estompé (v1.3) */
   for(var gy=0;gy<ROWS;gy++){
     for(var gx=0;gx<COLS;gx++){
-      var st=cells[idxAt(gx,gy)];
+      var ci=idxAt(gx,gy), st=cells[ci];
+      /* v1.2 : une trace en fin de vie passe dans le batch 5 (cells[] reste inchange) */
+      /* v1.3 : une trace en fin de vie s'estompe, MAIS garde sa couleur de propriétaire.
+         foamT<0 = mousse éteinte (voile d'eau permanent) ; la case reste bleue ou verte. */
+      var fv=foamT[ci];
+      if(st===2 && fv!==0 && fv<=FOAM_FADE_AT) st=5;
+      else if(st===4 && fv!==0 && fv<=FOAM_FADE_AT) st=6;
       var a=arrs[st];
       var x0=gx-7.5, x1=x0+1;
       var z0=gy-6.5, z1=z0+1;
@@ -1821,7 +1944,7 @@ function buildFloor(){
       pushV(a,x0,0,z0,N,0,1);
     }
   }
-  for(var k=0;k<5;k++){
+  for(var k=0;k<7;k++){
     floorCnt[k]=arrs[k].length/STRIDE;
     var f=new Float32Array(arrs[k]);
     if(!floorBuf[k]){
@@ -1833,9 +1956,11 @@ function buildFloor(){
       gl.bufferData(gl.ARRAY_BUFFER,f,gl.DYNAMIC_DRAW);
     }
   }
-  floorMeshes=[0,1,2,3,4].map(function(k){
+  floorMeshes=[0,1,2,3,4,5,6].map(function(k){
     return {buf:floorBuf[k], idx:null, count:floorCnt[k]};
   });
+  floorDirty=false; lastFloorBuild=performance.now()/1000;
+  floorBuilds++; floorBuildMs+=performance.now()-tb0;
 }
 function pushV(a,x,y,z,n,u,v){
   a.push(x,y,z,n[0],n[1],n[2],u,v);
@@ -1874,6 +1999,42 @@ function drawShadow(x,z,size,alpha){
   if(!OMBRES_ACTIVES) return;
   drawMesh(QUAD_XZ, trs(x,0.025,z,size*0.5,1,size*0.5,0), T.shadow, [0,0,0],
     {unlit:true, alpha:alpha===undefined?0.7:alpha});
+}
+
+/* v1.2 : TACHES DE CONTACT — une seule passe (meme technique que les halos) :
+   un quad horizontal sombre plaque au sol sous chaque objet bloquant.
+   Pas de shadow map, pas d'ombre longue : l'empreinte seule, opacite 0.22-0.32. */
+var CONTACT_SIZE = { bin:0.85, plant:0.95, column:0.95, lamp:0.70, tree:1.00, jug:0.80, statue:1.00 };   /* defaut 1.25 */
+function contactShadow(x,z,size,alpha){
+  drawMesh(QUAD_XZ, trs(x,0.03,z,size*0.5,1,size*0.5,0), T.cshadow, [0,0,0], {unlit:true, alpha:alpha});
+}
+function drawContactShadows(){
+  if(!SHADOWS) return;
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  /* props bloquants (les stations au sol et les luminaires sont solid:false) */
+  for(var i=0;i<LV.props.length;i++){
+    var pp=LV.props[i];
+    if(pp.solid===false || pp.k==='ceilinglight') continue;
+    if(!blocked[idxAt(pp.gx,pp.gy)]) continue;
+    contactShadow(pp.gx-7, pp.gy-6, CONTACT_SIZE[pp.k]||1.25, 0.30);
+  }
+  /* machines (joueur + bot) et leurs personnages (sprites, decales derriere la machine) */
+  var ms=[player,bot];
+  for(var mi=0;mi<2;mi++){
+    var m=ms[mi], mx=m.wx+m.kox, mz=m.wz+m.koz;
+    contactShadow(mx, mz, 1.45, 0.32);
+    contactShadow(mx-0.34*Math.sin(m.angle), mz-0.62*Math.cos(m.angle), 0.80, 0.26);
+  }
+  if(gm) contactShadow(gm.x, gm.z, 1.00, 0.28);
+  /* pollueurs : la mouette vole, sa tache est plus petite et plus pale */
+  for(var pI=0;pI<polluters.length;pI++){
+    var po=polluters[pI];
+    contactShadow(po.x, po.z, po.type==='gull'?0.80:0.95, po.type==='gull'?0.22:0.28);
+  }
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
 }
 
 /* ═════════ v0.9 : PROPS DU NIVEAU (obstacles solides) ═════════ */
@@ -2723,6 +2884,82 @@ function drawParticles(){
   gl.disable(gl.BLEND);
 }
 
+/* ── v1.2 : MOUSSE QUI SE DISSIPE ──
+   Chaque case lavee porte une minuterie foamT[] (FOAM_LIFE s). Palier 1 : mousse
+   pleine (batch trail/trailBot). Palier 2, sous FOAM_FADE_AT : batch trailFade.
+   Fin : la case repasse a l'etat 1 (propre). cells[] ne change qu'a la toute fin,
+   et jamais dirtyLeft : score et victoire ne dependent pas de la mousse.
+   Le sol n'est reconstruit que si un palier a change, et au plus toutes les
+   FOAM_REBUILD_MIN secondes (jamais a chaque frame). */
+function updateFoam(dt){
+  for(var i=0;i<foamT.length;i++){
+    var t=foamT[i];
+    if(t<=0) continue;
+    var st=cells[i];
+    if(st!==2 && st!==4){ foamT[i]=0; continue; }   /* resalie / nid : plus de mousse */
+    if(t<0) continue;                              /* deja eteinte : rien a faire */
+    var nt=t-dt;
+    if(nt<=0){
+      /* v1.3 : la mousse s'eteint mais la case RESTE bleue/verte (voile d'eau pale).
+         cells[] n'est plus modifie : score, comptage et vainqueur strictement inchanges. */
+      foamT[i]=-1; floorDirty=true;
+    } else {
+      foamT[i]=nt;
+      if(t>FOAM_FADE_AT && nt<=FOAM_FADE_AT) floorDirty=true;
+    }
+  }
+  if(floorDirty && performance.now()/1000-lastFloorBuild>=FOAM_REBUILD_MIN) buildFloor();
+}
+
+/* ── v1.2 : GERBE DE MOUSSE — pool fixe, zero allocation par frame ── */
+var FP_N = 120, FP_MAX_DRAW = 60;   /* pool ; plafond de quads dessines par frame (budget draw calls) */
+var fpX=new Float32Array(FP_N), fpY=new Float32Array(FP_N), fpZ=new Float32Array(FP_N);
+var fpVX=new Float32Array(FP_N), fpVY=new Float32Array(FP_N), fpVZ=new Float32Array(FP_N);
+var fpLife=new Float32Array(FP_N), fpMax=new Float32Array(FP_N), fpSize=new Float32Array(FP_N);
+var fpCur=0;
+function fpReset(){ fpLife.fill(0); fpCur=0; }
+function emitFoam(m){
+  var n=2+((Math.random()*3)|0);                       /* 2 a 4 particules par case lavee */
+  var bx=m.wx+m.kox+Math.sin(m.angle)*0.50, bz=m.wz+m.koz+Math.cos(m.angle)*0.50;   /* brosse : nez de la machine */
+  for(var k=0;k<n;k++){
+    var j=-1;
+    for(var s=0;s<FP_N;s++){ var q=(fpCur+s)%FP_N; if(fpLife[q]<=0){ j=q; break; } }
+    if(j<0) return;                                    /* pool plein : on ignore */
+    fpCur=(j+1)%FP_N;
+    var a=Math.random()*Math.PI*2, sp=0.25+Math.random()*0.45;   /* vitesse radiale faible */
+    fpX[j]=bx; fpY[j]=0.10; fpZ[j]=bz;
+    fpVX[j]=Math.cos(a)*sp; fpVZ[j]=Math.sin(a)*sp; fpVY[j]=0.45+Math.random()*0.55;
+    fpMax[j]=fpLife[j]=0.5+Math.random()*0.4;
+    fpSize[j]=0.16+Math.random()*0.12;
+  }
+}
+function updateFoamParticles(dt){
+  for(var i=0;i<FP_N;i++){
+    if(fpLife[i]<=0) continue;
+    fpLife[i]-=dt;
+    fpX[i]+=fpVX[i]*dt; fpZ[i]+=fpVZ[i]*dt; fpY[i]+=fpVY[i]*dt;
+    fpVY[i]-=1.8*dt;                                   /* gravite legere */
+    fpVX[i]*=0.95; fpVZ[i]*=0.95;
+    if(fpY[i]<0.05){ fpY[i]=0.05; fpVY[i]*=-0.3; }
+  }
+}
+function drawFoamParticles(){
+  var drawn=0, camYaw=Math.atan2(EYE[0],EYE[2]);
+  for(var i=0;i<FP_N;i++){
+    if(fpLife[i]<=0) continue;
+    if(drawn>=FP_MAX_DRAW || drawCalls>=DRAW_BUDGET-25) break;   /* garde-fou budget */
+    if(!drawn){
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+    }
+    var a=fpLife[i]/fpMax[i], sz=fpSize[i]*0.5*(1.0+0.5*(1-a));   /* quad = +-1 : demi-cote */
+    drawMesh(QUAD_XY, trs(fpX[i],fpY[i],fpZ[i],sz,sz,1,camYaw), T.glow, [1.15,1.25,1.40], {unlit:true, alpha:a*0.85});
+    drawn++;
+  }
+  if(drawn){ gl.depthMask(true); gl.disable(gl.BLEND); }
+}
+
 /* ── v0.8 : anneau de mousse de la torpille (quads qui s'ecartent) ── */
 function drawWave(){
   if(!wave) return;
@@ -2913,7 +3150,7 @@ function drawPusher(m){
   box(px_+ex*0.245*S, y0+1.20*S, pz_+ez*0.245*S, 0.30*S,0.02*S,0.20*S, T.noise, teamCol, A);           /* liseré coloré */
   bx(0,1.28,0, 0.11,0.045,0.11, T.noise, capL);                /* bouton */
 }function drawScene(){
-  drawCalls=0;
+  drawCalls=0; _phaseMark=0;
   gradeOf(LV.id);                     /* v0.11 : ambiance colorée propre à la salle */
   gl.disable(gl.BLEND);
   gl.depthMask(true);
@@ -2929,6 +3166,9 @@ function drawPusher(m){
   if(floorCnt[2]) drawFloorMesh(floorMeshes[2], FL.trail);
   if(floorCnt[3]) drawFloorMesh(floorMeshes[3], FL.nest);
   if(floorCnt[4]) drawFloorMesh(floorMeshes[4], FL.trailBot);   /* v0.14 : trace verte du bot */
+  if(floorCnt[5]) drawFloorMesh(floorMeshes[5], FL.trailFade);     /* v1.2 : bleu estompé */
+  if(floorCnt[6]) drawFloorMesh(floorMeshes[6], FL.trailBotFade);  /* v1.3 : vert estompé (LAYA) */
+  markPhase('floor');
 
   // ombres portees (alpha)
   gl.enable(gl.BLEND);
@@ -3049,7 +3289,10 @@ function drawPusher(m){
   var tNow=performance.now()/1000;
 
   /* ── PROPS du niveau (obstacles) ── */
-  drawProps();
+  markPhase('other');     /* sol exterieur + murs + decor hors arene */
+  drawContactShadows();   /* v1.2 : taches de contact, apres le sol et avant les objets */
+  drawStaticProps();       /* v1.4 : props statiques en lots (au lieu d'un draw par boîte) */
+  markPhase('props');
   drawLightHalos();   /* v1.1 : halos des luminaires */
 
   /* ── taches des pollueurs (fientes, tas, dechets) ── */
@@ -3077,10 +3320,15 @@ function drawPusher(m){
   /* ── machines ── */
   if(!window.__hideMachine){ drawMachine(player); }
   if(!window.__hideMachine){ drawMachine(bot); }
+  markPhase('machines');
   /* v0.17 : personnages en SPRITES 2D pixel (billboard), plus en volumes 3D */
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
   drawCharSprite(player); drawCharSprite(bot);
   gl.depthMask(true); gl.disable(gl.BLEND);
+
+  markPhase('entities');   /* bonus, pollueurs, sprites */
+  drawFoamParticles();   /* v1.2 : gerbe de mousse autour des brosses (apres props et machines) */
+  markPhase('particles');
 
   /* ── mousse de la torpille + particules ── */
   drawWave();
@@ -3158,7 +3406,7 @@ function arrive(m){
     /* NID DE DETRITUS — lavage 3x plus lent, compte double */
     detHits[i]++;
     if(detHits[i]>=DETRITUS_COEF){
-      cells[i]=2; detW[i]=0;
+      cells[i]=2; detW[i]=0; foamT[i]=FOAM_LIFE;
       removeNest(m.gx,m.gy);
       if(m===player) score+=DETRITUS_MULT; else botScore+=DETRITUS_MULT;
       burst(m.wx,m.wz,7,[0.5,0.42,0.30]);
@@ -3184,21 +3432,22 @@ function arrive(m){
     if(cleanHits[i]>=LV.passes){
       cleanHits[i]=0;
       if(m===player){
-        cells[i]=2; score++;
+        cells[i]=2; foamT[i]=FOAM_LIFE; score++;
         player.water=Math.max(0, player.water - (player.rocketT>0?0.012:0.045));
         player.dirt=Math.min(1, player.dirt + 0.030);      /* v0.17 : bac à crasse */
       }
-      else { cells[i]=4; botScore++; }   /* v0.14 : trace verte */
+      else { cells[i]=4; foamT[i]=FOAM_LIFE; botScore++; }   /* v0.14 : trace verte */
       m._dirty=true;
+      emitFoam(m);   /* v1.2 : gerbe de mousse a la brosse */
     } else {
       burst(m.wx,m.wz,3,[0.72,0.78,0.72]);   /* premier passage : la crasse part a moitie */
     }
     buildFloor();
     recomputeCounts();
   } else if(m===player && (cells[i]===1||cells[i]===4)){
-    cells[i]=2; buildFloor();   /* le joueur repasse en bleu sur du vert */
+    cells[i]=2; foamT[i]=FOAM_LIFE; buildFloor();   /* le joueur repasse en bleu sur du vert */
   } else if(m!==player && (cells[i]===1||cells[i]===2)){
-    cells[i]=4; buildFloor();   /* le bot repasse en vert */
+    cells[i]=4; foamT[i]=FOAM_LIFE; buildFloor();   /* le bot repasse en vert */
   }
   if(dirtyLeft<=0 && mode==='play') mode='win';
 }
@@ -3356,11 +3605,11 @@ function fireTorpille(m){
       if(blocked[idxAt(cc,ll)]) continue;
       var k=idxAt(cc,ll);
       if(cells[k]===3){
-        cells[k]=(m===player)?2:4; detW[k]=0; detHits[k]=0; removeNest(cc,ll); removeMarkAt(cc,ll);
+        cells[k]=(m===player)?2:4; foamT[k]=FOAM_LIFE; detW[k]=0; detHits[k]=0; removeNest(cc,ll); removeMarkAt(cc,ll);
         if(m===player) score+=DETRITUS_MULT; else botScore+=DETRITUS_MULT;
         nids++;
       } else if(cells[k]===0){
-        cells[k]=(m===player)?2:4; cleanHits[k]=0; removeMarkAt(cc,ll);
+        cells[k]=(m===player)?2:4; foamT[k]=FOAM_LIFE; cleanHits[k]=0; removeMarkAt(cc,ll);
         if(m===player) score++; else botScore++;
       }
     }
@@ -3477,6 +3726,8 @@ function updateEntities(dt){
 
   for(var ci=0;ci<coins.length;ci++) coins[ci].t+=dt;
   updateParticles(dt);
+  updateFoam(dt);            /* v1.2 : dissipation de la mousse */
+  updateFoamParticles(dt);
 
   machineCollisions(player,dt);
   machineCollisions(bot,dt);
@@ -3654,8 +3905,12 @@ function hudText(s,x,y,size,color,align,weight){
   hud.font=(weight||'bold')+' '+size+'px "Courier New",monospace';
   hud.textAlign=align||'left';
   hud.textBaseline='middle';
-  hud.fillStyle='rgba(0,0,0,0.65)';
-  hud.fillText(s,x+2,y+2);
+  var isDark = color && (color.indexOf('#0')===0 || color.indexOf('#1')===0);
+  if(!isDark){
+    var off = (size>=12) ? 2 : 1;
+    hud.fillStyle='rgba(0,0,0,0.72)';
+    hud.fillText(s,x+off,y+off);
+  }
   hud.fillStyle=color||'#eaf6ff';
   hud.fillText(s,x,y);
 }
@@ -3675,8 +3930,8 @@ function hudStars(x,y,n,on){
   for(var i=0;i<4;i++) s += (i<n?'★':'☆');
   hud.font='bold 9px "Courier New",monospace';
   hud.textAlign='right'; hud.textBaseline='middle';
-  hud.fillStyle='rgba(0,0,0,0.65)';
-  hud.fillText(s,x+2,y+2);
+  hud.fillStyle='rgba(0,0,0,0.72)';
+  hud.fillText(s,x+1,y+1);
   hud.fillStyle= on ? (n>=4?'#ff6a5a':(n===3?'#ffb04a':(n===2?'#ffd45a':'#6ff0c8'))) : 'rgba(190,215,225,0.55)';
   hud.fillText(s,x,y);
 }
@@ -3802,89 +4057,469 @@ function drawVehSprite(V,x,y,u){
 }
 
 /* ═════════ v0.14 : ECRAN DE CHOIX DU PERSONNAGE ═════════ */
-function drawPickGrid(title, subtitle, items, idx, kind){
-  var t=performance.now()/1000;
-  hud.fillStyle='rgba(4,7,12,0.94)'; hud.fillRect(0,0,640,360);
-  drawStripeBorder();
-  hudText('MOB RACER',320,26,24,'#eafcff','center');
-  hudText(title,320,50,13,'#ffd45a','center');
-  hudText(subtitle,320,66,8,'#8fa6b4','center','normal');
-  var CW=286, CH=124, GX=26, GY=76;
-  for(var i=0;i<items.length;i++){
-    var it=items[i];
-    var cx=GX+(i%2)*(CW+12), cy=GY+((i/2)|0)*(CH+6);
-    var on=(i===idx);
-    hud.fillStyle = on ? 'rgba(26,44,58,0.98)' : 'rgba(11,16,23,0.94)';
-    hud.fillRect(cx,cy,CW,CH);
-    hud.fillStyle = on ? (Math.floor(t*4)%2?'#ffd45a':'#ffeaa0') : 'rgba(120,150,170,0.5)';
-    hud.fillRect(cx,cy,CW,3); hud.fillRect(cx,cy+CH-3,CW,3);
-    hud.fillRect(cx,cy,3,CH); hud.fillRect(cx,cx+CW-3,3,CH);
-    /* ── v0.16 : APERÇU 2D PIXEL, dans son cadre, à gauche ── */
-    hud.fillStyle = on ? 'rgba(8,16,24,0.9)' : 'rgba(6,10,15,0.85)';
-    hud.fillRect(cx+6, cy+8, 70, CH-16);
-    hud.strokeStyle = on ? 'rgba(255,212,90,0.45)' : 'rgba(120,150,170,0.25)';
-    hud.lineWidth=1; hud.strokeRect(cx+6.5, cy+8.5, 69, CH-17);
-    if(kind==='char'){ drawPortrait(it, cx+9, cy+10, 3.0); }
-    else { drawVehSprite(it, cx+6, cy+40, 3.1); }
-    /* ── texte à DROITE du portrait (plus aucun chevauchement) ── */
-    var tx=cx+84;
-    hudText(it.name,tx,cy+24,11,on?'#ffffff':'#c3d5e0');
-    hudText(it.tag,tx,cy+40,7,on?'#7ad8f0':'#6d8492','left','normal');
-    var lines=hudWrap(it.desc,30);
-    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],tx,cy+56+d*10,7,on?'#cfe3ff':'#8ea3b0','left','normal');
-    hudText(it.perk,tx,cy+CH-14,8,on?'#9fe0b0':'#6d8492');
-    if(on){ hud.fillStyle='#ffd45a'; hud.fillRect(cx+6, cy+8, 3, CH-16); }
-  }
-  hudText('FLECHES : CHOISIR   ·   ENTREE : VALIDER   ·   ECHAP : TITRE',320,338,8,'#cfe3ff','center','normal');
+var BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+var LOGO_FONT = {
+  'M': ['10001','11011','10101','10101','10001','10001','10001'],
+  'O': ['01110','10001','10001','10001','10001','10001','01110'],
+  'B': ['11110','10001','10001','11110','10001','10001','11110'],
+  'R': ['11110','10001','10001','11110','10100','10010','10001'],
+  'A': ['01110','10001','10001','11111','10001','10001','10001'],
+  'C': ['01111','10000','10000','10000','10000','10000','01111'],
+  'E': ['11111','10000','10000','11110','10000','10000','11111'],
+  '3': ['11110','00001','00001','01110','00001','00001','11110'],
+  'D': ['11110','10001','10001','10001','10001','10001','11110']
+};
+
+
+function drawIconBin(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#090c10', B1='#f08c28', B2='#ffb84d', BD='#9e5210';
+  /* poignée + couvercle */
+  R(3,0,5,1,OUT); R(4,1,3,1,B2);
+  R(0,2,11,2,OUT); R(1,2,9,1,B2); R(1,3,9,1,B1);
+  /* fût rainuré */
+  R(1,4,9,7,OUT); R(2,4,7,6,B1);
+  R(3,5,1,4,BD); R(5,5,1,4,BD); R(7,5,1,4,BD);
+  R(2,4,7,1,B2);
 }
-function drawCharPick(){ drawPickGrid('CHOISIS TON PERSONNAGE','CHAQUE EQUIPIER A UN VRAI AVANTAGE', CHARS, charIdx, 'char'); }
-function drawVehPick(){ drawPickGrid('CHOISIS TA MACHINE','VITESSE ET TENUE DE ROUTE', VEHICLES, vehIdx, 'veh'); }
+
+function drawIconBolt(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#090c10', Y1='#ffd448', Y2='#fff9b8', OR='#e86a18';
+  R(4,0,6,2,OUT); R(3,2,5,2,OUT); R(1,4,8,2,OUT); R(3,6,5,2,OUT); R(2,8,4,2,OUT); R(1,10,3,1,OUT);
+  R(5,1,3,1,Y2); R(4,2,3,2,Y1); R(2,4,6,1,Y2); R(3,5,4,1,Y1); R(4,6,3,2,Y1); R(3,8,2,2,OR); R(2,9,1,1,Y1);
+}
+
+function drawIconClean(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#071018', T1='#2fa4e8', T2='#7bd6ff', HI='#ffffff';
+  R(1,1,9,9,OUT); R(2,2,7,7,T1); R(2,2,7,2,T2); R(2,2,2,7,T2);
+  /* étoile de brillance */
+  R(5,3,1,5,HI); R(3,5,5,1,HI); R(8,0,1,3,HI); R(7,1,3,1,HI);
+}
+
+function drawIconDrop(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#071018', B1='#1c7ed6', B2='#42beff', HI='#ffffff';
+  R(4,0,3,1,OUT); R(3,1,5,1,OUT); R(2,2,7,2,OUT); R(1,4,9,3,OUT); R(0,7,11,2,OUT); R(1,9,9,1,OUT); R(3,10,5,1,OUT);
+  R(5,1,1,1,B2); R(4,2,3,2,B2); R(2,4,7,3,B1); R(1,7,9,2,B1); R(3,9,5,1,B1);
+  R(2,4,5,3,B2); R(2,7,6,1,B2);
+  R(3,4,1,2,HI); R(2,6,1,2,HI); R(3,8,2,1,HI);
+}
+
+function drawIconScraper(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#090c10', MET='#b8c7d4', METD='#6e7f8d', RUB='#e89a2e', RUBH='#ffd45a', DIRT='#6b4824';
+  /* lame de raclette / grattoir + bloc éponge */
+  R(0,1,11,4,OUT);
+  R(1,2,9,2,RUB); R(1,2,9,1,RUBH);
+  /* taches de crasse sur le grattoir */
+  R(2,3,2,1,DIRT); R(6,2,2,1,DIRT); R(8,3,1,1,DIRT);
+  /* monture métallique + manche */
+  R(1,5,9,2,OUT); R(2,5,7,1,MET); R(2,6,7,1,METD);
+  R(4,7,3,4,OUT); R(5,7,1,3,MET);
+}
+
+function drawIconSponge(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#090c10', SP='#ff82b2', SPH='#ffc4dc', SPD='#c84b7c', BUB='#ffffff', BUBL='#9fe8ff';
+  R(0,3,9,7,OUT);
+  R(1,4,7,5,SP); R(1,4,7,1,SPH); R(1,8,7,1,SPD);
+  /* pores de l'éponge */
+  R(2,6,1,1,SPD); R(5,5,1,1,SPD); R(6,7,1,1,SPD);
+  /* bulles de mousse au-dessus et à droite */
+  R(2,1,2,2,BUB); R(2,1,1,1,BUBL);
+  R(6,0,3,3,OUT); R(7,1,1,1,BUB);
+  R(8,3,3,3,OUT); R(9,4,1,1,BUB);
+}
+
+function drawIconTorp(x,y,u){
+  var s = u || 1;
+  function R(gx,gy,gw,gh,c){ pxr(x+gx*s, y+gy*s, gw*s, gh*s, c); }
+  var OUT='#090c10', MET='#9eb4c8', METL='#d8ebfa', RED='#ff4a3d', FIN='#56687a';
+  R(1,3,9,5,OUT); R(0,2,3,7,OUT);
+  R(1,2,2,2,FIN); R(1,7,2,2,FIN);
+  R(2,4,6,3,MET); R(2,4,6,1,METL);
+  R(8,4,2,3,RED); R(9,5,1,1,'#ffd45a');
+}
+
+function drawSegmentedBar(x,y,w,h,ratio,fillCol,hiCol,segs,emptyCol,borderCol){
+  var rx=Math.round(x), ry=Math.round(y), rw=Math.round(w), rh=Math.round(h);
+  var r = Math.max(0, Math.min(1, ratio||0));
+  var n = segs || 10;
+  hud.fillStyle = '#070b10';
+  hud.fillRect(rx, ry, rw, rh);
+  hud.fillStyle = emptyCol || 'rgba(255,255,255,0.12)';
+  hud.fillRect(rx+1, ry+1, rw-2, rh-2);
+  var fw = Math.round((rw-2)*r);
+  if(fw > 0){
+    hud.fillStyle = fillCol;
+    hud.fillRect(rx+1, ry+1, fw, rh-2);
+    if(hiCol && rh>=6){
+      hud.fillStyle = hiCol;
+      hud.fillRect(rx+1, ry+1, fw, Math.max(1, Math.floor((rh-2)*0.32)));
+    }
+  }
+  /* séparateurs de segments */
+  hud.fillStyle = '#070b10';
+  for(var i=1; i<n; i++){
+    var sx = rx + Math.round(rw * i / n);
+    hud.fillRect(sx, ry+1, 1, rh-2);
+  }
+  /* bordure franche 1px */
+  hud.fillStyle = borderCol || 'rgba(210,235,255,0.42)';
+  hud.fillRect(rx, ry, rw, 1);
+  hud.fillRect(rx, ry+rh-1, rw, 1);
+  hud.fillRect(rx, ry, 1, rh);
+  hud.fillRect(rx+rw-1, ry, 1, rh);
+}
+
+function getItemStats(it, kind){
+  if(kind==='char'){
+    /* VITESSE et ADHERENCE sous forme de ratios [0..1] pour les barres */
+    var vMap = { stg:0.92, chef:0.74, vet:0.70, rob:0.76 };
+    var aMap = { stg:0.68, chef:0.80, vet:0.84, rob:0.98 };
+    return {
+      spd: vMap[it.id] || 0.75,
+      adh: aMap[it.id] || 0.75,
+      badge: 'AVANTAGE : ' + it.perk
+    };
+  }
+  /* Machine : conversion des caracs en barres visuelles + profil sans nombres nus */
+  var mvMap = { auto:0.70, mono:0.96, indus:0.54, mini:0.84 };
+  var maMap = { auto:0.72, mono:0.42, indus:0.98, mini:0.82 };
+  var mbMap = {
+    auto:  'PROFIL : POLYVALENTE & STABLE',
+    mono:  'PROFIL : POINTE DE VITESSE MAX',
+    indus: 'PROFIL : ANTI-DERAPAGE GLACE',
+    mini:  'PROFIL : MANIABILITE REACTIVE'
+  };
+  return {
+    spd: mvMap[it.id] || 0.70,
+    adh: maMap[it.id] || 0.70,
+    badge: mbMap[it.id] || 'PROFIL : EQUILIBRE'
+  };
+}
+
+function drawArcadeBox(x,y,w,h,bg,bdr,cornerCol,thick,ditherShadow){
+  var rx=Math.round(x), ry=Math.round(y), rw=Math.round(w), rh=Math.round(h);
+  var t = thick || 2;
+  if(ditherShadow){
+    drawDitherRect(rx+3, ry+3, rw, rh, 'rgba(0,0,0,0.75)', 0.50, 2);
+  }
+  if(bg){
+    hud.fillStyle = bg;
+    hud.fillRect(rx, ry, rw, rh);
+  }
+  /* bordure extérieure */
+  hud.fillStyle = bdr || '#3a4c5e';
+  hud.fillRect(rx, ry, rw, t);
+  hud.fillRect(rx, ry+rh-t, rw, t);
+  hud.fillRect(rx, ry, t, rh);
+  hud.fillRect(rx+rw-t, ry, t, rh);
+  /* liseré interne sombre pour détacher le cadre */
+  hud.fillStyle = '#070b10';
+  hud.fillRect(rx+t, ry+t, rw-t*2, 1);
+  hud.fillRect(rx+t, ry+rh-t-1, rw-t*2, 1);
+  hud.fillRect(rx+t, ry+t, 1, rh-t*2);
+  hud.fillRect(rx+rw-t-1, ry+t, 1, rh-t*2);
+  /* coins renforcés en L */
+  if(cornerCol){
+    var cl = Math.min(12, Math.floor(Math.min(rw,rh)*0.22));
+    var ct = t + 1;
+    hud.fillStyle = cornerCol;
+    /* haut-gauche */
+    hud.fillRect(rx-1, ry-1, cl, ct); hud.fillRect(rx-1, ry-1, ct, cl);
+    /* haut-droite */
+    hud.fillRect(rx+rw+1-cl, ry-1, cl, ct); hud.fillRect(rx+rw+1-ct, ry-1, ct, cl);
+    /* bas-gauche */
+    hud.fillRect(rx-1, ry+rh+1-ct, cl, ct); hud.fillRect(rx-1, ry+rh+1-cl, ct, cl);
+    /* bas-droite */
+    hud.fillRect(rx+rw+1-cl, ry+rh+1-ct, cl, ct); hud.fillRect(rx+rw+1-ct, ry+rh+1-cl, ct, cl);
+  }
+}
+
+function drawDitherRect(x,y,w,h,col,dens,step){
+  var s = step || 2;
+  var x0 = Math.round(x), y0 = Math.round(y), x1 = Math.round(x+w), y1 = Math.round(y+h);
+  hud.fillStyle = col;
+  for(var py=y0; py<y1; py+=s){
+    var by = BAYER4[((py/s)|0)&3];
+    for(var px0=x0; px0<x1; px0+=s){
+      if(((by[((px0/s)|0)&3]+0.5)/16) < dens){
+        hud.fillRect(px0, py, s, s);
+      }
+    }
+  }
+}
+
+function drawPixelWord(word, x, y, u, gap, pal){
+  var curX = x;
+  for(var i=0; i<word.length; i++){
+    var ch = word.charAt(i);
+    if(ch===' '){ curX += u*3; continue; }
+    var g = LOGO_FONT[ch];
+    if(!g) continue;
+    /* 1. ombre tramée (dithering ordonné) décalée de +u, +u */
+    for(var ry=0; ry<7; ry++){
+      for(var rx=0; rx<5; rx++){
+        if(g[ry].charAt(rx)==='1'){
+          drawDitherRect(curX+rx*u+u, y+ry*u+u, u, u, '#04060a', 0.60, 1);
+        }
+      }
+    }
+    /* 2. contour franc + extrusion pixel 3D */
+    for(var ry2=0; ry2<7; ry2++){
+      for(var rx2=0; rx2<5; rx2++){
+        if(g[ry2].charAt(rx2)==='1'){
+          pxr(curX+rx2*u-1, y+ry2*u-1, u+2, u+2, '#070a10');
+          pxr(curX+rx2*u+2, y+ry2*u+2, u, u, pal.ext);
+        }
+      }
+    }
+    /* 3. remplissage par bandes franches (haut / milieu / bas) + reflet pixel */
+    for(var ry3=0; ry3<7; ry3++){
+      var col = (ry3<=1) ? pal.hi : (ry3<=4 ? pal.mid : pal.lo);
+      for(var rx3=0; rx3<5; rx3++){
+        if(g[ry3].charAt(rx3)==='1'){
+          pxr(curX+rx3*u, y+ry3*u, u, u, col);
+          if(ry3===0){ pxr(curX+rx3*u, y+ry3*u, u, 1, '#ffffff'); }
+        }
+      }
+    }
+    curX += 5*u + gap;
+  }
+}
+
+function drawPickGrid(title, subtitle, items, idx, kind){
+  var t = performance.now()/1000;
+  var blinkSlow = Math.floor(t*2.4)%2===0;
+  hud.fillStyle = 'rgba(5,9,15,0.94)';
+  hud.fillRect(0,0,640,360);
+  drawDitherRect(0, 0, 640, 360, 'rgba(18,32,48,0.35)', 0.25, 2);
+  drawStripeBorder();
+
+  /* ── Bandeau d'en-tête structuré (pas d'empilement) ── */
+  drawArcadeBox(14, 11, 612, 36, '#0d1520', '#2e4458', '#ffd45a', 2, false);
+  var stepTxt = (kind==='char') ? 'ETAPE 1/3 · PILOTE' : 'ETAPE 2/3 · MACHINE';
+  pxr(20, 16, 128, 26, '#162638');
+  hudText(stepTxt, 84, 24, 8, '#7ad8f0', 'center');
+  var pageNum = ((idx/2)|0) + 1;
+  hudText('PAGE '+pageNum+'/2  ·  CHOIX '+(idx+1)+'/'+items.length, 84, 36, 7, '#ffd45a', 'center', 'normal');
+
+  hudText(title, 320, 23, 13, '#ffd45a', 'center');
+  hudText(subtitle, 320, 37, 7, '#a8c2d4', 'center', 'normal');
+
+  /* Rappel du choix précédent à droite */
+  pxr(482, 16, 138, 26, '#162638');
+  if(kind==='veh'){
+    hudText('PILOTE RETENU', 551, 23, 7, '#8fa6b4', 'center', 'normal');
+    hudText(CHARS[charIdx].name, 551, 35, 8, '#6ff0c8', 'center');
+  } else {
+    hudText('EQUIPE J1 (BLEU)', 551, 23, 7, '#8fa6b4', 'center', 'normal');
+    hudText('VS LAYA (VERT)', 551, 35, 8, '#5fd07a', 'center');
+  }
+
+  /* ── Grille 2×2 de grandes cartes (CW=298, CH=132) ── */
+  var CW=298, CH=132, GX=16, GY=52, GAPX=12, GAPY=8;
+  for(var i=0; i<items.length; i++){
+    var it = items[i];
+    var baseX = GX + (i%2)*(CW+GAPX);
+    var baseY = GY + ((i/2)|0)*(CH+GAPY);
+    var on = (i===idx);
+
+    /* Léger agrandissement (+3px de chaque côté) et contraste fort pour la carte sélectionnée */
+    var cx = on ? baseX-3 : baseX;
+    var cy = on ? baseY-2 : baseY;
+    var cw = on ? CW+6    : CW;
+    var ch = on ? CH+4    : CH;
+
+    var bgCol = on ? '#172d42' : '#0b1119';
+    var bdrCol = on ? (blinkSlow ? '#ffd45a' : '#fff3b0') : '#2c3d4f';
+    var crnCol = on ? (blinkSlow ? '#ffffff' : '#ffd45a') : '#4d657a';
+    drawArcadeBox(cx, cy, cw, ch, bgCol, bdrCol, crnCol, on ? 3 : 2, on);
+
+    /* Bandeau supérieur interne de la carte */
+    pxr(cx+3, cy+3, cw-6, 18, on ? '#224360' : '#111a26');
+
+    /* ── Aperçu 2D Pixel AGRANDI (×1.42 à ×1.48 vs u=3.0/3.1 d'origine) ── */
+    var pBoxW = (kind==='char') ? 104 : 122;
+    var pBoxH = ch - 14;
+    var pBoxX = cx + 7;
+    var pBoxY = cy + 7;
+    pxr(pBoxX, pBoxY, pBoxW, pBoxH, on ? '#0c1824' : '#070c12');
+    /* damier tramé subtil dans le cadre du portrait */
+    drawDitherRect(pBoxX+2, pBoxY+2, pBoxW-4, pBoxH-4, on ? 'rgba(90,190,255,0.12)' : 'rgba(255,255,255,0.04)', 0.25, 2);
+    pxr(pBoxX, pBoxY, pBoxW, 1, on ? '#ffd45a' : '#2c3d4f');
+    pxr(pBoxX, pBoxY+pBoxH-1, pBoxW, 1, on ? '#ffd45a' : '#2c3d4f');
+    pxr(pBoxX, pBoxY, 1, pBoxH, on ? '#ffd45a' : '#2c3d4f');
+    pxr(pBoxX+pBoxW-1, pBoxY, 1, pBoxH, on ? '#ffd45a' : '#2c3d4f');
+
+    if(kind==='char'){
+      /* Portrait 2D : u = 4.3 (non sélectionné, ×1.43) / 4.45 (sélectionné, ×1.48) */
+      var uChar = on ? 4.45 : 4.30;
+      drawPortrait(it, pBoxX + 5, pBoxY + 9, uChar);
+    } else {
+      /* Machine vue de profil : u = 4.35 (×1.40) / 4.45 (×1.44) */
+      var uVeh = on ? 4.45 : 4.35;
+      /* Sol carrelé stylisé sous la machine */
+      pxr(pBoxX+4, pBoxY+pBoxH-18, pBoxW-8, 12, '#132638');
+      pxr(pBoxX+4, pBoxY+pBoxH-18, pBoxW-8, 2, '#3d7ca8');
+      drawVehSprite(it, pBoxX + 3, pBoxY + 26, uVeh);
+    }
+
+    /* Badge d'index et état de sélection */
+    pxr(pBoxX+2, pBoxY+2, 16, 10, on ? '#ffd45a' : '#1d2b3a');
+    hudText('#'+(i+1), pBoxX+10, pBoxY+7, 6.5, on ? '#091018' : '#8fa6b4', 'center');
+
+    /* ── Colonne d'informations à droite du portrait ── */
+    var tx = pBoxX + pBoxW + 8;
+    var availW = (cx + cw - 8) - tx;
+    var maxChars = Math.max(22, Math.floor(availW / 4.3));
+
+    /* Nom + pastille SELECTION */
+    hudText(it.name, tx, cy+12, 10, on ? '#ffffff' : '#c7d9e5');
+    if(on){
+      var selW = 46;
+      pxr(cx+cw-selW-6, cy+5, selW, 13, blinkSlow ? '#ffd45a' : '#6ff0c8');
+      hudText('ACTIF', cx+cw-selW/2-6, cy+12, 7, '#081018', 'center');
+    }
+
+    /* Sous-titre métier */
+    hudText(it.tag, tx, cy+26, 7, on ? '#6fe4ff' : '#6e8796', 'left', 'normal');
+
+    /* Description courte (2 lignes max) */
+    var lines = hudWrap(it.desc, maxChars);
+    for(var d=0; d<lines.length && d<2; d++){
+      hudText(lines[d], tx, cy+38+d*10, 7, on ? '#d8ecff' : '#8ea3b0', 'left', 'normal');
+    }
+
+    /* ── Caractéristiques en BARRES (VITESSE / ADHERENCE, zéro nombre nu) ── */
+    var st = getItemStats(it, kind);
+    var barX = tx + 56;
+    var barW = Math.max(60, (cx + cw - 8) - barX);
+
+    hudText('VITESSE', tx, cy+64, 7, on ? '#9fd8f0' : '#7b93a2');
+    drawSegmentedBar(barX, cy+59, barW, 8, st.spd,
+      on ? '#38b6ff' : '#2878a8', on ? '#a8e8ff' : null, 8,
+      'rgba(255,255,255,0.10)', on ? '#7ad8f0' : '#3a5064');
+
+    hudText('ADHERENCE', tx, cy+78, 7, on ? '#a6f4c0' : '#7b93a2');
+    drawSegmentedBar(barX, cy+73, barW, 8, st.adh,
+      on ? '#46dc78' : '#2d8a50', on ? '#b8ffd0' : null, 8,
+      'rgba(255,255,255,0.10)', on ? '#7af0a0' : '#3a5064');
+
+    /* ── Bandeau d'avantage / spécialité au bas de la carte ── */
+    var perkY = cy + ch - 23;
+    var perkW = (cx + cw - 7) - tx;
+    pxr(tx, perkY, perkW, 16, on ? '#0e2030' : '#080d14');
+    pxr(tx, perkY, 3, 16, on ? '#ffd45a' : '#3a5064');
+    pxr(tx, perkY, perkW, 1, on ? 'rgba(255,212,90,0.55)' : 'rgba(120,150,170,0.25)');
+    pxr(tx, perkY+15, perkW, 1, on ? 'rgba(255,212,90,0.55)' : 'rgba(120,150,170,0.25)');
+    hudText(st.badge, tx+7, perkY+8, 6.5, on ? '#ffd45a' : '#7f96a3');
+  }
+
+  /* ── Pied d'écran : commandes adaptées au périphérique + curseur de page ── */
+  drawArcadeBox(14, 329, 612, 20, '#0d1520', '#2e4458', null, 1, false);
+  var footCmd = window.__padOnFlag
+    ? 'CROIX : CHOISIR CARTE   ·   BOUTON B / TOUCHER : VALIDER   ·   PAGE '+pageNum+'/2'
+    : 'FLECHES / WASD : CHOISIR   ·   ENTREE / ESPACE : VALIDER   ·   ECHAP : TITRE   ·   PAGE '+pageNum+'/2';
+  hudText(footCmd, 320, 339, 7, '#d8ecff', 'center', 'normal');
+}
+function drawCharPick(){ drawPickGrid('CHOISIS TON PERSONNAGE','CHAQUE EQUIPIER POSSEDE UN AVANTAGE UNIQUE', CHARS, charIdx, 'char'); }
+function drawVehPick(){ drawPickGrid('CHOISIS TA MACHINE',' COMPARE LES BARRES DE VITESSE ET D ADHERENCE', VEHICLES, vehIdx, 'veh'); }
 
 /* v0.9 : ECRAN DE SELECTION DES NIVEAUX (4 cartes, fleches + Entree) */
 function drawSelect(){
-  var t=performance.now()/1000;
-  hud.fillStyle='rgba(4,7,12,0.90)';
+  var t = performance.now()/1000;
+  var blinkSlow = Math.floor(t*2.4)%2===0;
+  hud.fillStyle = 'rgba(5,9,15,0.92)';
   hud.fillRect(0,0,640,360);
+  drawDitherRect(0, 0, 640, 360, 'rgba(18,32,48,0.30)', 0.25, 2);
   drawStripeBorder();
 
-  hudText('MOB RACER',320,30,26,'#eafcff','center');
-  hudText('CHOISIS TA SALLE',320,56,12,'#ffd45a','center');
-  hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(120,66,400,1);
+  /* En-tête */
+  var pageNum = ((selIdx/2)|0) + 1;
+  drawArcadeBox(14, 11, 612, 34, '#0d1520', '#2e4458', '#ffd45a', 2, false);
+  pxr(20, 15, 134, 26, '#162638');
+  hudText('ETAPE 3/3 · SALLE', 87, 22, 8, '#7ad8f0', 'center');
+  hudText('PAGE '+pageNum+'/3  ·  SALLE '+(selIdx+1)+'/'+LEVELS.length, 87, 34, 7, '#ffd45a', 'center', 'normal');
 
-  var CW=282, CH=86, GX=28, GY=74;   /* v0.10 : 5 cartes = 2 colonnes x 3 lignes */
-  for(var i=0;i<LEVELS.length;i++){
-    var L=LEVELS[i];
-    var cx=GX+(i%2)*(CW+12);
-    var cy=GY+((i/2)|0)*(CH+6);
-    var on=(i===selIdx);
-    /* fond de carte */
-    hud.fillStyle = on ? 'rgba(24,42,56,0.98)' : 'rgba(12,17,24,0.94)';
-    hud.fillRect(cx,cy,CW,CH);
-    hud.fillStyle = on ? (Math.floor(t*4)%2?'#ffd45a':'#ffeaa0') : 'rgba(120,150,170,0.55)';
-    hud.fillRect(cx,cy,CW,3);
-    hud.fillRect(cx,cy+CH-3,CW,3);
-    hud.fillRect(cx,cy,3,CH);
-    hud.fillRect(cx+CW-3,cy,3,CH);
-    /* numero + nom */
-    hud.fillStyle = on ? 'rgba(255,212,90,0.22)' : 'rgba(90,120,140,0.18)';
-    hud.fillRect(cx+8,cy+8,24,24);
-    hudText(String(L.num),cx+20,cy+20,15,on?'#ffd45a':'#8fa6b4','center');
-    hudText(L.name,cx+40,cy+17,12,on?'#ffffff':'#c3d5e0');
-    hudText(L.tag,cx+40,cy+31,7,on?'#7ad8f0':'#6d8492','left','normal');
-    /* description sur 2 lignes */
-    var lines=hudWrap(L.desc,60);
-    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+10,cy+46+d*9,7,on?'#cfe3ff':'#8ea3b0','left','normal');
-    /* NIVEAU + difficulte (etoiles) */
-    hudText('NIVEAU '+L.num+' · '+L.diffLabel,cx+10,cy+66,8,on?'#ffd45a':'#9fb3c0');
-    hudStars(cx+CW-10,cy+66,L.stars,on);
-    hudText(POLL_DESC[L.id]||'',cx+10,cy+78,7,on?'#9fe0b0':'#6d8492','left','normal');
-    hudText('HIGH '+highScores[L.id],cx+CW-10,cy+78,7,'#ffd45a','right','normal');
+  hudText('CHOISIS TA SALLE', 320, 22, 13, '#ffd45a', 'center');
+  hudText('5 ARENES DE NUIT · 75 SECONDES PAR MANCHE', 320, 35, 7, '#a8c2d4', 'center', 'normal');
+
+  pxr(468, 15, 152, 26, '#162638');
+  hudText(CHARS[charIdx].name, 544, 22, 7, '#6ff0c8', 'center');
+  hudText(VEHICLES[vehIdx].name, 544, 34, 7, '#9fd8f0', 'center', 'normal');
+
+  /* Grille 2×3 (5 salles + 1 panneau récapitulatif en bas à droite) */
+  var CW=298, CH=86, GX=16, GY=50, GAPX=12, GAPY=6;
+  for(var i=0; i<LEVELS.length; i++){
+    var L = LEVELS[i];
+    var baseX = GX + (i%2)*(CW+GAPX);
+    var baseY = GY + ((i/2)|0)*(CH+GAPY);
+    var on = (i===selIdx);
+    var cx = on ? baseX-2 : baseX;
+    var cy = on ? baseY-2 : baseY;
+    var cw = on ? CW+4    : CW;
+    var ch = on ? CH+4    : CH;
+
+    drawArcadeBox(cx, cy, cw, ch,
+      on ? '#172d42' : '#0b1119',
+      on ? (blinkSlow ? '#ffd45a' : '#fff3b0') : '#2c3d4f',
+      on ? (blinkSlow ? '#ffffff' : '#ffd45a') : '#4d657a',
+      on ? 3 : 2, on);
+
+    /* Numéro de salle */
+    pxr(cx+7, cy+7, 26, 26, on ? '#ffd45a' : '#182432');
+    hudText('0'+L.num, cx+20, cy+20, 12, on ? '#081018' : '#8fa6b4', 'center');
+
+    /* Titre + sous-titre */
+    hudText(L.name, cx+40, cy+14, 10, on ? '#ffffff' : '#c7d9e5');
+    hudText(L.tag, cx+40, cy+26, 7, on ? '#6fe4ff' : '#6e8796', 'left', 'normal');
     if(on){
-      hudText('▶',cx+CW-14,cy+16,12,'#ffd45a','center');
+      pxr(cx+cw-52, cy+6, 44, 13, blinkSlow ? '#ffd45a' : '#6ff0c8');
+      hudText('PRET ▶', cx+cw-30, cy+13, 7, '#081018', 'center');
     }
+
+    /* Description courte */
+    var lines = hudWrap(L.desc, 62);
+    for(var d=0; d<lines.length && d<2; d++){
+      hudText(lines[d], cx+8, cy+40+d*9, 6.5, on ? '#d8ecff' : '#8ea3b0', 'left', 'normal');
+    }
+
+    /* Barre de difficulté + étoiles + High Score */
+    pxr(cx+6, cy+ch-25, cw-12, 19, on ? '#0e1e2e' : '#080d14');
+    hudText('DIFFICULTE : '+L.diffLabel, cx+10, cy+ch-19, 7, on ? '#ffd45a' : '#9fb3c0');
+    hudStars(cx+cw-10, cy+ch-19, L.stars, on);
+    hudText(POLL_DESC[L.id]||'', cx+10, cy+ch-10, 6, on ? '#9fe0b0' : '#6d8492', 'left', 'normal');
+    hudText('RECORD '+(highScores[L.id]||0), cx+cw-10, cy+ch-10, 7, '#ffd45a', 'right');
   }
-  hudText('FLECHES / WASD : CHOISIR   ·   ENTREE : JOUER   ·   M : SON',320,338,8,'#cfe3ff','center','normal');
-  hudText('v0.11',612,26,8,'rgba(190,215,225,0.55)','right','normal');
+
+  /* 6e case (colonne droite, ligne 3) : Récapitulatif de la salle sélectionnée */
+  var rx0 = GX + CW + GAPX, ry0 = GY + 2*(CH+GAPY);
+  var selL = LEVELS[selIdx];
+  drawArcadeBox(rx0, ry0, CW, CH, '#0d1824', '#3a546e', '#7ad8f0', 2, false);
+  pxr(rx0+3, ry0+3, CW-6, 16, '#16293c');
+  hudText('BRIEFING SALLE 0'+selL.num+' · '+selL.name, rx0+CW/2, ry0+11, 8, '#7ad8f0', 'center');
+  hudText('OBJECTIF : LAVER PLUS DE CASES QUE LAYA EN 75s', rx0+10, ry0+28, 7, '#eafcff', 'left', 'normal');
+  hudText('NIDS DE CRASSE : '+selL.nests+'   ·   PASSAGES REQUIS : x'+selL.passes, rx0+10, ry0+42, 7, '#ffd45a', 'left', 'normal');
+  hudText('RECORD DE LA SALLE : '+(highScores[selL.id]||0)+' CASES', rx0+10, ry0+56, 8, '#6ff0c8');
+  hudText('RECORD GENERAL : '+highScore+' CASES', rx0+10, ry0+70, 7, '#9fb3c0', 'left', 'normal');
+
+  /* Pied d'écran adapté au périphérique */
+  drawArcadeBox(14, 329, 612, 20, '#0d1520', '#2e4458', null, 1, false);
+  var selFoot = window.__padOnFlag
+    ? 'CROIX : CHOISIR SALLE   ·   B / TOUCHER : LANCER LA MANCHE   ·   PAGE '+pageNum+'/3'
+    : 'FLECHES / WASD : CHOISIR SALLE   ·   ENTREE : JOUER   ·   ECHAP : RETOUR   ·   M : SON';
+  hudText(selFoot, 320, 339, 7, '#d8ecff', 'center', 'normal');
 }
 
 /* v0.9 : retour a la ligne simple pour les cartes */
@@ -3916,62 +4551,143 @@ function drawStripeBorder(){
 
 /* v0.8 : ECRAN TITRE — attract mode borne d'arcade */
 function drawAttract(){
-  var t=performance.now()/1000;
-  /* voile : la demo auto-jouee reste visible derriere */
-  hud.fillStyle='rgba(5,8,16,0.62)';
-  hud.fillRect(0,0,640,360);
+  var t = performance.now()/1000;
+  var alt = ((t*2)|0)%2===0;
+  var pulse = ((t*1.6)|0)%2===0;
 
+  /* Voile léger : la démo 3D auto-jouée reste visible en arrière-plan */
+  hud.fillStyle = 'rgba(5,9,16,0.56)';
+  hud.fillRect(0,0,640,360);
   drawStripeBorder();
 
-  /* bandeau titre : 2 couleurs alternees */
-  var alt=((t*2)|0)%2===0;
-  hud.fillStyle='rgba(0,0,0,0.55)'; hud.fillRect(56,58,528,64);
-  hudText('MOB RACER',320,88,44,alt?'#ffd45a':'#e74c3c','center');
+  /* ── Barre supérieure de borne d'arcade (1UP / HIGH SCORE / DEMO / CREDIT) ── */
+  pxr(12, 11, 616, 18, 'rgba(8,13,22,0.92)');
+  pxr(12, 28, 616, 1, '#2e4458');
+  hudText('CREDIT 01', 22, 20, 8, '#7ad8f0', 'left');
+  hudText('RECORD GENERAL : '+highScore+' PTS', 320, 20, 9, '#ffd45a', 'center');
+  hudText('DEMO SALLE '+LV.num+'/5 · '+LV.name, 618, 20, 8, '#ff9a7a', 'right');
 
-  /* sous-titre defilant */
-  hud.save();
-  hud.beginPath(); hud.rect(24,128,592,16); hud.clip();
-  var st='DES MACHINES QUI TRACENT DU PROPRE  ·  4 SALLES  ·  MOUETTES VANDALES  ·  CHIENS INDECIS  ·  RATONS LAVEURS  ·  HUMAINS SALES';
-  hud.font='bold 9px "Courier New",monospace';
-  var w=hud.measureText(st).width;
-  var sx=640-((t*46)%(w+660));
-  hud.fillStyle='#7ac0ea'; hud.textBaseline='middle'; hud.textAlign='left';
-  hud.fillText(st,sx,136);
-  hud.restore();
+  /* ── MARQUEE & LOGO PIXEL COMPOSÉ « MOB RACER » + « SERVICE DE PROPRETE 3D » ── */
+  drawArcadeBox(38, 33, 564, 78, 'rgba(9,16,26,0.94)', '#3a5670', '#ffd45a', 2, true);
+  drawDitherRect(42, 37, 556, 70, 'rgba(36,74,110,0.28)', 0.35, 2);
 
-  /* HIGH SCORE persiste */
-  hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(212,152,216,22);
-  hudText('HIGH SCORE  '+highScore,320,163,14,'#ffd45a','center');
+  /* Mot « MOB » (or/ambre) + mot « RACER » (cyan/bleu) + badge « 3D » */
+  var palMob = {
+    hi:  alt ? '#fff7b8' : '#ffe888',
+    mid: alt ? '#ffd45a' : '#ffae34',
+    lo:  '#d86818',
+    ext: '#4a1c08'
+  };
+  var palRacer = {
+    hi:  alt ? '#c8f6ff' : '#fff7b8',
+    mid: alt ? '#4dc8ff' : '#ffd45a',
+    lo:  alt ? '#1b72c8' : '#d86818',
+    ext: '#0c2b4e'
+  };
+  var pal3D = {
+    hi: '#ffd8d0', mid: '#ff5a4a', lo: '#a81c14', ext: '#380806'
+  };
+  /* Largeur totale : MOB (3*20 + 2*4 = 68) + espace 16 + RACER (5*20 + 4*4 = 116) + espace 16 + 3D (2*20 + 4 = 44) = 260 px -> x=190 */
+  drawPixelWord('MOB',   182, 41, 4, 4, palMob);
+  drawPixelWord('RACER', 268, 41, 4, 4, palRacer);
+  drawPixelWord('3D',    406, 41, 4, 4, pal3D);
 
-  /* instructions */
-  var lignes=[
-    '1 JOUEUR  /  BOT LAYA  ·  4 NIVEAUX',
-    'FLECHES OU WASD : DEPLACER   ·   E : TORPILLE',
-    'SAVON = GLISSE x1.6   ·   TORPILLE = ZONE 5x5',
-    'LES POLLUEURS RESALISSENT CE QUE TU AS NETTOYE !'
-  ];
-  for(var i=0;i<lignes.length;i++) hudText(lignes[i],320,198+i*19,9,i===0?'#eafcff':'#cfe3ff','center','normal');
+  /* Illustrations pixel gauche/droite dans le marquee */
+  drawVehSprite(VEHICLES[0], 50, 42, 3.2);
+  drawPortrait(CHARS[0], 534, 37, 2.2);
 
-  /* INSERT COIN / PRESS START : clignotement 1 Hz */
-  var pulse=((t*1)|0)%2===0;
-  if(pulse){
-    hudText('INSERT COIN',320,282,17,'#7dffa0','center');
-    hudText('PRESS START  (ENTREE)  →  CHOIX DE LA SALLE',320,308,11,'#ffffff','center');
+  /* Cartouche Sous-titre « SERVICE DE PROPRETE 3D » */
+  pxr(152, 82, 336, 22, '#07101a');
+  pxr(152, 82, 336, 1, '#5fd8ec');
+  pxr(152, 103, 336, 1, '#5fd8ec');
+  drawIconDrop(162, 87, 1);
+  drawIconClean(468, 87, 1);
+  hudText('SERVICE DE PROPRETE 3D', 320, 93, 10, '#eafcff', 'center');
+
+  /* ── COMPOSITION ÉQUILIBRÉE EN 2 COLONNES (zéro empilement central) ── */
+  /* COLONNE GAUCHE : Cadre de HIGH SCORE par salle */
+  var LX=18, LY=118, LW=296, LH=150;
+  drawArcadeBox(LX, LY, LW, LH, 'rgba(8,14,22,0.92)', '#3a546e', '#ffd45a', 2, true);
+  pxr(LX+3, LY+3, LW-6, 18, '#16283b');
+  drawIconClean(LX+10, LY+6, 1);
+  hudText('HIGH SCORE PAR SALLE', LX+28, LY+12, 8, '#ffd45a', 'left');
+  hudText('5 SALLES', LX+LW-10, LY+12, 7, '#7ad8f0', 'right');
+
+  for(var li=0; li<LEVELS.length; li++){
+    var L = LEVELS[li];
+    var ry = LY + 25 + li*24;
+    var isCurDemo = (L.id === LV.id);
+    pxr(LX+6, ry, LW-12, 20, isCurDemo ? 'rgba(36,68,96,0.85)' : 'rgba(15,24,36,0.80)');
+    if(isCurDemo){ pxr(LX+6, ry, 3, 20, '#ffd45a'); }
+    pxr(LX+12, ry+3, 18, 14, isCurDemo ? '#ffd45a' : '#1f3246');
+    hudText('0'+L.num, LX+21, ry+10, 7, isCurDemo ? '#081018' : '#9fb3c0', 'center');
+    hudText(L.name, LX+36, ry+10, 7, isCurDemo ? '#ffffff' : '#cfe3ff', 'left');
+    hudStars(LX+LW-68, ry+10, L.stars, isCurDemo);
+    var hsVal = highScores[L.id] || 0;
+    hudText(hsVal+' PTS', LX+LW-10, ry+10, 8, hsVal>0 ? '#ffd45a' : '#6d8492', 'right');
   }
-  /* badge demo + credit */
-  hudText('DEMO',596,26,9,'#ff9a7a','right');
-  hudText('CREDIT 01',46,26,9,'#7ac0ea','left');
-  hudText('v0.9',320,338,7,'rgba(190,215,225,0.55)','center','normal');
+
+  /* COLONNE DROITE : Briefing d'arcade illustré (icônes pixel + règles) */
+  var RX=326, RY=118, RW=296, RH=150;
+  drawArcadeBox(RX, RY, RW, RH, 'rgba(8,14,22,0.92)', '#3a546e', '#7ad8f0', 2, true);
+  pxr(RX+3, RY+3, RW-6, 18, '#16283b');
+  drawIconBolt(RX+10, RY+6, 1);
+  hudText('MANUEL DE SERVICE · 75s', RX+28, RY+12, 8, '#7ad8f0', 'left');
+  hudText('1J VS LAYA', RX+RW-10, RY+12, 7, '#5fd07a', 'right');
+
+  /* 4 cartes de règles dans le panneau droit */
+  var rules = [
+    { y: RY+26, c1:'#38b6ff', c2:'#5fd07a', t1:'DUEL : TOI (BLEU) VS LAYA (VERT)', t2:'Lave le maximum de cases avant la fin des 75s' },
+    { y: RY+56, icon:'drop',  c1:'#42beff', t1:'EAU & CRASSE : STATIONS AUX ANGLES', t2:'Recharge bleue (HG) · Vidange orange (HD)' },
+    { y: RY+86, icon:'sponge',c1:'#ff9ec2', t1:'BONUS : SAVON, FUSEE & TORPILLE', t2:'Savon x1.6 · Fusee turbo · Torpille 5x5 [E/A]' },
+    { y: RY+116,icon:'scrap', c1:'#ffd45a', t1:'ATTENTION AUX POLLUEURS !', t2:'Mouettes, chiens, ratons et dinos resalissent' }
+  ];
+  for(var ri=0; ri<rules.length; ri++){
+    var rl = rules[ri];
+    pxr(RX+6, rl.y, RW-12, 26, 'rgba(15,24,36,0.82)');
+    pxr(RX+6, rl.y, 3, 26, rl.c1);
+    if(ri===0){
+      pxr(RX+14, rl.y+5, 10, 7, '#38b6ff');
+      pxr(RX+14, rl.y+14, 10, 7, '#5fd07a');
+    } else if(rl.icon==='drop'){
+      drawIconDrop(RX+14, rl.y+7, 1);
+    } else if(rl.icon==='sponge'){
+      drawIconSponge(RX+14, rl.y+7, 1);
+    } else {
+      drawIconScraper(RX+14, rl.y+7, 1);
+    }
+    hudText(rl.t1, RX+30, rl.y+8, 7, '#ffffff', 'left');
+    hudText(rl.t2, RX+30, rl.y+19, 6, '#9fb6c6', 'left', 'normal');
+  }
+
+  /* ── BANDOULIÈRE D'ACTION : INSERT COIN / APPUIE SUR ENTREE (adapté mobile / clavier) ── */
+  var BX=70, BY=274, BW=500, BH=44;
+  drawArcadeBox(BX, BY, BW, BH, 'rgba(10,20,32,0.95)', pulse ? '#ffd45a' : '#5fd8ec', pulse ? '#ffffff' : '#ffd45a', 2, true);
+  var keyPrompt = window.__padOnFlag
+    ? 'APPUIE SUR ENTREE / BOUTON [B]  (OU TOUCHE L ECRAN)'
+    : 'APPUIE SUR ENTREE  [TOUCHE ENTREE / ESPACE]';
+  if(pulse){
+    hudText('INSERT COIN   ·   PARTIE GRATUITE', 320, BY+14, 12, '#6ff0c8', 'center');
+    hudText(keyPrompt, 320, BY+31, 9, '#ffffff', 'center');
+  } else {
+    hudText('INSERT COIN   ·   PRET A NETTOYER', 320, BY+14, 12, '#ffd45a', 'center');
+    hudText(keyPrompt, 320, BY+31, 9, '#9fd8f0', 'center');
+  }
+
+  /* ── Pied d'écran : commandes selon périphérique ── */
+  pxr(12, 326, 616, 20, 'rgba(8,13,22,0.92)');
+  var attractFoot = window.__padOnFlag
+    ? 'MOBILE : CROIX DIRECTIONNELLE  ·  A : TORPILLE  ·  B / ECRAN : VALIDER'
+    : 'CLAVIER : FLECHES / WASD : DIRIGER  ·  E : TORPILLE  ·  ENTREE : JOUER  ·  M : SON';
+  hudText(attractFoot, 320, 336, 7, '#cfe3ff', 'center', 'normal');
 }
 
 function drawHUD(){
   hud.setTransform(2.25,0,0,2.25,0,0);
-  /* v0.17 : filtre CRT discret (lignes paires assombries) */
   function crtScanlines(){
     hud.fillStyle='rgba(0,0,0,0.10)';
     for(var y=0;y<360;y+=2) hud.fillRect(0,y,640,1);
-  }   /* v0.15 : HUD dessiné en 640×360, rendu en 960×540 */
-  /* v0.16 : panneau d'état lisible sous le jeu (portrait mobile) */
+  }
   if(window.__padOnFlag && (performance.now()|0)%4===0 && typeof stPct!=='undefined' && stPct){
     var pctTxt = Math.round((totalCleanable>0 ? (totalCleanable-dirtyLeft)/totalCleanable : 1)*100)+'%';
     stPct.textContent=pctTxt;
@@ -3981,9 +4697,9 @@ function drawHUD(){
     stWater.textContent=Math.round(player.water*100)+'%';
   }
   hud.clearRect(0,0,640,360);
-  hudAccent();                       /* v0.11 : accent couleur de la salle */
-  /* v0.9 : ecrans plein HUD */
-  if(mode==='attract'){ drawAttract(); return; }
+  hudAccent();
+
+  if(mode==='attract'){ drawAttract(); if(window.__crt!==false) crtScanlines(); return; }
   if(window.__sprTest){
     hud.fillStyle='#10141a'; hud.fillRect(0,0,640,360);
     var keys=['you','bot'], dirs=[0,1,2];
@@ -4001,124 +4717,256 @@ function drawHUD(){
     hudText('PLANCHE DES SPRITES (QA)', 320, 20, 10, '#ffd45a','center');
     return;
   }
-  if(mode==='select'){ drawSelect(); return; }
-  if(mode==='charPick'){ drawCharPick(); return; }
-  if(mode==='vehPick'){ drawVehPick(); return; }
-  var pct = totalCleanable? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable):0;
+  if(mode==='select'){ drawSelect(); if(window.__crt!==false) crtScanlines(); return; }
+  if(mode==='charPick'){ drawCharPick(); if(window.__crt!==false) crtScanlines(); return; }
+  if(mode==='vehPick'){ drawVehPick(); if(window.__crt!==false) crtScanlines(); return; }
 
-  /* ═════════ v1.0 : BARRE HAUTE façon borne d'arcade ═════════ */
-  hud.fillStyle='#151a23'; hud.fillRect(0,0,640,26);
-  hud.fillStyle='rgba(120,200,255,0.16)'; hud.fillRect(0,26,640,1);
-  hud.fillStyle='#3a4356'; hud.fillRect(0,27,640,1);
-  hudText('PROPRETE / CLEAN : '+pct+'%', 12, 13, 11, '#f2f4f8');
+  var pct = totalCleanable ? Math.round(100*(totalCleanable-dirtyLeft)/totalCleanable) : 0;
+  var nowMs = performance.now();
+  var pulseFast = Math.floor(nowMs/260)%2===0;
+
+  /* Contexte de dominance visuelle :
+     - Si l'eau est basse (<= 35%) ou vide, la jauge EAU / WATER devient critique et dominante.
+     - Sinon, la jauge d'objectif principal PROPRETE / CLEAN est visuellement dominante. */
+  var waterCrit = (player.water <= 0.35);
+  var dirtCrit  = (player.dirt >= 0.85);
+  var cleanDom  = !waterCrit;
+
+  /* ═════════ BARRE HAUTE : PROPRETÉ / CHRONO / DUEL ═════════ */
+  pxr(0, 0, 640, 28, '#101620');
+  pxr(0, 28, 640, 1, '#3a4c60');
+  pxr(0, 29, 640, 13, 'rgba(6,10,15,0.95)');
+  pxr(0, 42, 640, 1, 'rgba(120,190,240,0.22)');
+
+  /* 1. Jauge PROPRETE / CLEAN (label bilingue AU-DESSUS de la barre) */
+  var cBoxX=6, cBoxY=2, cBoxW=254, cBoxH=24;
+  if(cleanDom){
+    pxr(cBoxX, cBoxY, cBoxW, cBoxH, '#16283b');
+    pxr(cBoxX, cBoxY, cBoxW, 1, '#5fd8ec');
+    pxr(cBoxX, cBoxY+cBoxH-1, cBoxW, 1, '#5fd8ec');
+    pxr(cBoxX, cBoxY, 2, cBoxH, '#ffd45a');
+  }
+  drawIconClean(cBoxX+5, cBoxY+2, 1);
+  hudText('PROPRETE / CLEAN', cBoxX+20, cBoxY+7, 7, cleanDom ? '#ffffff' : '#9fb6c6');
+  hudText(pct+'%', cBoxX+cBoxW-6, cBoxY+7, 8, '#6ff0c8', 'right');
+  drawSegmentedBar(cBoxX+20, cBoxY+13, cBoxW-26, cleanDom ? 9 : 7, pct/100,
+    '#38b6ff', '#a8ebff', 10, 'rgba(255,255,255,0.12)', cleanDom ? '#7ad8f0' : '#3a5064');
+
+  /* 2. Chrono central octogonal */
   (function(){
     var tl=Math.max(0,Math.ceil(timeLeft));
     var mm=Math.floor(tl/60), ss=tl%60;
     var txt=(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss;
-    var px0=272, py0=3, pw=96, ph=20, c=6;
+    var px0=270, py0=2, pw=100, ph=24, c=5;
     hud.beginPath();
     hud.moveTo(px0+c,py0); hud.lineTo(px0+pw-c,py0); hud.lineTo(px0+pw,py0+c);
     hud.lineTo(px0+pw,py0+ph-c); hud.lineTo(px0+pw-c,py0+ph); hud.lineTo(px0+c,py0+ph);
     hud.lineTo(px0,py0+ph-c); hud.lineTo(px0,py0+c); hud.closePath();
-    hud.fillStyle='#0d1119'; hud.fill();
-    hud.strokeStyle=(timeLeft<=10&&mode==='play')?'#ff5a5a':'#3a4356'; hud.lineWidth=1; hud.stroke();
+    hud.fillStyle='#090d14'; hud.fill();
+    hud.strokeStyle=(timeLeft<=10&&mode==='play')?'#ff5a5a':'#4a6278'; hud.lineWidth=1; hud.stroke();
     hudText(txt, px0+pw/2, py0+ph/2+1, 13,
             (timeLeft<=10&&mode==='play')?'#ff7a6a':'#f2f4f8','center');
   })();
-  hudText('J1 : '+score+' pts', 392, 13, 11, '#f2a93b');
-  hudText('J2 : '+botScore+' pts', 512, 13, 11, '#dfe3ea');
-  hud.fillStyle='rgba(6,9,13,0.96)'; hud.fillRect(0,28,640,14);
-  hudText(LV.num+'/'+LEVELS.length+' · '+LV.name, 12, 35, 7, '#5fd8ec');
-  hudText('POLLUEURS '+polluters.length, 214, 35, 7, '#7f96a3');
-  hudText('RESALIES '+dirtyByPolluters, 292, 35, 7, dirtyByPolluters>0?'#ff9a7a':'#6d8492');
-  hudText('NIDS '+nests.length, 372, 35, 7, HUD_ACC);
-  hudText('x'+player.coins, 424, 35, 7, HUD_ACC);
 
-  /* ═════════ v1.0 : jauges EAU / WATER et CRASSE / GRIME (labels au-dessus) ═════════ */
-  var gxE=120, gW=150, wy0=298;
-  hudText('EAU / WATER', gxE, 294, 8, '#9fd8f0');
-  hud.fillStyle='rgba(255,255,255,0.16)'; hud.fillRect(gxE, 300, gW, 9);
-  hud.fillStyle = player.water>0.35 ? '#3fb6f0' : (player.water>0 ? '#f0a83c' : '#e05555');
-  hud.fillRect(gxE, 300, Math.round(gW*player.water), 9);
-  for(var wl=1; wl<4; wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(gxE+Math.round(gW*wl/4), 300, 1, 9); }
-  hud.strokeStyle='rgba(255,255,255,0.30)'; hud.lineWidth=1; hud.strokeRect(gxE+0.5, 300.5, gW-1, 8);
-  hudText('CRASSE / GRIME', gxE, 316, 8, '#e8c08a');
-  hud.fillStyle='rgba(255,255,255,0.22)'; hud.fillRect(gxE, 322, gW, 9);
-  hud.fillStyle = player.dirt>0.75 ? '#ff5a4a' : '#e0a03c';
-  hud.fillRect(gxE, 322, Math.round(gW*player.dirt), 9);
-  hud.strokeStyle='rgba(255,255,255,0.30)'; hud.strokeRect(gxE+0.5, 322.5, gW-1, 8);
-  if(player.dirt>=0.999){
-    hudText('PLEIN !', gxE+gW+8, 326, 8, (Math.floor(performance.now()/300)%2)?'#ff5a4a':'#ffd45a');
-  }
-  if(player.rocketT>0){
-    hud.fillStyle='rgba(255,170,50,0.9)';
-    hud.fillRect(gxE+gW+8, 300, Math.round(46*Math.min(1,player.rocketT/FUSEE_DUREE)), 9);
-    hudText('FUSEE', gxE+gW+58, 305, 7, '#ffd45a');
-  }
+  /* 3. Compteurs de duel : TOI (bleu) vs LAYA (vert) */
+  pxr(380, 3, 124, 22, '#0e2236');
+  pxr(380, 3, 124, 1, '#38b6ff');
+  pxr(385, 8, 10, 12, '#38b6ff');
+  pxr(386, 9, 8, 3, '#b8ecff');
+  hudText('TOI', 400, 10, 7, '#8fd8ff');
+  hudText(score+' CAS.', 498, 14, 9, '#ffffff', 'right');
 
-  /* v0.17 : MINI-CARTE de l'arène (bas gauche) */
+  pxr(510, 3, 124, 22, '#0e261a');
+  pxr(510, 3, 124, 1, '#5fd07a');
+  pxr(515, 8, 10, 12, '#5fd07a');
+  pxr(516, 9, 8, 3, '#c2fad0');
+  hudText('LAYA', 530, 10, 7, '#9ff5b8');
+  hudText(botScore+' CAS.', 628, 14, 9, '#e8fff0', 'right');
+
+  /* 4. Bandeau secondaire d'informations de salle */
+  var nidLeft=0;
+  for(var nI=0;nI<nests.length;nI++) if(cells[idxAt(nests[nI].gx,nests[nI].gy)]===3) nidLeft++;
+  hudText('SALLE '+LV.num+'/'+LEVELS.length+' · '+LV.name, 10, 36, 7, '#5fd8ec');
+  hudText('POLLUEURS : '+polluters.length, 218, 36, 7, '#9fb3c0');
+  hudText('RESALIES : '+dirtyByPolluters, 314, 36, 7, dirtyByPolluters>0?'#ff9a7a':'#7f96a3');
+  hudText('NIDS : '+nidLeft, 412, 36, 7, '#e0b272');
+  hudText('PIECES : x'+player.coins, 476, 36, 7, '#ffd45a');
+  hudText(LV.passes>1 ? ('LAVAGE x'+LV.passes) : ('RECORD '+(highScores[LV.id]||0)), 630, 36, 7, '#9fd8f0', 'right');
+
+  /* ═════════ 4. MINI-CARTE (bas gauche : bordure lisible, liseré murs, légende) ═════════ */
   (function(){
-    var MX=6, MY=232, MW=104, MH=90;
-    hud.fillStyle='rgba(4,7,10,0.78)'; hud.fillRect(MX,MY,MW,MH);
-    hud.strokeStyle=HUD_ACC; hud.lineWidth=1; hud.strokeRect(MX+0.5,MY+0.5,MW-1,MH-1);
-    var cw=(MW-8)/COLS, ch=(MH-8)/ROWS;
+    var MX=6, MY=214, MW=114, MH=123;
+    drawArcadeBox(MX, MY, MW, MH, 'rgba(6,10,16,0.92)', HUD_ACC, '#7ad8f0', 2, false);
+    /* En-tête de la mini-carte */
+    pxr(MX+2, MY+2, MW-4, 12, '#132232');
+    hudText('PLAN / MAP', MX+MW/2, MY+8, 7, '#eafcff', 'center');
+
+    /* Zone de la grille 15×13 avec liseré extérieur qui distingue l'enceinte des murs */
+    var gx0 = MX+7, gy0 = MY+16, gw = 100, gh = 78;
+    var cw = gw/COLS, ch = gh/ROWS;
+    /* Liseré d'enceinte des murs (double filet clair/sombre autour de l'arène) */
+    pxr(gx0-2, gy0-2, gw+4, gh+4, '#9ab2c8');
+    pxr(gx0-1, gy0-1, gw+2, gh+2, '#18222e');
+
     for(var gy=0; gy<ROWS; gy++){
       for(var gx=0; gx<COLS; gx++){
-        var idx=idxAt(gx,gy), c=null;
-        if(blocked[idx]) c='rgba(120,132,150,0.55)';
-        else if(cells[idx]===3) c='#8a5a2a';
-        else if(cells[idx]===0) c='rgba(150,120,80,0.35)';
-        else if(cells[idx]===2) c='rgba(95,189,240,0.75)';
-        else if(cells[idx]===4) c='rgba(95,208,122,0.75)';
-        else c='rgba(255,255,255,0.10)';
-        hud.fillStyle=c; hud.fillRect(MX+4+gx*cw, MY+4+gy*ch, Math.ceil(cw), Math.ceil(ch));
+        var idx = idxAt(gx,gy);
+        var cx0 = Math.round(gx0 + gx*cw);
+        var cy0 = Math.round(gy0 + gy*ch);
+        var cw0 = Math.max(2, Math.round((gx+1)*cw) - Math.round(gx*cw));
+        var ch0 = Math.max(2, Math.round((gy+1)*ch) - Math.round(gy*ch));
+        if(blocked[idx]){
+          /* Mur / obstacle : remplissage dense + liseré clair qui distingue les murs */
+          pxr(cx0, cy0, cw0, ch0, '#465466');
+          pxr(cx0, cy0, cw0, 1, '#c4d8ea');
+          pxr(cx0, cy0, 1, ch0, '#c4d8ea');
+          pxr(cx0, cy0+ch0-1, cw0, 1, '#1a222c');
+        } else {
+          var c;
+          if(cells[idx]===3)      c = '#9c6228';
+          else if(cells[idx]===0) c = 'rgba(148,118,78,0.42)';
+          else if(cells[idx]===2) c = 'rgba(72,186,248,0.85)';
+          else if(cells[idx]===4) c = 'rgba(78,214,122,0.85)';
+          else                    c = 'rgba(220,235,245,0.16)';
+          pxr(cx0, cy0, cw0, ch0, c);
+        }
       }
     }
-    /* stations */
+    /* Stations (Recharge eau = cyan, Vidange = orange) avec contour franc */
     for(var si=0; si<LV.props.length; si++){
-      var sp2=LV.props[si];
-      if(sp2.k==='recharge'){ hud.fillStyle='#4dc8ff'; hud.fillRect(MX+4+sp2.gx*cw-1, MY+4+sp2.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2); }
-      if(sp2.k==='vidange'){ hud.fillStyle='#ffa63c'; hud.fillRect(MX+4+sp2.gx*cw-1, MY+4+sp2.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2); }
+      var sp2 = LV.props[si];
+      if(sp2.k==='recharge' || sp2.k==='vidange'){
+        var sx = Math.round(gx0 + sp2.gx*cw) - 1;
+        var sy = Math.round(gy0 + sp2.gy*ch) - 1;
+        var sw = Math.ceil(cw)+2, sh = Math.ceil(ch)+2;
+        pxr(sx-1, sy-1, sw+2, sh+2, '#070b10');
+        pxr(sx, sy, sw, sh, sp2.k==='recharge' ? '#4de0ff' : '#ffa63c');
+        pxr(sx+1, sy+1, Math.max(1,sw-2), 1, '#ffffff');
+      }
     }
-    /* joueur + bot */
-    hud.fillStyle='#5fbdf0'; hud.fillRect(MX+4+player.gx*cw-1, MY+4+player.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2);
-    hud.fillStyle='#5fd07a'; hud.fillRect(MX+4+bot.gx*cw-1, MY+4+bot.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2);
-    hudText('PLAN',MX+MW/2,MY-5,7,'#7ad8f0','center');
+    /* Marqueurs Joueur (bleu) et LAYA (vert) */
+    var pxM = Math.round(gx0 + player.gx*cw) - 1;
+    var pyM = Math.round(gy0 + player.gy*ch) - 1;
+    var bxM = Math.round(gx0 + bot.gx*cw) - 1;
+    var byM = Math.round(gy0 + bot.gy*ch) - 1;
+    var mw = Math.ceil(cw)+2, mh = Math.ceil(ch)+2;
+    pxr(bxM-1, byM-1, mw+2, mh+2, '#07120a');
+    pxr(bxM, byM, mw, mh, '#5fd07a');
+    pxr(bxM, byM, mw, 1, '#d8ffe2');
+
+    pxr(pxM-1, pyM-1, mw+2, mh+2, '#ffffff');
+    pxr(pxM, pyM, mw, mh, '#28a8ff');
+
+    /* Légende discrète sur 2 lignes en bas de la mini-carte */
+    var ly1 = MY + 100, ly2 = MY + 111;
+    pxr(MX+3, MY+95, MW-6, 25, '#091018');
+    /* Ligne 1 : TOI / LAYA / MUR */
+    pxr(MX+7,  ly1-3, 5, 5, '#28a8ff'); pxr(MX+7, ly1-3, 5, 1, '#ffffff');
+    hudText('TOI', MX+14, ly1, 6, '#bfe6ff');
+    pxr(MX+42, ly1-3, 5, 5, '#5fd07a');
+    hudText('LAYA', MX+49, ly1, 6, '#bff5c8');
+    pxr(MX+80, ly1-3, 5, 5, '#465466'); pxr(MX+80, ly1-3, 5, 1, '#c4d8ea');
+    hudText('MUR', MX+87, ly1, 6, '#b8cad8');
+    /* Ligne 2 : STATIONS EAU & VIDANGE */
+    pxr(MX+7,  ly2-3, 5, 5, '#4de0ff');
+    hudText('EAU', MX+14, ly2, 6, '#8fe8ff');
+    pxr(MX+42, ly2-3, 5, 5, '#ffa63c');
+    hudText('VIDANGE', MX+49, ly2, 6, '#ffd090');
   })();
 
-  if(player.water<=0 || player.dirt>=0.999){
-    var need = player.water<=0 ? 'RECHARGE EAU  ◄ HAUT GAUCHE' : 'VIDANGE  ► HAUT DROITE';
-    hudText(need, 320, 300, 9, (Math.floor(performance.now()/320)%2)?'#ffd45a':'#ff8a5a','center');
-  }
-  if(player.water<=0){
-    hudText('EAU VIDE — BONBONNE BLEUE',130,wy0+6,8,(Math.floor(performance.now()/300)%2)?'#ff6a5a':'#ffd45a');
-  }
-  /* v0.16 : fusée active */
-  if(player.rocketT>0){
-    hud.fillStyle='rgba(255,170,50,0.85)';
-    hud.fillRect(232,wy0,Math.round(70*Math.min(1,player.rocketT/FUSEE_DUREE)),9);
-    hudText('FUSEE',306,wy0+6,8,'#ffd45a');
+  /* ═════════ 3. CONSOLE DE JAUGES (grille unique, écarts constants, icônes pixel) ═════════
+     4 modules alignés sur la même ligne (y=297..337) à droite de la mini-carte (x=126..634),
+     avec écart constant GAP=10px et tous les labels bilingues AU-DESSUS de leur barre. */
+  drawArcadeBox(126, 297, 508, 40, 'rgba(7,12,19,0.92)', '#2e4458', null, 2, false);
+
+  /* Alerte contextuelle au-dessus des jauges si Eau vide ou Bac plein */
+  if(player.water<=0 || player.dirt>=0.999 || waterCrit){
+    var alertTxt = player.water<=0
+      ? 'RESERVOIR VIDE ! RECHARGE EAU (STATION BLEUE HG OU BONBONNE)'
+      : (player.dirt>=0.999
+          ? 'BAC PLEIN ! VIDANGE OBLIGATOIRE (STATION ORANGE HD)'
+          : 'ATTENTION : NIVEAU D EAU CRITIQUE ('+Math.round(player.water*100)+'%)');
+    var alertCol = pulseFast ? '#ffd45a' : '#ff6a5a';
+    pxr(160, 279, 440, 16, 'rgba(12,18,26,0.94)');
+    pxr(160, 279, 440, 1, alertCol);
+    pxr(160, 294, 440, 1, alertCol);
+    if(player.dirt>=0.999) drawIconBin(166, 282, 1);
+    else drawIconDrop(166, 282, 1);
+    hudText(alertTxt, 386, 287, 7, alertCol, 'center');
   }
 
-  /* v1.0 : compteurs regroupés sur la ligne secondaire de la barre du haut */
-  /* v1.0 : le chrono, les scores et les compteurs sont dans la barre du haut */
+  /* Coordonnées de la grille unique d'alignement :
+     Col 1 (EAU / WATER)    : x=132, w=134 (fin 266)
+     Col 2 (CRASSE / GRIME) : x=276, w=134 (fin 410)  [écart = 10]
+     Col 3 (SAVON / SOAP)   : x=420, w=98  (fin 518)  [écart = 10]
+     Col 4 (FUSEE / ROCKET) : x=528, w=98  (fin 626)  [écart = 10]
+     Ligne des icônes : y=301 · Ligne des labels bilingues : y=307 · Ligne des barres : y=317 */
+  var Y_ICON = 301, Y_LBL = 307, Y_BAR = 317, H_BAR = 11;
 
-  /* bulle de la grand-mere « 1… 2… 3… » (billboard HUD) */
+  /* ── MODULE 1 : EAU / WATER (dominante si waterCrit) ── */
+  var X1 = 132, W1 = 134;
+  if(waterCrit){
+    pxr(X1-3, 299, W1+6, 36, 'rgba(60,24,18,0.85)');
+    pxr(X1-3, 299, W1+6, 2, pulseFast ? '#ffd45a' : '#ff5a4a');
+    pxr(X1-3, 333, W1+6, 2, pulseFast ? '#ffd45a' : '#ff5a4a');
+  }
+  drawIconDrop(X1, Y_ICON, 1);
+  hudText('EAU / WATER', X1+14, Y_LBL, 7, waterCrit ? (pulseFast?'#ffd45a':'#ff7a6a') : '#9fd8f0');
+  hudText(Math.round(player.water*100)+'%', X1+W1, Y_LBL, 7, waterCrit ? '#ffd45a' : '#eafcff', 'right');
+  var wCol = player.water>0.35 ? '#2fb2f0' : (player.water>0 ? '#f0a030' : '#e04848');
+  var wHi  = player.water>0.35 ? '#9fe4ff' : '#ffe090';
+  drawSegmentedBar(X1, Y_BAR, W1, waterCrit ? 13 : H_BAR, player.water,
+    wCol, wHi, 8, 'rgba(255,255,255,0.14)', waterCrit ? (pulseFast?'#ffd45a':'#ff6a5a') : '#5aa8d6');
+
+  /* ── MODULE 2 : CRASSE / GRIME + icône poubelle pour la vidange ── */
+  var X2 = 276, W2 = 134;
+  if(dirtCrit){
+    pxr(X2-3, 299, W2+6, 36, 'rgba(58,28,12,0.85)');
+    pxr(X2-3, 299, W2+6, 2, pulseFast ? '#ffd45a' : '#ff6a4a');
+    pxr(X2-3, 333, W2+6, 2, pulseFast ? '#ffd45a' : '#ff6a4a');
+  }
+  drawIconScraper(X2, Y_ICON, 1);
+  hudText('CRASSE / GRIME', X2+14, Y_LBL, 7, dirtCrit ? '#ffd45a' : '#e8c08a');
+  hudText(Math.round(player.dirt*100)+'%', X2+W2-14, Y_LBL, 7, dirtCrit ? '#ffd45a' : '#ffd8a8', 'right');
+  drawIconBin(X2+W2-11, Y_ICON, 1);
+  var dCol = player.dirt>0.75 ? '#ff5a4a' : '#e09a38';
+  drawSegmentedBar(X2, Y_BAR, W2, dirtCrit ? 13 : H_BAR, player.dirt,
+    dCol, '#ffd898', 8, 'rgba(255,255,255,0.14)', dirtCrit ? '#ffd45a' : '#8a6d4b');
+  if(player.dirt>=0.999){
+    hudText('VIDANGE !', X2+W2/2, Y_BAR+6, 7, pulseFast ? '#ffffff' : '#ffd45a', 'center');
+  }
+
+  /* ── MODULE 3 : SAVON / SOAP + icône éponge savonneuse ── */
+  var X3 = 420, W3 = 98;
+  var soapRatio = Math.min(1, (player.soapT||0) / (SAVON_DUREE*(player.soapMul||1)));
+  drawIconSponge(X3, Y_ICON, 1);
+  hudText('SAVON / SOAP', X3+14, Y_LBL, 7, player.soapT>0 ? '#ffb6cf' : '#8da2b0');
+  drawSegmentedBar(X3, Y_BAR, W3, H_BAR, soapRatio,
+    '#ff82b2', '#ffd2e4', 6, 'rgba(255,255,255,0.10)', player.soapT>0 ? '#ffb6cf' : '#3a4c5e');
+
+  /* ── MODULE 4 : FUSEE / ROCKET + icône éclair ── */
+  var X4 = 528, W4 = 98;
+  var rockRatio = Math.min(1, (player.rocketT||0) / FUSEE_DUREE);
+  drawIconBolt(X4, Y_ICON, 1);
+  hudText('FUSEE / ROCKET', X4+13, Y_LBL, 7, player.rocketT>0 ? '#ffd45a' : '#8da2b0');
+  drawSegmentedBar(X4, Y_BAR, W4, H_BAR, rockRatio,
+    '#ff9a2e', '#fff0a0', 6, 'rgba(255,255,255,0.10)', player.rocketT>0 ? '#ffd45a' : '#3a4c5e');
+
+  /* Bulle de la grand-mère « 1… 2… 3… » (billboard HUD) */
   if(gm && mode==='play'){
     var q=hudProject(gm.x,1.48,gm.z);
-    if(q){
+    if(q && q.y > 48 && q.y < 280){
       var num=1+(Math.floor(gm.pieces)%3);
       var txt=num+'…';
       hud.font='bold 10px "Courier New",monospace';
       var tw=hud.measureText(txt).width+14;
       hud.fillStyle='rgba(255,255,255,0.96)';
       hud.fillRect(q.x-tw/2,q.y-11,tw,15);
-      hud.fillRect(q.x-3,q.y+4,6,4);            /* queue de la bulle */
+      hud.fillRect(q.x-3,q.y+4,6,4);
       hud.fillRect(q.x-2,q.y+8,4,3);
       hud.fillStyle='rgba(40,34,52,0.9)';
       hud.fillRect(q.x-tw/2,q.y+3,3,3);
       hud.fillRect(q.x+tw/2-3,q.y+3,3,3);
-      /* texte sans ombre portee : la bulle est blanche */
       hud.font='bold 10px "Courier New",monospace';
       hud.textAlign='center'; hud.textBaseline='middle';
       hud.fillStyle=gm.colere>0?'#c01818':'#241e30';
@@ -4126,53 +4974,116 @@ function drawHUD(){
     }
   }
 
-  /* --- barre basse / etats des bonus --- */
-  hud.fillStyle='rgba(6,9,13,0.90)'; hud.fillRect(0,340,640,20);
-  hud.fillStyle='rgba(90,230,250,0.30)'; hud.fillRect(0,340,640,1);
-
-  /* savon : jauge de glisse */
-  hudText('SAVON / SOAP',12,350,8,player.soapT>0?'#ffb6cf':'#9fb0b8');
-  hud.fillStyle='rgba(255,255,255,0.10)'; hud.fillRect(44,346,58,7);
-  if(player.soapT>0){
-    hud.fillStyle='#ff9ec2'; hud.fillRect(44,346,Math.round(58*player.soapT/SAVON_DUREE),7);
-  }
-  /* torpille */
+  /* ── Barre de pied d'écran (y=340..360) : état Torpille + rappel des commandes ── */
+  pxr(0, 340, 640, 20, 'rgba(6,9,14,0.95)');
+  pxr(0, 340, 640, 1, '#2e4458');
+  drawIconTorp(10, 345, 1);
   var tState, tCol;
-  if(player.torpCharge>0){ tState='TORPILLE [E]'; tCol=(Math.floor(performance.now()/180)%2)?'#6ff0c8':'#eafcff'; }
-  else if(torp){ tState='TORPILLE AU SOL'; tCol='#8fd8ea'; }
-  else if(torpUsed){ tState='TORPILLE —'; tCol='#5f7078'; }
-  else { tState='TORPILLE'; tCol='#5f7078'; }
-  hudText(tState,126,350,8,tCol);
-  /* nids restants */
-  var nidLeft=0;
-  for(var nI=0;nI<nests.length;nI++) if(cells[idxAt(nests[nI].gx,nests[nI].gy)]===3) nidLeft++;
-  hudText('NIDS '+nidLeft,258,350,8,'#c39a63');
-  if(LV.passes>1) hudText('LAVAGE x'+LV.passes,318,350,8,'#ff9a7a');
+  if(player.torpCharge>0){ tState='TORPILLE PRETE ['+(window.__padOnFlag?'A':'E')+']'; tCol=pulseFast?'#6ff0c8':'#ffffff'; }
+  else if(torp){ tState='TORPILLE : AU SOL'; tCol='#8fd8ea'; }
+  else if(torpUsed){ tState='TORPILLE : UTILISEE'; tCol='#6d8492'; }
+  else { tState='TORPILLE : EN ATTENTE'; tCol='#6d8492'; }
+  hudText(tState, 26, 350, 7, tCol);
 
-  hudText((window.__padOnFlag ? 'FLECHES : DIRECTION  ·  A : TORPILLE  ·  B : VALIDER' : 'FLECHES/WASD  ·  E TORPILLE  ·  R REJOUER  ·  M SON'),628,350,7,'rgba(190,215,225,0.80)','right','normal');
+  /* Indicateur de station de vidange / recharge dans la barre basse */
+  drawIconBin(188, 345, 1);
+  hudText('VIDANGE : HD', 202, 350, 7, '#e0a050');
+  drawIconDrop(282, 345, 1);
+  hudText('EAU : HG', 296, 350, 7, '#7ad8f0');
 
-  if(mode==='over'||mode==='win'){
-    hud.fillStyle='rgba(4,7,10,0.82)';
+  var playCmd = window.__padOnFlag
+    ? 'CROIX : DIRIGER  ·  A : TORPILLE  ·  B : VALIDER'
+    : 'FLECHES/WASD : DIRIGER  ·  E : TORPILLE  ·  R : REJOUER  ·  M : SON';
+  hudText(playCmd, 632, 350, 7, '#cfe3ff', 'right', 'normal');
+
+  /* ═════════ 5. ÉCRAN DE FIN (mode === 'over' || mode === 'win') ═════════ */
+  if(mode==='over' || mode==='win'){
+    hud.fillStyle = 'rgba(4,8,14,0.88)';
     hud.fillRect(0,0,640,360);
-    hudText(mode==='win'?'SALLE IMPECCABLE':'TEMPS ECOULE',320,92,28,mode==='win'?'#5cf0b0':'#ffd24a','center');
-    hudText('NIVEAU '+LV.num+' · '+LV.name,320,120,11,'#7ad8f0','center');
-    /* v0.14 : LE VAINQUEUR = CELUI QUI A NETTOYE LE PLUS DE CASES */
+    drawDitherRect(0, 0, 640, 360, 'rgba(16,32,48,0.35)', 0.25, 2);
+    drawStripeBorder();
+
+    var MX0=64, MY0=22, MW0=512, MH0=316;
     var gagne = score>botScore, egal = (score===botScore);
-    var vTxt = egal ? 'EGALITE PARFAITE' : (gagne ? 'TU GAGNES !' : 'LAYA GAGNE');
-    var vCol = egal ? '#ffd24a' : (gagne ? '#7fd8ff' : '#5fd07a');   /* bleu = toi, vert = Laya */
-    hud.fillStyle = egal ? 'rgba(60,50,10,0.55)' : (gagne ? 'rgba(12,44,64,0.55)' : 'rgba(10,58,34,0.55)');
-    hud.fillRect(130,134,380,34);
-    hudText(vTxt,320,151,20,vCol,'center');
-    /* compteurs de CASES (bleu = toi, vert = Laya) */
-    hud.fillStyle='rgba(90,180,240,0.85)'; hud.fillRect(150,178,12,12);
-    hudText('TOI  '+score+' CASES',168,184,11,'#bfe6ff','left');
-    hud.fillStyle='rgba(95,208,122,0.85)';  hud.fillRect(330,178,12,12);
-    hudText('LAYA '+botScore+' CASES',348,184,11,'#bff5c8','left');
-    hudText('PROPRE : '+pct+'%   ·   SALI PAR LES POLLUEURS : '+dirtyByPolluters+'   ·   PIECES : '+player.coins,320,206,9,'#cfe3ff','center','normal');
-    hudText('HIGH SCORE '+LV.name+' : '+(highScores[LV.id]||0),320,226,9,HUD_ACC,'center','normal');
-    var nx=LEVELS[(levelIdx+1)%LEVELS.length];
-    hudText('ENTREE = NIVEAU SUIVANT  ('+nx.name+')',320,258,12,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
-    hudText('R = REJOUER   ·   ECHAP = CHOIX DES SALLES',320,282,8,'#8fa6b4','center','normal');
+    var vTxt = egal ? 'EGALITE PARFAITE !' : (gagne ? 'VICTOIRE : TU GAGNES !' : 'LAYA REMPORTE LA MANCHE');
+    var vCol = egal ? '#ffd45a' : (gagne ? '#4dc8ff' : '#5fd07a');
+
+    drawArcadeBox(MX0, MY0, MW0, MH0, '#0a121c', vCol, '#ffd45a', 3, true);
+
+    /* 1. Titre et salle */
+    pxr(MX0+4, MY0+4, MW0-8, 52, '#122234');
+    hudText('SALLE '+LV.num+'/'+LEVELS.length+'  ·  '+LV.name, 320, MY0+16, 9, '#7ad8f0', 'center');
+    hudText(mode==='win' ? 'SALLE IMPECCABLE !' : 'TEMPS ECOULE !', 320, MY0+38, 22, mode==='win' ? '#5cf0b0' : '#ffd45a', 'center');
+
+    /* 2. Bandeau du vainqueur */
+    var vBg = egal ? '#2c240c' : (gagne ? '#0e2a42' : '#0e2e1c');
+    drawArcadeBox(MX0+24, MY0+62, MW0-48, 38, vBg, vCol, null, 2, false);
+    hudText(vTxt, 320, MY0+76, 15, vCol, 'center');
+    var diffCases = Math.abs(score - botScore);
+    var subWin = egal ? 'MEME NOMBRE DE CASES NETTOYEES' : ('ECART : +'+diffCases+' CASE'+(diffCases>1?'S':'')+' DE PROPRETE');
+    hudText(subWin, 320, MY0+91, 7, '#d8ecff', 'center', 'normal');
+
+    /* 3. Deux compteurs de cases avec pastilles de couleur cohérentes (Bleu = Toi, Vert = LAYA) */
+    var cY = MY0+108, cW = 224, cH = 68;
+    /* Carte Joueur (Bleu) */
+    var pX = MX0+24;
+    drawArcadeBox(pX, cY, cW, cH, '#0d1e30', '#38b6ff', gagne ? '#ffd45a' : null, 2, false);
+    /* Pastille bleue */
+    pxr(pX+12, cY+12, 20, 20, '#071018');
+    pxr(pX+13, cY+13, 18, 18, '#28a8ff');
+    pxr(pX+13, cY+13, 18, 4, '#a8e8ff');
+    pxr(pX+13, cY+13, 18, 1, '#ffffff');
+    hudText('TOI (BLEU)', pX+40, cY+17, 9, '#8fd8ff');
+    hudText(CHARS[charIdx].name, pX+40, cY+28, 7, '#9fb6c6', 'left', 'normal');
+    hudText(score+' CASES', pX+cW/2, cY+50, 15, '#ffffff', 'center');
+
+    /* Carte LAYA (Vert) */
+    var bX = MX0+MW0-24-cW;
+    drawArcadeBox(bX, cY, cW, cH, '#0d2418', '#5fd07a', (!gagne && !egal) ? '#ffd45a' : null, 2, false);
+    /* Pastille verte */
+    pxr(bX+12, cY+12, 20, 20, '#071018');
+    pxr(bX+13, cY+13, 18, 18, '#46dc78');
+    pxr(bX+13, cY+13, 18, 4, '#b8ffd0');
+    pxr(bX+13, cY+13, 18, 1, '#ffffff');
+    hudText('LAYA (VERT)', bX+40, cY+17, 9, '#9ff5b8');
+    hudText('AUTOLAVEUSE IA', bX+40, cY+28, 7, '#9fb6c6', 'left', 'normal');
+    hudText(botScore+' CASES', bX+cW/2, cY+50, 15, '#e8fff0', 'center');
+
+    /* Barre de répartition Bleu vs Vert */
+    var totDuel = Math.max(1, score + botScore);
+    var pRatio = (score===0 && botScore===0) ? 0.5 : (score / totDuel);
+    var barDuelX = MX0+24, barDuelY = cY+cH+6, barDuelW = MW0-48;
+    pxr(barDuelX, barDuelY, barDuelW, 8, '#46dc78');
+    pxr(barDuelX, barDuelY, Math.round(barDuelW*pRatio), 8, '#28a8ff');
+    pxr(barDuelX+Math.round(barDuelW*pRatio)-1, barDuelY-1, 2, 10, '#ffffff');
+
+    /* 4. Score record & bilan de propreté */
+    var recY = barDuelY + 14;
+    drawArcadeBox(MX0+24, recY, MW0-48, 46, '#0d1722', '#2e4458', null, 1, false);
+    var curRec = highScores[LV.id] || 0;
+    var isNewRec = (score > 0 && score >= curRec);
+    drawIconClean(MX0+36, recY+7, 1);
+    hudText('SCORE RECORD ('+LV.name+') : '+curRec+' CASES', MX0+54, recY+13, 9, '#ffd45a');
+    if(isNewRec){
+      pxr(MX0+MW0-128, recY+6, 96, 14, pulseFast ? '#ffd45a' : '#6ff0c8');
+      hudText('NOUVEAU RECORD !', MX0+MW0-80, recY+13, 7, '#081018', 'center');
+    }
+    hudText('PROPRETE : '+pct+'%   ·   CASES RESALIES : '+dirtyByPolluters+'   ·   PIECES : '+player.coins,
+            320, recY+33, 8, '#cfe3ff', 'center', 'normal');
+
+    /* 5. Rappel des commandes pour rejouer / salle suivante */
+    var nx = LEVELS[(levelIdx+1)%LEVELS.length];
+    var cmdY = recY + 54;
+    pxr(MX0+16, cmdY, MW0-32, 46, '#112030');
+    pxr(MX0+16, cmdY, MW0-32, 1, '#5fd8ec');
+    var nextPrompt = window.__padOnFlag
+      ? 'TOUCHE L ECRAN OU [B] : SALLE SUIVANTE ('+nx.name+')'
+      : 'ENTREE / ESPACE : SALLE SUIVANTE ('+nx.name+')';
+    var replayPrompt = window.__padOnFlag
+      ? 'BOUTON B : CONTINUER   ·   REJOUER LA PARTIE'
+      : 'R : REJOUER CETTE SALLE   ·   ECHAP : CHANGER PILOTE / MACHINE';
+    hudText(nextPrompt, 320, cmdY+16, 10, pulseFast ? '#6ff0c8' : '#ffffff', 'center');
+    hudText(replayPrompt, 320, cmdY+34, 8, '#9fd8f0', 'center', 'normal');
   }
   if(window.__crt!==false) crtScanlines();
 }
@@ -4425,6 +5336,8 @@ window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
 window.__hudProjectRaw = function(x,y,z){ return hudProject(x,y,z); };
 window.__cam = function(){ return {EYE:EYE, TARGET:TARGET, rot:CAM_ROT, dist:CAM_DIST}; };
+window.__setFoam = function(gx,gy,sec){ var i=idxAt(gx,gy); foamT[i]=sec; floorDirty=true; return {cell:cells[i], foam:foamT[i]}; };
+window.__foamAt = function(gx,gy){ var i=idxAt(gx,gy); return {cell:cells[i], foam:foamT[i]}; };
 window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
 window.__state = function(){
   return {
@@ -4445,8 +5358,12 @@ window.__loadout = function(){ return { char:CHARS[charIdx].id, veh:VEHICLES[veh
 window.__padState = function(){ return { on:PAD_ON, touch:isTouch, cls:padEl.className }; };
 detectTouch();
 
+/* v1.3 : INSTRUMENTATION — coût par sous-système (ms) et FPS réels, exposés par __dbg.timing */
+var PERF={update:0, scene:0, blit:0, hud:0, total:0, fps:0, frames:0, acc:0};
+function perfSample(key, t0){ PERF[key]=PERF[key]*0.9 + (performance.now()-t0)*0.1; }
 function frame(now){
   tFrame=performance.now();
+  var _t0=tFrame;
   var dt=(now-last)/1000; last=now;
   if(dt>0.05) dt=0.05;
 
@@ -4464,6 +5381,7 @@ function frame(now){
 
   if(mode==='play') botThink(dt);
   if(mode==='attract'){ aiThink(bot,dt); aiThink(player,dt); }
+  perfSample('update', _t0);
 
   // --- passe scene -> FBO basse res ---
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -4475,6 +5393,8 @@ function frame(now){
   gl.disable(gl.CULL_FACE);
   drawScene();
 
+  PERF.scene=PERF.scene*0.9+(performance.now()-_t0)*0.1;   /* coût de la passe 3D (FBO) */
+  var _t1=performance.now();
   // --- passe upscale NEAREST -> canvas ---
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   gl.viewport(0,0,OW,OH);
@@ -4483,11 +5403,18 @@ function frame(now){
   gl.clear(gl.COLOR_BUFFER_BIT);
   drawBlit();
 
+  var _t2=performance.now();
   drawHUD();
-  cpuMs += performance.now()-tFrame; cpuN++;
+  var _t3=performance.now();
+  PERF.blit=PERF.blit*0.9+(_t2-_t1)*0.1;
+  PERF.hud =PERF.hud*0.9+(_t3-_t2)*0.1;
+  PERF.total=PERF.total*0.9+(_t3-tFrame)*0.1;
+  cpuMs += _t3-tFrame; cpuN++;
 
   fpsFrames++;
+  PERF.frames++;
   if(now-fpsT>=1000){
+    PERF.fps=Math.round(1000*fpsFrames/(now-fpsT));
     var f=Math.round(1000*fpsFrames/(now-fpsT));
     if(fpsReported<12 || fpsReported%5===0) console.log('FPS: '+f+' ('+fpsFrames+' frames / '+Math.round(now-fpsT)+' ms)');
     if(maxDrawCalls>lastLoggedDraws){
@@ -4590,6 +5517,18 @@ window.__dbg = {
   get marks(){
     return soilMarks.map(function(m){ return {gx:m.gx,gy:m.gy,kind:m.kind}; });
   },
+  get bakeProbe(){ var arr=Object.keys(bakeKeys).map(function(k){return {k:k, n:bakeKeys[k]};}).sort(function(a,b){return b.n-a.n;}); return {keys:arr.length, total:bakeTotal, top:arr.slice(0,12)}; },
+  get staticBatches(){ return staticPropDraws; },
+  get drawBreak(){ return {floor:drawBreak.floor, props:drawBreak.props, machines:drawBreak.machines, entities:drawBreak.entities, particles:drawBreak.particles, other:drawBreak.other}; },
+  get timing(){ return { ms:{update:PERF.update, scene:PERF.scene, blit:PERF.blit, hud:PERF.hud, total:PERF.total}, fps:PERF.fps, frames:PERF.frames, draws:maxDrawCalls, clipped:drawClipped }; },
+  get foam(){
+    var a=0,f=0;
+    var e=0;
+    for(var i=0;i<foamT.length;i++){ if(foamT[i]>0){ a++; if(foamT[i]<=FOAM_FADE_AT) f++; } else if(foamT[i]<0) e++; }
+    var pa=0; for(var j=0;j<FP_N;j++) if(fpLife[j]>0) pa++;
+    return { active:a, fading:f, extinct:e, floorBuilds:floorBuilds, floorBuildMs:floorBuildMs, floorCnt:[0,1,2,3,4,5,6].map(function(k){return floorCnt[k];}), particles:pa };
+  },
+  resetFloorStats: function(){ floorBuilds=0; floorBuildMs=0; },
   get maxDrawCalls(){ return maxDrawCalls; },
   get drawClipped(){ return drawClipped; },
   get drawBudget(){ return DRAW_BUDGET; },
