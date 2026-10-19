@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v1.0 — moteur hi-bit, HUD borne, supermarché</title>
+<title>MOB RACER 3D v1.1 — vue classique, modélisation 3D étendue</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -861,6 +861,17 @@ function makeTex(canvas,repeat){
   return t;
 }
 
+function texGlow(){
+  var c=document.createElement('canvas'); c.width=c.height=128;
+  var g=c.getContext('2d');
+  var rg=g.createRadialGradient(64,64,2,64,64,62);
+  rg.addColorStop(0.00,'rgba(255,255,255,1.00)');
+  rg.addColorStop(0.35,'rgba(235,248,255,0.72)');
+  rg.addColorStop(0.70,'rgba(200,230,255,0.26)');
+  rg.addColorStop(1.00,'rgba(180,220,255,0.00)');
+  g.fillStyle=rg; g.fillRect(0,0,128,128);
+  return c;
+}
 var T = {
   tile:  makeTex(texTileClean(),false),
   dirty: makeTex(texTileDirty(),false),
@@ -872,6 +883,7 @@ var T = {
   suds:  makeTex(texSuds(),false),
   fur:   makeTex(texFur(),false),
   noise: makeTex(texNoise(),true),
+  glow:  makeTex(texGlow(),false),
   shadow:makeTex(texShadow(),false),
   nest:  makeTex(texNest(),false),
   soap:  makeTex(texSoap(),false),
@@ -1053,7 +1065,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 /* v0.17 : caméra DIAGONALE — on pivote l'axe de visée de 24° autour de la salle
    pour retrouver la lecture « diorama » des JRPG 3D pixel (Breath of Fire IV) :
    les murs fuient en biais au lieu d'être strictement parallèles à l'écran. */
-var CAM_ROT=24*Math.PI/180, CAM_DIST=1.20;
+var CAM_ROT=0, CAM_DIST=1.12;     /* v1.1 : retour à la VUE CLASSIQUE (pas de rotation), cadrage ajusté */
 function rotAroundY(p, a, k){
   var c=Math.cos(a), sn=Math.sin(a);
   return [ (p[0]*c + p[2]*sn)*k, p[1]*k, (-p[0]*sn + p[2]*c)*k ];
@@ -1125,7 +1137,15 @@ var LEVELS=[
            {k:'carton',gx:13,gy:5,v:0},{k:'carton',gx:6,gy:10,v:1},{k:'carton',gx:13,gy:10,v:2},
            {k:'jug',gx:1,gy:6},{k:'jug',gx:13,gy:6},{k:'jug',gx:6,gy:4},{k:'jug',gx:8,gy:4},
            {k:'debris',gx:2,gy:5},{k:'debris',gx:12,gy:2},{k:'debris',gx:4,gy:10},{k:'debris',gx:10,gy:10},
-           {k:'debris',gx:1,gy:9},{k:'debris',gx:13,gy:3}],
+           {k:'debris',gx:1,gy:9},{k:'debris',gx:13,gy:3},
+           /* ── v1.1 : modélisation 3D — enseignes suspendues, luminaires, chariots, tapis ── */
+           {k:'aislesign',gx:4,gy:5,solid:false,v:0},{k:'aislesign',gx:10,gy:5,solid:false,v:1},
+           {k:'aislesign',gx:7,gy:2,solid:false,v:2},
+           {k:'ceilinglight',gx:3,gy:6,solid:false},{k:'ceilinglight',gx:11,gy:6,solid:false},
+           {k:'ceilinglight',gx:7,gy:4,solid:false},{k:'ceilinglight',gx:7,gy:10,solid:false},
+           {k:'cart3d',gx:1,gy:8},{k:'cart3d',gx:13,gy:8},
+           {k:'beltitem',gx:2,gy:10,solid:false},{k:'beltitem',gx:5,gy:10,solid:false},
+           {k:'beltitem',gx:9,gy:10,solid:false},{k:'beltitem',gx:12,gy:10,solid:false}],
     extras:[{k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.20,0.22,0.30]},
             {k:'neon', x:-6.2, z:-8.8, c:[0.45,0.85,1.55]},
             {k:'neon', x:6.2, z:-8.8, c:[1.45,0.90,0.35]},
@@ -1864,6 +1884,29 @@ function drawBin(x,z){
   box(x,0.40,z+0.215, 0.24,0.16,0.03, T.noise, [0.10,0.12,0.14]);
 }
 
+/* v1.1 : HALOS des luminaires — passe dédiée (mélange additif, après le décor) */
+function drawLightHalos(){
+  var lights=[];
+  for(var i=0;i<LV.props.length;i++){
+    var pp=LV.props[i];
+    if(pp.k==='ceilinglight') lights.push(pp);
+  }
+  if(!lights.length) return;
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  gl.disable(gl.DEPTH_TEST);       /* les flaques de lumière passent par-dessus le sol */
+  for(var j=0;j<lights.length;j++){
+    var L=lights[j], lx=L.gx-7, lz=L.gy-6;
+    drawMesh(QUAD_XZ, trs(lx, 0.05, lz, 4.4, 1, 4.4, 0), T.glow, [0.55,0.75,1.10], {unlit:true, alpha:0.55});
+    drawMesh(QUAD_XZ, trs(lx, 0.06, lz, 2.6, 1, 2.6, 0), T.glow, [1.05,1.20,1.45], {unlit:true, alpha:0.70});
+    drawMesh(QUAD_XZ, trs(lx, 0.07, lz, 1.4, 1, 1.4, 0), T.glow, [1.60,1.70,1.90], {unlit:true, alpha:0.85});
+  }
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+}
+
 function drawProps(){
   /* v0.10 : décors FIDÈLES par environnement. Couleurs = multiplicateur de la
      texture (T.noise = neutre, T.metal = inox, T.wood = bois, T.glass = verre).
@@ -2215,6 +2258,39 @@ function drawProps(){
       box(x-0.18,0.28,z-0.04, 0.40,0.06,0.38, T.noise, [2.35,2.10,1.60]);   /* liseré clair */
       box(x+0.22,0.24,z+0.06, 0.34,0.24,0.32, T.wood, [1.72,1.42,1.02]);
       box(x+0.02,0.56,z-0.02, 0.30,0.24,0.28, T.wood, [2.05,1.72,1.26]);
+    } else if(p.k==='aislesign'){
+      /* ── ENSEIGNE SUSPENDUE d'allée (panneau + tiges + halo) ── */
+      var lbl = p.v===1 ? 'FRAIS / CHILLED' : (p.v===2 ? 'PROMO' : 'BOISSONS / DRINKS');
+      var key = 'aisle'+lbl;
+      if(!SIGN_TEX[key]) SIGN_TEX[key]=makeSignTex(lbl,'rgba(10,24,38,0.94)', p.v===2?'#ffd45a':'#8fe0ff');
+      var camY = Math.atan2(EYE[0],EYE[2]);
+      drawMesh(QUAD_XY, trs(x, 2.05, z, 1.75, 0.30, 1, camY), SIGN_TEX[key], [1,1,1], {unlit:true});
+      box(x-0.72,2.36,z, 0.035,0.32,0.035, T.metal, [0.70,0.74,0.80]);
+      box(x+0.72,2.36,z, 0.035,0.32,0.035, T.metal, [0.70,0.74,0.80]);
+      box(x,2.53,z, 1.60,0.035,0.035, T.metal, [0.70,0.74,0.80]);
+    } else if(p.k==='ceilinglight'){
+      /* ── LUMINAIRE de plafond + halo au sol (ambiance néon de nuit) ── */
+      /* caisson suspendu + tube fluorescent (émissif) */
+      box(x,2.72,z, 1.70,0.14,0.44, T.metal, [1.20,1.26,1.34]);
+      box(x,2.62,z, 1.55,0.10,0.32, T.noise, [2.6,2.7,2.8], {emit:1.0});
+      box(x,2.55,z, 0.90,0.05,0.18, T.noise, [2.8,2.8,2.8], {emit:1.0});
+      box(x-0.78,2.86,z, 0.03,0.30,0.03, T.metal, [0.85,0.90,0.96]);
+      box(x+0.78,2.86,z, 0.03,0.30,0.03, T.metal, [0.85,0.90,0.96]);
+    } else if(p.k==='cart3d'){
+      /* ── CHARIOT de course (panier ajouré + roulettes + poignée) ── */
+      box(x,0.30,z, 0.60,0.30,0.46, T.metal, [0.85,0.88,0.94]);
+      box(x,0.46,z, 0.62,0.04,0.48, T.metal, [1.25,1.30,1.36]);
+      box(x-0.30,0.30,z, 0.04,0.30,0.48, T.metal, [1.10,1.14,1.20]);
+      box(x+0.30,0.30,z, 0.04,0.30,0.48, T.metal, [1.10,1.14,1.20]);
+      for(var cw=0; cw<3; cw++) box(x,0.36+cw*0.08,z, 0.62,0.02,0.48, T.metal, [0.70,0.74,0.80]);
+      box(x,0.62,z-0.26, 0.54,0.05,0.05, T.metal, [1.30,0.35,0.30]);       /* poignée rouge */
+      box(x-0.22,0.12,z-0.18, 0.08,0.12,0.08, T.noise, [0.16,0.16,0.19]);
+      box(x+0.22,0.12,z-0.18, 0.08,0.12,0.08, T.noise, [0.16,0.16,0.19]);
+    } else if(p.k==='beltitem'){
+      /* ── articles sur le tapis de caisse ── */
+      box(x-0.18,0.16,z, 0.26,0.30,0.26, T.noise, [1.95,0.85,0.25]);
+      box(x+0.12,0.13,z+0.05, 0.22,0.24,0.22, T.noise, [2.05,1.95,0.55]);
+      box(x-0.02,0.30,z-0.08, 0.18,0.20,0.18, T.noise, [0.60,1.55,0.75]);
     } else if(p.k==='carton'){
       /* ── CARTON éparpillé (obstacle) ── */
       var ch2 = 0.30 + ((p.v||0)%3)*0.08;
@@ -2678,6 +2754,14 @@ function drawMachine(m){
      écume, tableau de bord (écran + 3 voyants), volant, brosse rotative,
      raclette arrière, flexible latéral, plaque de marque, arceau avec poignées. */
   var x=m.wx+m.kox, z=m.wz+m.koz, ry=m.angle, A={ry:ry};
+  /* v1.1 : chaque véhicule a sa VRAIE silhouette 3D (largeur, longueur, cuve, disque) */
+  var VID = (m===player) ? VEHICLES[vehIdx].id : 'indus';
+  var PROF = {
+    auto : {W:0.90, L:0.90, tankH:0.30, tankW:0.74, tankL:0.74, disc:false, wheels:4, wh:0.22, rear:true },
+    mono : {W:0.84, L:0.96, tankH:0.20, tankW:0.58, tankL:0.66, disc:true,  wheels:2, wh:0.26, rear:false},
+    indus: {W:0.98, L:1.00, tankH:0.40, tankW:0.84, tankL:0.82, disc:false, wheels:4, wh:0.26, rear:true },
+    mini : {W:0.74, L:0.78, tankH:0.24, tankW:0.58, tankL:0.58, disc:false, wheels:4, wh:0.18, rear:true }
+  }[VID] || {W:0.90,L:0.90,tankH:0.30,tankW:0.74,tankL:0.74,disc:false,wheels:4,wh:0.22,rear:true};
   var body = (m.id===0 && m.machChassis) ? m.machChassis : (m.id===0?[1,1,1]:[0.90,1.0,0.94]);
   var bodyD = [body[0]*0.66, body[1]*0.66, body[2]*0.66];
   var bodyL = [Math.min(2.3,body[0]*1.12), Math.min(2.3,body[1]*1.12), Math.min(2.3,body[2]*1.12)];
@@ -2685,25 +2769,31 @@ function drawMachine(m){
   var accent = (m.id===0 && m.machAccent) ? m.machAccent : (m.id===0?[1.0,0.55,0.16]:[0.94,0.28,0.28]);
   var p;
   /* ── roues (4) + essieux ── */
-  var wp=[[-0.40,0.36],[0.40,0.36],[-0.40,-0.36],[0.40,-0.36]];
-  for(var wi=0; wi<4; wi++){
-    p=localToWorld(x,z,ry,wp[wi][0],wp[wi][1]);
-    box(p[0],0.11,p[1], 0.16,0.22,0.22, T.noise, tyre, A);
-    box(p[0],0.11,p[1], 0.17,0.08,0.09, T.noise, [0.30,0.30,0.34], A);   /* jante */
+  var wsp = PROF.wheels>=4 ? [[-1,-1],[1,-1],[-1,1],[1,1]] : [[0,-1],[0,1]];
+  for(var wi=0; wi<wsp.length; wi++){
+    p=localToWorld(x,z,ry, wsp[wi][0]*PROF.W*0.46, wsp[wi][1]*PROF.L*0.40);
+    box(p[0],PROF.wh/2,p[1], 0.16,PROF.wh,PROF.wh, T.noise, tyre, A);
+    box(p[0],PROF.wh/2,p[1], 0.17,PROF.wh*0.36,0.09, T.noise, [0.30,0.30,0.34], A);   /* jante */
+  }
+  if(PROF.disc){
+    /* monobrosse : gros disque de lavage visible sous le châssis */
+    drawMesh(CYL10, trs(x, 0.06, z, 0.86, 0.09, 0.86, 0), T.noise, [0.62,0.66,0.72], {});
+    drawMesh(CYL10, trs(x, 0.02, z, 0.78, 0.05, 0.78, 0), T.noise, [0.35,0.38,0.44], {});
+    box(x,0.13,z, PROF.W*0.55,0.10,PROF.L*0.55, T.metal, accent, A);
   }
   /* ── jupe + châssis ── */
-  box(x,0.10,z, 0.92,0.10,0.92, T.metal, bodyD, A);
-  box(x,0.26,z, 0.88,0.28,0.88, T.metal, body, A);
-  box(x,0.40,z, 0.90,0.06,0.90, T.noise, accent, A);                     /* bande de danger */
-  box(x,0.44,z, 0.86,0.05,0.86, T.metal, bodyL, A);
-  box(x,0.26,z+0.45, 0.60,0.20,0.03, T.noise, bodyL, A);                 /* face avant */
-  box(x,0.26,z-0.45, 0.60,0.20,0.03, T.noise, bodyD, A);                 /* face arrière */
-  /* ── bac à eau + niveau + écume ── */
-  box(x,0.60,z, 0.74,0.30,0.74, T.basin, m.basinTint, A);
-  box(x,0.745,z, 0.70,0.05,0.70, T.noise, [0.94,0.97,1.0], A);           /* rebord du bac */
-  box(x,0.66,z, 0.62,0.04,0.62, T.noise, [1.15,1.30,1.45], {ry:ry,alpha:0.55}); /* eau */
-  drawMesh(QUAD_XZ, trs(x,0.795,z,0.30,1,0.30,0), T.suds, [1,1,1], {unlit:true});
-  box(x,0.62,z+0.375, 0.44,0.10,0.02, T.noise, [1.45,1.50,1.55], A);     /* jauge de niveau */
+  box(x,0.10,z, PROF.W+0.02,0.10,PROF.L+0.02, T.metal, bodyD, A);
+  box(x,0.26,z, PROF.W-0.02,0.28,PROF.L-0.02, T.metal, body, A);
+  box(x,0.40,z, PROF.W,0.06,PROF.L, T.noise, accent, A);                   /* bande de danger */
+  box(x,0.44,z, PROF.W-0.04,0.05,PROF.L-0.04, T.metal, bodyL, A);
+  box(x,0.26,z+PROF.L/2, PROF.W*0.68,0.20,0.03, T.noise, bodyL, A);        /* face avant */
+  box(x,0.26,z-PROF.L/2, PROF.W*0.68,0.20,0.03, T.noise, bodyD, A);        /* face arrière */
+  /* ── bac à eau + niveau + écume (dimensions selon le véhicule) ── */
+  box(x,0.44+PROF.tankH/2,z, PROF.tankW,PROF.tankH,PROF.tankL, T.basin, m.basinTint, A);
+  box(x,0.44+PROF.tankH+0.02,z, PROF.tankW*0.95,0.05,PROF.tankL*0.95, T.noise, [0.94,0.97,1.0], A);
+  box(x,0.44+PROF.tankH-0.08,z, PROF.tankW*0.84,0.04,PROF.tankL*0.84, T.noise, [1.15,1.30,1.45], {ry:ry,alpha:0.55});
+  drawMesh(QUAD_XZ, trs(x,0.44+PROF.tankH+0.05,z,PROF.tankW*0.40,1,PROF.tankL*0.40,0), T.suds, [1,1,1], {unlit:true});
+  box(x,0.44+PROF.tankH-0.04,z+PROF.tankL/2, PROF.tankW*0.60,0.10,0.02, T.noise, [1.45,1.50,1.55], A);
   /* ── tableau de bord ── */
   p=localToWorld(x,z,ry,0,0.44);
   box(p[0],0.52,p[1], 0.36,0.16,0.06, T.panel, [1,1,1], {ry:ry, emit:0.5});
@@ -2960,6 +3050,7 @@ function drawPusher(m){
 
   /* ── PROPS du niveau (obstacles) ── */
   drawProps();
+  drawLightHalos();   /* v1.1 : halos des luminaires */
 
   /* ── taches des pollueurs (fientes, tas, dechets) ── */
   drawMarks();
@@ -4332,6 +4423,8 @@ window.__playerScreen = function(){
 };
 window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
+window.__hudProjectRaw = function(x,y,z){ return hudProject(x,y,z); };
+window.__cam = function(){ return {EYE:EYE, TARGET:TARGET, rot:CAM_ROT, dist:CAM_DIST}; };
 window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
 window.__state = function(){
   return {
