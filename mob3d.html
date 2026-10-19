@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v1.7 — conducteurs pixel art 3D, rendu 2160</title>
+<title>MOB RACER 3D v1.8 — passe de contour pixel art</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -299,6 +299,8 @@ var FS = [
 'uniform vec3 uColor;',
 'uniform vec3 uLight;',
 'uniform float uVig;',
+'uniform float uOutline;',
+'uniform vec2 uTexel;',
 'uniform vec4 uGrade;',
 'varying vec3 vNor;',
 'varying vec2 vUV;',
@@ -313,6 +315,16 @@ var FS = [
 '  vec3 lum = vec3(dot(col, vec3(0.299,0.587,0.114)));',
 '  col = mix(lum, col, uGrade.w) * uGrade.rgb;',
 '  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);',
+'  /* v1.8 : CONTOUR 1 texel - gradient de luminance sur la couleur deja rendue */',
+'  if(uOutline > 0.5){',
+'    float c0 = dot(col, vec3(0.299,0.587,0.114));',
+'    float cl = dot(texture2D(uTex, vUV - vec2(uTexel.x,0.0)).rgb, vec3(0.299,0.587,0.114));',
+'    float cr = dot(texture2D(uTex, vUV + vec2(uTexel.x,0.0)).rgb, vec3(0.299,0.587,0.114));',
+'    float cu = dot(texture2D(uTex, vUV - vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
+'    float cd = dot(texture2D(uTex, vUV + vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
+'    float gg = max(max(abs(c0-cl),abs(c0-cr)), max(abs(c0-cu),abs(c0-cd)));',
+'    col = mix(col, col * 0.46, smoothstep(0.045, 0.15, gg));',
+'  }',
 '  /* v1.7 : scanlines CRT calculées sur le GPU (le remplissage Canvas coûtait 3 ms) */',
 '  col *= 0.945 + 0.055 * step(1.0, mod(floor(gl_FragCoord.y * 0.5), 2.0));',
 '  if(uVig > 0.5){',
@@ -354,6 +366,8 @@ var U = {
   color: gl.getUniformLocation(prog,'uColor'),
   light: gl.getUniformLocation(prog,'uLight'),
   vig: gl.getUniformLocation(prog,'uVig'),
+  outline: gl.getUniformLocation(prog,'uOutline'),
+  texel: gl.getUniformLocation(prog,'uTexel'),
   grade: gl.getUniformLocation(prog,'uGrade')
 };
 gl.uniform4f(U.grade, 1,1,1,1);
@@ -1136,6 +1150,7 @@ function drawMesh(m, model, tex, color, opt){
   gl.uniform1f(U.unlit, opt.unlit?1:0);
   gl.uniform1f(U.emit, opt.emit||0);
   gl.uniform1f(U.alpha, opt.alpha===undefined?1:opt.alpha);
+  gl.uniform1f(U.outline, 0);   /* contour uniquement à la passe finale */
   gl.uniform3f(U.color, color[0],color[1],color[2]);
   gl.uniform1f(U.vig, opt.vig?1:0);
   if(tex){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex); }
@@ -3529,6 +3544,8 @@ function drawPusher(m){
 
 function drawBlit(){
   gl.uniform4f(U.grade,1,1,1,1);   /* blit : pas d'étalonnage */
+  gl.uniform1f(U.outline, 1);      /* v1.8 : contour actif sur la passe finale */
+  gl.uniform2f(U.texel, 1/GW, 1/GH);
   var id=ident();
   gl.uniformMatrix4fv(U.mvp,false,id);
   gl.uniformMatrix3fv(U.nmat,false,new Float32Array([1,0,0,0,1,0,0,0,1]));
