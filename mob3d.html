@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MOB RACER 3D v0.12 — jouable au doigt (manette retro)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MOB RACER 3D v0.13 — manette calibree mobile</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -12,6 +12,8 @@
     -webkit-tap-highlight-color:transparent; overscroll-behavior:none;
   }
   #wrap{position:fixed;inset:0;overflow:hidden}
+  #safeProbe{position:absolute;top:0;left:0;width:1px;height:1px;pointer-events:none;
+             padding-top:env(safe-area-inset-top);}
   #stage{position:absolute;left:0;top:0;width:1280px;height:720px;background:#06070a;transform-origin:top left;will-change:transform}
   canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
   #gl{image-rendering:pixelated;image-rendering:crisp-edges}
@@ -27,8 +29,7 @@
   #pad.on{ display:flex; flex-direction:column; }
   #padRow{ display:flex; align-items:flex-end; justify-content:space-between; width:100%; }
   #padMid{ display:none; }
-  #pad .side{ pointer-events:auto; display:flex; align-items:center; gap:4vw; }
-  #pad .side:last-child{ flex:0 0 auto; }
+  #pad .side{ pointer-events:auto; display:flex; align-items:center; gap:3vw; min-width:0; }
   #stick{
     position:relative; width:min(32vw,148px); height:min(32vw,148px); min-width:92px; min-height:92px;
     border-radius:22%;
@@ -64,71 +65,56 @@
   .abtn span{ font-size:min(5.5vw,21px); text-shadow:0 1px 2px rgba(0,0,0,.5); }
   .abtn.down{ transform:translateY(2px) scale(.97); filter:brightness(1.15); }
   .mini{
-    pointer-events:auto; width:38px; height:38px; border-radius:10px;
+    position:absolute; top:6px; right:6px; z-index:30;
+    pointer-events:auto; width:34px; height:34px; border-radius:8px;
     background:linear-gradient(#3b4048,#22262c); color:#dfe9f2; border:2px solid #0c0d10;
     font-size:15px; padding:0; box-shadow:inset 0 2px 0 rgba(255,255,255,.16), 0 4px 10px rgba(0,0,0,.5);
   }
-  /* ═══ PORTRAIT : PANNEAU CONSOLE rétro qui remplit l'espace sous le jeu ═══ */
-  #padMarquee{ display:none; }
+  /* ═══ PORTRAIT : panneau console COMPACT (jeu en haut, manette juste dessous) ═══ */
+  #padMarquee, #padMid{ display:none; }
+  #padLegend{ display:none; }
+  #padTag{ display:none; }
   @media (orientation: portrait){
     #pad{
-      flex-direction:column; justify-content:space-between; align-items:stretch;
+      flex-direction:column; justify-content:flex-end; align-items:stretch;
       padding:0; height:auto;
-      /* plaque de console : métal brossé + trame, plus aucun « vide noir » */
-      background:
-        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, rgba(0,0,0,0) 1px 3px),
-        linear-gradient(#1d232c 0%, #262d38 14%, #1a2029 62%, #0f1319 100%);
-      border-top:2px solid #39414d;
-      box-shadow:inset 0 3px 0 rgba(255,255,255,.10), inset 0 -22px 40px rgba(0,0,0,.6),
-                 inset 22px 0 40px rgba(0,0,0,.35), inset -22px 0 40px rgba(0,0,0,.35);
-      overflow:hidden;
+      background:linear-gradient(#151a21 0%, #1d232c 44%, #131820 100%);
+      border-top:2px solid #333b46;
+      box-shadow:inset 0 2px 0 rgba(255,255,255,.07), inset 0 -18px 36px rgba(0,0,0,.55);
     }
-    #padMarquee{
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      padding:1.2vh 0; margin:0 0 0;
-      background:linear-gradient(#1b2029, #12161c);
-      border-bottom:1px solid #2a303a;
-      box-shadow:inset 0 -6px 12px rgba(0,0,0,.5);
+    #padRow{
+      display:flex; align-items:flex-end; justify-content:space-between;
+      gap:3vw; padding:0 5vw 3.5vh; min-width:0;
     }
-    #padMarquee span{ font-family:monospace; font-weight:bold; font-size:min(4.4vw,16px);
-      color:#ffd45a; letter-spacing:3px; text-shadow:0 0 8px rgba(255,212,90,.45), 0 2px 0 #5a3f00; }
-    #padMarquee em{ font-style:normal; font-size:min(2.8vw,10px); color:#7ad8f0; letter-spacing:2px; opacity:.85; }
-    /* zone centrale : petite fiche de contrôles + trame discrète (plus de vide mort) */
-    #padMid{
-      flex:1; display:flex; align-items:center; justify-content:center; gap:3vw;
-      flex-wrap:wrap; padding:2vh 5vw; position:relative;
+    #pad .side{ display:flex; align-items:center; gap:3vw; min-width:0; flex-shrink:0; }
+    #padTag{
+      display:flex; align-items:baseline; justify-content:center; gap:8px;
+      font-family:monospace; font-weight:bold; letter-spacing:3px;
+      font-size:min(3.4vw,13px); color:#e9f2fa;
+      text-shadow:0 2px 0 #0a0d12;
+      padding:1.4vh 0 1.0vh; margin-bottom:auto;
     }
-    #padMid::before{                 /* rivets de plaque */
-      content:""; position:absolute; inset:10px 12px;
-      border:1px solid rgba(255,255,255,.06); border-radius:12px;
-      box-shadow:0 0 0 1px rgba(0,0,0,.45);
-      pointer-events:none;
+    #padTag i{ font-style:normal; font-size:min(2.3vw,9px); letter-spacing:1.6px; color:#7ad8f0; opacity:.85; }
+    #stick{
+      width:min(38vw,170px); height:min(38vw,170px);
+      min-width:114px; min-height:114px; flex:0 0 auto;
     }
-    #padMid .emblem{
-      flex:0 0 100%; text-align:center; font-family:monospace; font-weight:bold;
-      font-size:min(7vw,26px); letter-spacing:4px; color:#e9f2fa;
-      text-shadow:0 0 12px rgba(120,200,255,.35), 0 3px 0 #0a0d12;
-      margin-bottom:.6vh;
-    }
-    #padMid .emblem i{ display:block; font-style:normal; font-size:min(2.8vw,10px);
-      letter-spacing:3px; color:#7ad8f0; margin-top:4px; opacity:.85; }
-    #padMid .lg{
-      display:flex; flex-direction:column; align-items:center; gap:4px;
-      font-family:monospace; font-size:min(2.6vw,10px); letter-spacing:1.5px;
-      color:#8fa3b4; text-transform:uppercase;
-      padding:8px 14px; border:1px solid #2b323c; border-radius:8px;
-      background:linear-gradient(#171b22,#101419);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-    }
-    #padMid .lg b{ font-size:min(4.2vw,15px); color:#ffd45a; letter-spacing:1px; }
-    #padRow{ padding:0 4vw calc(2.2vh + env(safe-area-inset-bottom)); }
-    #pad .side{ padding:0; }
-    #stick{ width:min(50vw,236px); height:min(50vw,236px); }
     #knob{ width:44%; height:44%; }
-    .abtn{ width:min(27vw,124px); height:min(27vw,124px); }
-    .abtn small{ font-size:min(2.9vw,11px); }
-    .abtn span{ font-size:min(7.2vw,26px); }
-    .mini{ width:44px; height:44px; font-size:17px; }
+    .abtn{
+      width:min(21vw,94px); height:min(21vw,94px);
+      min-width:70px; min-height:70px; flex:0 0 auto;
+    }
+    #btnB{ transform:translateY(-14px); }      /* B en haut à gauche, A en bas à droite */
+    #btnB.down{ transform:translateY(-12px) scale(.97); }
+    .abtn small{ font-size:min(2.4vw,10px); }
+    .abtn span{ font-size:min(6vw,24px); }
+    #padLegend{
+      display:block; text-align:center; font-family:monospace;
+      font-size:min(2.5vw,10px); letter-spacing:1.4px; color:#8fa3b4;
+      padding:1.1vh 4vw calc(1.4vh + env(safe-area-inset-bottom));
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+    #padLegend b{ color:#ffd45a; }
   }
   /* paysage serré : manette compacte en surimpression */
   @media (orientation: landscape) and (max-height: 560px){
@@ -148,26 +134,23 @@
 </head>
 <body>
 <div id="wrap">
+  <div id="safeProbe"></div>
   <div id="stage">
     <canvas id="gl" width="1280" height="720"></canvas>
     <canvas id="hud" width="640" height="360"></canvas>
   </div>
+  <button class="mini" id="btnFull" title="Plein écran">⛶</button>
   <div id="pad">
     <div id="padMarquee"><span>MOB RACER</span><em>· ARCADE ·</em></div>
-    <div id="padMid">
-      <div class="emblem">MOB RACER<i>SERVICE DE PROPRETE 3D</i></div>
-      <div class="lg"><b>STICK</b>DIRECTION</div>
-      <div class="lg"><b>A</b>TORPILLE</div>
-      <div class="lg"><b>B</b>VALIDER</div>
-    </div>
+    <div id="padTag">MOB RACER <i>SERVICE DE PROPRETE 3D</i></div>
     <div id="padRow">
       <div class="side"><div id="stick"><div class="cross"></div><div id="knob"></div></div></div>
       <div class="side">
         <button class="abtn" id="btnB"><small>VALIDER</small><span>B</span></button>
         <button class="abtn" id="btnA"><small>TORPILLE</small><span>A</span></button>
-        <button class="mini" id="btnFull" title="Plein écran">⛶</button>
       </div>
     </div>
+    <div id="padLegend"><b>STICK</b> DIRECTION · <b>A</b> TORPILLE · <b>B</b> VALIDER</div>
   </div>
 </div>
 <script>
@@ -3224,8 +3207,12 @@ function layout(){
   var availH = (portrait && PAD_ON) ? Math.round(v.h*0.62) : v.h;
   var sc = Math.max(0.18, Math.min(v.w/OW, availH/OH));
   var drawW=OW*sc, drawH=OH*sc;
+  /* encoche / Dynamic Island : inset haut lu sur une sonde CSS */
+  var probe=document.getElementById('safeProbe');
+  var safeTop=0;
+  if(probe){ safeTop=parseInt(getComputedStyle(probe).paddingTop,10)||0; }
   var px=Math.round((v.w-drawW)/2);
-  var py=portrait ? 0 : Math.round((v.h-drawH)/2);
+  var py=portrait ? safeTop : Math.max(safeTop, Math.round((v.h-drawH)/2));
   stage.style.transformOrigin='top left';
   stage.style.left='0px'; stage.style.top='0px';
   stage.style.transform='translate('+px+'px,'+py+'px) scale('+sc+')';
