@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v0.16 — choix 2D pixel, D-pad, eau et fusée</title>
+<title>MOB RACER 3D v0.17 — supermarché de nuit, stations, sprites 2D</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -996,7 +996,7 @@ var PV = null; // projection * vue, calculee une fois
 var drawCalls = 0;   // compteur de boites/draws par frame (budget < 250)
 var maxDrawCalls = 0;
 var drawClipped = 0; // nb de draws ignorés par le garde-fou budget (effets de fin)
-var DRAW_BUDGET = 700;   /* marge de securite sous 250 */
+var DRAW_BUDGET = 1000;   /* marge de securite sous 250 */
 
 function drawMesh(m, model, tex, color, opt){
   opt = opt || {};
@@ -1042,11 +1042,23 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 
 /* ---------- 7. CAMERA ---------- */
 // plongee ~55 deg, arene entiere visible
-var EYE=[0,13.35,9.72], TARGET=[0,0.25,0.75], FOV=45*Math.PI/180;   /* v0.15 : caméra rapprochée (~18%) — les personnages occupent enfin assez de pixels */
+/* v0.17 : caméra DIAGONALE — on pivote l'axe de visée de 24° autour de la salle
+   pour retrouver la lecture « diorama » des JRPG 3D pixel (Breath of Fire IV) :
+   les murs fuient en biais au lieu d'être strictement parallèles à l'écran. */
+var CAM_ROT=24*Math.PI/180, CAM_DIST=1.20;
+function rotAroundY(p, a, k){
+  var c=Math.cos(a), sn=Math.sin(a);
+  return [ (p[0]*c + p[2]*sn)*k, p[1]*k, (-p[0]*sn + p[2]*c)*k ];
+}
+var EYE_0=[0,13.35,9.72], TARGET_0=[0,0.25,0.75];
+var EYE = rotAroundY(EYE_0, CAM_ROT, CAM_DIST);
+var TARGET = rotAroundY(TARGET_0, CAM_ROT, CAM_DIST);
+var FOV=45*Math.PI/180;
 var PROJ = persp(FOV, GW/GH, 2.0, 120);
 PROJ[9] = 0.090;   // decalage vertical (laisse la place aux barres HUD)
 PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
 /* v0.15 : mode QA « ?closeup » — caméra rapprochée pour inspecter les sprites */
+if(/sprtest/.test(location.search)){ window.__sprTest=true; }
 if(/closeup/.test(location.search)){
   EYE=[0.6,3.0,6.2]; TARGET=[0,0.75,1.2];
   PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
@@ -1077,25 +1089,36 @@ var HIGH_SCORE_CLE='mobracer_highscore_v09_';
    le nombre de nids et le nombre de passages de lavage par case.
    Duree identique partout (75 s) pour que la comparaison reste lisible. */
 var LEVELS=[
-  /* ─────────── 1. CENTRE COMMERCIAL — galerie marchande ─────────── */
-  { id:'mall', num:1, name:'CENTRE COMMERCIAL', tag:'GALERIE MARCHANDE',
-    desc:'Vitrines de boutiques, kiosque central, bancs. Les mouettes entrent par le hall.',
+  /* ─────────── 1. SUPERMARCHÉ DE NUIT — allées, caisses, station de recharge ─────────── */
+  { id:'mall', num:1, name:'SUPERMARCHE DE NUIT', tag:'ALLEES & CAISSES',
+    desc:'Rayons garnis, congeles, caisses et reserve. Station RECHARGE en haut a gauche, VIDANGE en haut a droite.',
     coef:0.95, diffLabel:'FACILE', stars:1, nests:4, passes:1,
-    floor:'mall', wall:'wallMall', wallCol:[1.10,0.98,0.84], wallH:2.05,
-    accent:[1.0,0.78,0.34], sky:[0.125,0.110,0.105], ground:[0.30,0.27,0.24],
-    props:[{k:'shopfront',gx:1,gy:0},{k:'shopfront',gx:4,gy:0},{k:'shopfront',gx:10,gy:0},{k:'shopfront',gx:13,gy:0},
-           {k:'plant',gx:2,gy:3},{k:'plant',gx:12,gy:3},{k:'plant',gx:2,gy:10},{k:'plant',gx:12,gy:10},
-           {k:'kiosk',gx:7,gy:5},
-           {k:'escalator',gx:7,gy:1},{k:'fountain',gx:7,gy:9},
-           {k:'banner',gx:3,gy:4,v:0},{k:'banner',gx:11,gy:4,v:1},{k:'banner',gx:7,gy:7,v:2},
-           {k:'bench',gx:4,gy:9},{k:'bench',gx:10,gy:9},
-           {k:'bin',gx:9,gy:3},{k:'bin',gx:5,gy:9}],
-    extras:[{k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.42,0.34,0.26]},
-            {k:'neon', x:-6.2, z:-8.8, c:[1.45,0.85,0.30]},
-            {k:'neon', x:6.2, z:-8.8, c:[0.45,0.85,1.45]},
-            {k:'pylon', x:-9.2, z:-3.0, c:[0.70,0.62,0.50]},
-            {k:'pylon', x:9.2, z:-3.0, c:[0.70,0.62,0.50]}],
-    mobs:['gull','gull','human','human','dog'] },
+    floor:'mall', wall:'wallMall', wallCol:[1.02,1.00,0.96], wallH:1.75,
+    accent:[1.0,0.80,0.34], sky:[0.085,0.090,0.125], ground:[0.26,0.26,0.30],
+    props:[/* ── RÉSERVE (haut) : palettes de cartons ── */
+           {k:'pallet',gx:3,gy:1},{k:'pallet',gx:4,gy:1},{k:'pallet',gx:5,gy:1},{k:'pallet',gx:10,gy:1},{k:'pallet',gx:11,gy:1},{k:'pallet',gx:12,gy:1},
+           /* ── STATIONS (traversables) ── */
+           {k:'recharge',gx:1,gy:1,solid:false},{k:'vidange',gx:13,gy:1,solid:false},
+           {k:'bin',gx:6,gy:1},{k:'bin',gx:8,gy:1},
+           /* ── ALLÉE 1 (rangée de gondoles, passage central libre en gx=7) ── */
+           {k:'gondola',gx:2,gy:3},{k:'gondola',gx:3,gy:3},{k:'gondola',gx:4,gy:3},{k:'gondola',gx:5,gy:3},
+           {k:'gondola',gx:9,gy:3},{k:'gondola',gx:10,gy:3},{k:'gondola',gx:11,gy:3},{k:'gondola',gx:12,gy:3},
+           /* ── CONGELATEURS (milieu) ── */
+           {k:'freezer',gx:2,gy:6},{k:'freezer',gx:12,gy:6},
+           {k:'plant',gx:7,gy:6},
+           /* ── ALLÉE 2 ── */
+           {k:'gondola',gx:2,gy:8},{k:'gondola',gx:3,gy:8},{k:'gondola',gx:4,gy:8},{k:'gondola',gx:5,gy:8},
+           {k:'gondola',gx:9,gy:8},{k:'gondola',gx:10,gy:8},{k:'gondola',gx:11,gy:8},{k:'gondola',gx:12,gy:8},
+           /* ── CAISSES (bas) ── */
+           {k:'checkout',gx:2,gy:11},{k:'checkout',gx:5,gy:11},{k:'checkout',gx:9,gy:11},{k:'checkout',gx:12,gy:11},
+           {k:'bin',gx:7,gy:11}],
+    extras:[{k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.20,0.22,0.30]},
+            {k:'neon', x:-6.2, z:-8.8, c:[0.45,0.85,1.55]},
+            {k:'neon', x:6.2, z:-8.8, c:[1.45,0.90,0.35]},
+            {k:'neon', x:0, z:-9.4, c:[0.85,0.60,1.45]},
+            {k:'pylon', x:-9.2, z:-3.0, c:[0.42,0.46,0.54]},
+            {k:'pylon', x:9.2, z:-3.0, c:[0.42,0.46,0.54]}],
+    mobs:['human','human','gull','gull','dog'] },
 
   /* ─────────── 2. RESTAURANT — SALLE + CUISINE (passe-plat) ─────────── */
   { id:'resto', num:2, name:'RESTAURANT', tag:'SALLE & CUISINE',
@@ -1324,7 +1347,7 @@ function newMach(gx,gy,id){
     kox:0, koz:0,                       /* rebond visuel */
     torpCharge:0,
     pivotT:0, iceCd:0,                  /* v0.9 : patinoire (pivot lent / glisse) */
-    water:1, rocketT:0,                 /* v0.16 : réservoir d'eau + fusée */
+    water:1, rocketT:0, dirt:0,          /* v0.16/0.17 : réservoir d'eau, fusée, bac à crasse */
     _dirty:false
   };
 }
@@ -1336,7 +1359,7 @@ var soapTimer=SAVON_REAPPARITION;
 /* v0.16 : bonbonnes d'eau (recharges) et FUSÉES (déplacement libre limité) */
 var waters=[];                 // [{gx,gy,t}]
 var rockets=[];                // [{gx,gy,t}]
-var waterWarn=0;
+var waterWarn=0, dirtWarn=0;
 var torp=null;                 // {gx,gy,t}
 var torpUsed=false;
 var wave=null;                  // {cx,cy,t}
@@ -1401,6 +1424,7 @@ function resetGame(mode0){
   /* props du niveau : chaque prop bloque sa case */
   for(var pi=0; pi<LV.props.length; pi++){
     var pr=LV.props[pi];
+    if(pr.solid===false) continue;          /* v0.17 : station au sol = traversable */
     blocked[idxAt(pr.gx,pr.gy)] = 1;
   }
   /* v0.10 : CLOISONS INTERIEURES (cuisine du restaurant, reserve de l'Apple Store).
@@ -1440,7 +1464,7 @@ function resetGame(mode0){
   /* nids, savon, torpille, grand-mere, pollueurs */
   nests=[]; soap=null; torp=null; wave=null; coins=[]; parts=[];
   soapTimer=SAVON_REAPPARITION; torpUsed=false;
-  waters=[]; rockets=[]; waterRespawn=[0]; rocketRespawn=[0]; waterWarn=0;
+  waters=[]; rockets=[]; waterRespawn=[0]; rocketRespawn=[0]; waterWarn=0; dirtWarn=0;
   placeNests();
   placeSoap();
   placeWaters(); placeRockets();
@@ -1512,7 +1536,6 @@ function pickWaters(m){
       player.water=Math.min(1, player.water+EAU_RECHARGE);
       burst(m.wx,m.wz,14,[0.45,0.95,1.6]);
       beep(880,0.10,0.05); beep(1180,0.08,0.04);
-      if(waterTimer>0) {} /* no-op */
       waterRespawn[0]=EAU_REAPPARITION;
     } else {
       burst(m.wx,m.wz,8,[0.4,0.8,1.3]);
@@ -2138,6 +2161,66 @@ function drawProps(){
       box(x,0.50,z-0.16, 0.06,0.08,0.06, T.metal, [0.75,0.80,0.85]);
       box(x,0.30,z+0.30, 0.28,0.08,0.28, T.noise, [0.35,0.38,0.42]);          /* siege */
       box(x,0.16,z+0.30, 0.06,0.26,0.06, T.metal, [0.75,0.80,0.85]);
+    } else if(p.k==='gondola'){
+      /* ── GONDOLE de supermarché : base, montants, 3 niveaux garnis, fronton ── */
+      box(x,0.06,z, 0.96,0.12,0.62, T.metal, [0.52,0.56,0.62]);
+      box(x,0.52,z, 0.92,0.80,0.54, T.metal, [0.78,0.82,0.88]);
+      box(x,0.92,z, 0.94,0.07,0.58, T.noise, LV.accent, {emit:0.22});      /* fronton coloré */
+      box(x,0.20,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);           /* tablette basse */
+      box(x,0.46,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);
+      box(x,0.72,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);
+      /* marchandises : petits blocs colorés = lecture « rayon rempli » */
+      var goods=[[2.1,0.35,0.30],[0.40,0.85,0.55],[0.45,0.65,1.30],[1.85,1.65,0.55],[1.55,0.80,0.25],[0.85,0.60,1.35]];
+      for(var gi=0; gi<5; gi++){
+        var gxx=x-0.32+gi*0.16;
+        box(gxx,0.32,z+0.22, 0.14,0.20,0.14, T.noise, goods[gi%6]);
+        box(gxx,0.60,z+0.22, 0.14,0.22,0.14, T.noise, goods[(gi+2)%6]);
+        box(gxx,0.86,z+0.22, 0.13,0.17,0.13, T.noise, goods[(gi+4)%6]);
+        /* et sur le dessus, pour la lecture « rayon plein » vue de dessus */
+        box(gxx,1.00,z, 0.14,0.14,0.44, T.noise, goods[(gi+1)%6]);
+      }
+      box(x,0.16,z+0.26, 0.86,0.05,0.03, T.noise, [2.2,2.2,1.9]);        /* étiquettes de prix */
+    } else if(p.k==='freezer'){
+      /* ── CONGELATEUR vitré : caisson + vitre + produits + froid ── */
+      box(x,0.22,z, 0.92,0.34,0.66, T.metal, [0.86,0.90,0.96]);
+      box(x,0.40,z, 0.84,0.06,0.58, T.noise, [0.55,0.85,1.25], {emit:0.45});
+      for(var fi=0; fi<4; fi++) box(x-0.28+fi*0.19, 0.44, z, 0.13,0.10,0.34, T.noise, [1.6,1.7,1.85]);
+      box(x,0.60,z, 0.92,0.05,0.66, T.metal, [1.25,1.30,1.36]);           /* couvercle */
+      box(x,0.65,z, 0.74,0.03,0.48, T.noise, [0.60,0.95,1.40], {emit:0.55, alpha:0.75});
+    } else if(p.k==='checkout'){
+      /* ── CAISSE : comptoir, tapis, caisse enregistreuse, écran ── */
+      box(x,0.24,z, 0.94,0.46,0.70, T.wood, [0.92,0.78,0.60]);
+      box(x,0.48,z, 0.90,0.05,0.34, T.noise, [0.22,0.24,0.28]);           /* tapis */
+      box(x+0.18,0.62,z-0.12, 0.26,0.22,0.22, T.metal, [0.70,0.74,0.80]); /* caisse */
+      box(x+0.18,0.76,z-0.12, 0.20,0.10,0.06, T.panel, [1,1,1], {emit:0.6});
+      box(x-0.30,0.52,z+0.16, 0.18,0.07,0.14, T.noise, [1.30,0.30,0.28]); /* panier */
+    } else if(p.k==='pallet'){
+      /* ── PALETTE + CARTONS (réserve) ── */
+      box(x,0.06,z, 0.96,0.12,0.76, T.wood, [1.55,1.28,0.92]);
+      box(x-0.18,0.28,z-0.04, 0.38,0.32,0.36, T.wood, [1.95,1.62,1.18]);
+      box(x-0.18,0.28,z-0.04, 0.40,0.06,0.38, T.noise, [2.35,2.10,1.60]);   /* liseré clair */
+      box(x+0.22,0.24,z+0.06, 0.34,0.24,0.32, T.wood, [1.72,1.42,1.02]);
+      box(x+0.02,0.56,z-0.02, 0.30,0.24,0.28, T.wood, [2.05,1.72,1.26]);
+    } else if(p.k==='recharge'){
+      if(!SIGN_TEX.recharge) SIGN_TEX.recharge=makeSignTex('RECHARGE','rgba(8,30,50,0.92)','#6fd4ff');
+      drawMesh(QUAD_XY, trs(x, 1.30, z-0.05, 1.55, 0.40, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.recharge, [1,1,1], {unlit:true});
+      box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
+      box(x,0.028,z, 0.99,0.012,0.99, T.noise, [0.25,0.70,1.20], {emit:0.35});
+    } else if(p.k==='vidange'){
+      if(!SIGN_TEX.vidange) SIGN_TEX.vidange=makeSignTex('VIDANGE','rgba(48,24,6,0.92)','#ffb03c');
+      drawMesh(QUAD_XY, trs(x, 1.30, z-0.05, 1.55, 0.40, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.vidange, [1,1,1], {unlit:true});
+      box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
+      box(x,0.028,z, 0.99,0.012,0.99, T.noise, [1.55,0.80,0.20], {emit:0.35});
+      /* ── STATION DE RECHARGE D'EAU (zone au sol, traversable) ── */
+      box(x,0.20,z-0.42, 0.34,0.38,0.16, T.metal, [0.55,0.85,1.20]);      /* borne */
+      box(x,0.44,z-0.42, 0.26,0.09,0.11, T.noise, [0.30,0.75,1.35], {emit:0.85});
+      box(x+0.34,0.16,z+0.30, 0.11,0.26,0.11, T.metal, [0.95,1.0,1.05]);  /* plot */
+    } else if(p.k==='vidange'){
+      /* ── STATION DE VIDANGE (zone au sol, traversable) ── */
+      box(x,0.06,z, 0.52,0.07,0.52, T.metal, [0.42,0.32,0.18]);           /* grille */
+      for(var di2=0; di2<4; di2++) box(x-0.15+di2*0.10, 0.085, z, 0.03,0.02,0.34, T.noise, [0.30,0.32,0.36]);
+      box(x-0.34,0.24,z-0.34, 0.22,0.40,0.22, T.metal, [0.72,0.55,0.30]); /* fût */
+      box(x-0.34,0.45,z-0.34, 0.24,0.05,0.24, T.noise, [1.35,0.55,0.20]);
     } else if(p.k==='woodtable' || p.k==='display'){
       box(x,0.39,z, 0.98,0.10,0.72, T.wood, [1.12,1.00,0.86]);
       box(x-0.37,0.19,z, 0.10,0.38,0.60, T.wood, [0.84,0.71,0.57]);
@@ -2329,6 +2412,127 @@ function drawPolluters(t){
     else if(p.type==='skeleton') drawSkeleton(p,t);
     else drawDirtyHuman(p,t);
   }
+}
+
+
+/* ═════════ v0.17 : PERSONNAGES EN SPRITES 2D PIXEL (façon SNES 8 directions) ═════════
+   Le pousseur n'est plus un empilement de boîtes 3D : c'est un SPRITE 2D pixel
+   art plaqué en billboard dans la scène 3D (comme les ennemis de Doom/Mode 7
+   revisité, cf. la référence de game design de José). Trois poses :
+   face, dos, profil (le profil est miroité pour aller à gauche). */
+/* ── v0.17 : ENSEIGNES 3D (RECHARGE / VIDANGE) dessinées sur canvas ── */
+function makeSignTex(label, bg, fg){
+  var cv=document.createElement('canvas'); cv.width=192; cv.height=48;
+  var g=cv.getContext('2d');
+  g.fillStyle=bg; g.fillRect(0,0,192,48);
+  g.strokeStyle=fg; g.lineWidth=4; g.strokeRect(2,2,188,44);
+  g.font='bold 26px "Courier New",monospace'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillStyle=fg; g.fillText(label,96,26);
+  return makeTex(cv,false);
+}
+var SIGN_TEX={};
+
+function sprRect(g,x,y,w,h,col){ g.fillStyle=col; g.fillRect(x,y,w,h); }
+function sprCol(c,k,add){
+  var a=add||0;
+  return 'rgb('+Math.max(0,Math.min(255,Math.round(c[0]*255*k+a)))+','
+              +Math.max(0,Math.min(255,Math.round(c[1]*255*k+a)))+','
+              +Math.max(0,Math.min(255,Math.round(c[2]*255*k+a)))+')';
+}
+function spriteCanvas(pal, dir){
+  var W=30, H=44;
+  var cv=document.createElement('canvas'); cv.width=W*2; cv.height=H*2;   /* v0.17 : ×2 texels */
+  var g=cv.getContext('2d'); g.imageSmoothingEnabled=false; g.scale(2,2);
+  var OUT='#0a0c10';
+  var suit=pal.suit, pants=pal.pants, skin=pal.skin, cap=pal.cap, team=pal.team;
+  var suitS=sprCol(suit,0.66), suitL=sprCol(suit,1.20,12);
+  var skinS=sprCol(skin,0.80), skinL=sprCol(skin,1.10,10);
+  var capS=sprCol(cap,0.72), pantsS=sprCol(pants,0.72);
+  var boot='#15171c', glove=sprCol([1.0,0.80,0.25],1,0);
+  var R=sprRect, G=g;
+  function silhouette(list){ for(var i=0;i<list.length;i++){ var q=list[i]; R(G,q[0]-1,q[1]-1,q[2]+2,q[3]+2,OUT); } }
+  if(dir===1){                      /* ── DOS ── */
+    silhouette([[9,6,12,10],[8,15,14,13],[6,17,4,8],[20,17,4,8],[10,28,4,10],[16,28,4,10],[9,38,6,4],[15,38,6,4]]);
+    R(G,10,28,4,10,pants); R(G,16,28,4,10,pants);
+    R(G,9,38,6,4,boot);    R(G,15,38,6,4,boot);
+    R(G,8,15,14,13,suit);  R(G,10,15,10,13,suitL);
+    R(G,6,17,4,8,suitS);   R(G,20,17,4,8,suitS);
+    R(G,9,6,12,10,skinS);                       /* nuque + cheveux */
+    R(G,8,4,14,6,'#241a12'); R(G,8,8,14,3,'#2e2116');
+    R(G,9,1,12,5,cap); R(G,9,5,12,2,capS); R(G,8,7,14,2,sprCol(team,1,0));
+    R(G,11,15,8,3,suitS);                       /* col */
+  } else if(dir===2){               /* ── PROFIL (regarde à droite) ── */
+    silhouette([[11,6,10,10],[9,15,13,13],[7,17,4,9],[20,16,6,8],[11,28,4,10],[15,28,4,10],[10,38,6,4],[15,38,6,4]]);
+    R(G,11,28,4,10,pantsS); R(G,15,28,4,10,pants);
+    R(G,10,38,6,4,boot);    R(G,15,38,6,4,boot);
+    R(G,9,15,13,13,suit); R(G,9,15,5,13,suitS); R(G,16,15,6,13,suitL);
+    R(G,7,17,4,9,suitS);                         /* bras arrière */
+    R(G,20,16,6,8,suit); R(G,21,23,5,4,glove);   /* bras + gant devant */
+    R(G,11,6,10,10,skin); R(G,11,10,10,6,skinS);
+    R(G,19,10,4,5,skinL); R(G,21,11,2,2,skin);   /* nez */
+    R(G,10,4,12,5,'#241a12');                    /* cheveux */
+    R(G,10,2,13,4,cap); R(G,10,5,13,2,capS);
+    R(G,10,7,13,1,sprCol(team,1,0));
+    R(G,20,7,9,3,'#0f1116');                     /* visière vers la droite */
+    R(G,17,11,2,3,'#0c0e12');                    /* œil */
+    R(G,18,15,3,1,'#7a3a30');                    /* bouche */
+  } else {                          /* ── FACE ── */
+    silhouette([[9,6,12,10],[8,15,14,13],[6,17,4,8],[20,17,4,8],[10,28,4,10],[16,28,4,10],[9,38,6,4],[15,38,6,4]]);
+    R(G,10,28,4,10,pants); R(G,16,28,4,10,pants);
+    R(G,9,38,6,4,boot);    R(G,15,38,6,4,boot);
+    R(G,8,15,14,13,suit);  R(G,10,16,10,11,'#f2f2ec');   /* tablier */
+    R(G,10,16,10,1,'#ffffff');
+    R(G,6,17,4,8,suitS);   R(G,20,17,4,8,suitS);
+    R(G,6,23,4,4,glove);   R(G,20,23,4,4,glove);         /* gants */
+    R(G,11,26,8,2,sprCol(team,1,0));                     /* badge */
+    R(G,9,6,12,10,skin);   R(G,9,12,12,4,skinS);
+    R(G,10,5,3,5,'#241a12'); R(G,17,5,3,5,'#241a12');    /* mèches */
+    R(G,11,2,9,4,cap); R(G,11,5,9,2,capS); R(G,10,6,11,2,sprCol(team,1,0));
+    R(G,7,7,15,3,'#0f1116');                             /* visière (3 px) */
+    R(G,7,10,15,1,'#3a3f47');
+    R(G,11,9,3,3,'#ffffff'); R(G,12,10,1,2,'#0c0e12');   /* yeux */
+    R(G,16,9,3,3,'#ffffff'); R(G,17,10,1,2,'#0c0e12');
+    R(G,10,8,3,1,'#241a12'); R(G,17,8,3,1,'#241a12');    /* sourcils */
+    R(G,14,12,2,1,skinS);                                /* nez */
+    R(G,12,14,6,1,'#7a3a30');                            /* bouche */
+  }
+  return cv;
+}
+/* textures de sprite construites à la demande (4 personnages × 3 poses) */
+var SPR={}, SPRC={};
+function spriteTex(who, dir){
+  var key=who+'_'+dir;
+  if(SPR[key]) return SPR[key];
+  var pal;
+  if(who==='bot'){
+    pal={ suit:[0.86,0.24,0.22], pants:[0.24,0.26,0.34], skin:[0.90,0.70,0.52], cap:[0.96,0.95,0.90], team:[0.42,0.92,0.55] };
+  } else {
+    var C=CHARS[charIdx];
+    pal={ suit:C.suit, pants:C.pants, skin:C.skin, cap:C.cap, team:(C.id==='chef'?[0.60,0.32,0.90]:(C.id==='vet'?[0.28,0.78,0.36]:(C.id==='rob'?[0.40,0.82,1.0]:[1.0,0.55,0.18]))) };
+  }
+  var cv=spriteCanvas(pal, dir);
+  SPR[key]=makeTex(cv, false);
+  SPRC[key]=cv;
+  return SPR[key];
+}
+/* billboard : quad vertical orienté vers la caméra */
+function drawCharSprite(m){
+  var who = (m===player) ? 'you' : 'bot';
+  var dir = 0;
+  /* 0 = face (vers la caméra), 1 = dos, 2 = profil */
+  var camYaw = Math.atan2(EYE[0], EYE[2]);
+  var rel = m.angle - camYaw;
+  var a = Math.atan2(Math.sin(rel), Math.cos(rel));
+  if(Math.abs(a) < 0.9) dir = 0;
+  else if(Math.abs(a) > 2.2) dir = 1;
+  else dir = 2;
+  var tex = spriteTex(who, dir);
+  var bob = m.moving ? Math.sin(m.t*Math.PI)*0.05 : 0;
+  var w = 1.24, h = 1.82;
+  var flip = (dir===2 && Math.sin(m.angle - camYaw) < 0);
+  var sc = flip ? -w : w;
+  drawMesh(QUAD_XY, trs(m.wx+m.kox-0.34*Math.sin(m.angle), h*0.5, m.wz+m.koz-0.62*Math.cos(m.angle), sc, h, 1, camYaw),
+           tex, [1,1,1], {unlit:true, alpha:1.0});
 }
 
 /* ── v0.16 : SQUELETTE DE DINOSAURE (musée) — os blanchis, laisse des os ── */
@@ -2749,8 +2953,12 @@ function drawPusher(m){
   drawPolluters(tNow);
 
   /* ── machines ── */
-  if(!window.__hideMachine){ drawMachine(player); } drawPusher(player);
-  if(!window.__hideMachine){ drawMachine(bot); }    drawPusher(bot);
+  if(!window.__hideMachine){ drawMachine(player); }
+  if(!window.__hideMachine){ drawMachine(bot); }
+  /* v0.17 : personnages en SPRITES 2D pixel (billboard), plus en volumes 3D */
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  drawCharSprite(player); drawCharSprite(bot);
+  gl.depthMask(true); gl.disable(gl.BLEND);
 
   /* ── mousse de la torpille + particules ── */
   drawWave();
@@ -2797,8 +3005,32 @@ function startMove(m,di){
   return true;
 }
 
+function stationAt(gx,gy){
+  for(var i=0;i<LV.props.length;i++){
+    var pr=LV.props[i];
+    if(pr.gx===gx && pr.gy===gy && (pr.k==='recharge' || pr.k==='vidange')) return pr.k;
+  }
+  return null;
+}
+function applyStation(m){
+  if(m!==player) return;
+  var st=stationAt(m.gx,m.gy);
+  if(!st) return;
+  if(st==='recharge' && m.water<0.999){
+    m.water=Math.min(1, m.water+0.35);
+    burst(m.wx,m.wz,10,[0.5,1.1,1.9]);
+    beep(760,0.08,0.04); beep(1040,0.07,0.03);
+  } else if(st==='vidange' && m.dirt>0.01){
+    score+=Math.round(m.dirt*10);            /* la crasse vidangée rapporte des points */
+    m.dirt=0;
+    burst(m.wx,m.wz,12,[1.6,0.9,0.35]);
+    beep(320,0.10,0.05); beep(240,0.10,0.04);
+  }
+}
+
 function arrive(m){
   var i=idxAt(m.gx,m.gy);
+  applyStation(m);
   removeMarkAt(m.gx,m.gy);          /* v0.9 : la tache disparait avec la salete */
   if(cells[i]===3){
     /* NID DE DETRITUS — lavage 3x plus lent, compte double */
@@ -2821,12 +3053,18 @@ function arrive(m){
       if(!waterWarn || timeNow()-waterWarn>1.2){ waterWarn=timeNow(); beep(120,0.10,0.05); }
       return;
     }
+    if(m===player && player.dirt>=0.999){
+      /* bac à crasse plein : il faut aller VIDANGER avant de pouvoir relaver */
+      if(!dirtWarn || timeNow()-dirtWarn>1.2){ dirtWarn=timeNow(); beep(100,0.12,0.05); }
+      return;
+    }
     cleanHits[i]++;
     if(cleanHits[i]>=LV.passes){
       cleanHits[i]=0;
       if(m===player){
         cells[i]=2; score++;
         player.water=Math.max(0, player.water - (player.rocketT>0?0.012:0.045));
+        player.dirt=Math.min(1, player.dirt + 0.030);      /* v0.17 : bac à crasse */
       }
       else { cells[i]=4; botScore++; }   /* v0.14 : trace verte */
       m._dirty=true;
@@ -3605,7 +3843,12 @@ function drawAttract(){
 }
 
 function drawHUD(){
-  hud.setTransform(1.5,0,0,1.5,0,0);   /* v0.15 : HUD dessiné en 640×360, rendu en 960×540 */
+  hud.setTransform(1.5,0,0,1.5,0,0);
+  /* v0.17 : filtre CRT discret (lignes paires assombries) */
+  function crtScanlines(){
+    hud.fillStyle='rgba(0,0,0,0.10)';
+    for(var y=0;y<360;y+=2) hud.fillRect(0,y,640,1);
+  }   /* v0.15 : HUD dessiné en 640×360, rendu en 960×540 */
   /* v0.16 : panneau d'état lisible sous le jeu (portrait mobile) */
   if(window.__padOnFlag && (performance.now()|0)%4===0 && typeof stPct!=='undefined' && stPct){
     var pctTxt = Math.round((totalCleanable>0 ? (totalCleanable-dirtyLeft)/totalCleanable : 1)*100)+'%';
@@ -3619,6 +3862,23 @@ function drawHUD(){
   hudAccent();                       /* v0.11 : accent couleur de la salle */
   /* v0.9 : ecrans plein HUD */
   if(mode==='attract'){ drawAttract(); return; }
+  if(window.__sprTest){
+    hud.fillStyle='#10141a'; hud.fillRect(0,0,640,360);
+    var keys=['you','bot'], dirs=[0,1,2];
+    for(var a=0;a<keys.length;a++){
+      for(var b2=0;b2<dirs.length;b2++){
+        var key=keys[a]+'_'+dirs[b2];
+        spriteTex(keys[a],dirs[b2]);
+        if(SPRC[key]){
+          hud.imageSmoothingEnabled=false;
+          hud.drawImage(SPRC[key], 30+b2*180, 40+a*160, 90, 132);
+          hudText(key, 75+b2*180, 190+a*160, 8, '#7ad8f0','center');
+        }
+      }
+    }
+    hudText('PLANCHE DES SPRITES (QA)', 320, 20, 10, '#ffd45a','center');
+    return;
+  }
   if(mode==='select'){ drawSelect(); return; }
   if(mode==='charPick'){ drawCharPick(); return; }
   if(mode==='vehPick'){ drawVehPick(); return; }
@@ -3644,13 +3904,55 @@ function drawHUD(){
 
   /* v0.14 : code couleur cohérent avec les traces au sol — BLEU = toi, VERT = Laya */
   /* v0.16 : JAUGE D'EAU (le réservoir se vide à chaque case lavée) */
-  var wx0=196, wy0=300;
-  hudText('EAU',10,wy0+6,8,'#9fd8f0');
-  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(40,wy0,86,9);
+  var wx0=196, wy0=298;
+  var gxE=120;
+  hudText('EAU',gxE,wy0+6,8,'#9fd8f0');
+  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(gxE+30,wy0,76,9);
   hud.fillStyle = player.water>0.35 ? '#3fb6f0' : (player.water>0 ? '#f0a83c' : '#e05555');
-  hud.fillRect(40,wy0,Math.round(86*player.water),9);
-  for(var wl=1;wl<4;wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(40+Math.round(86*wl/4),wy0,1,9); }
-  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.lineWidth=1; hud.strokeRect(40.5,wy0+0.5,85,8);
+  hud.fillRect(gxE+30,wy0,Math.round(76*player.water),9);
+  for(var wl=1;wl<4;wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(gxE+30+Math.round(76*wl/4),wy0,1,9); }
+  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.lineWidth=1; hud.strokeRect(gxE+30.5,wy0+0.5,75,8);
+  /* v0.17 : bac à crasse (VIDANGE quand plein) */
+  hudText('CRASSE',gxE,wy0+20,8,'#e8c08a');
+  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(gxE+46,wy0+14,60,8);
+  var dirtC = player.dirt>0.75 ? '#e05555' : '#c08a3c';
+  hud.fillStyle=dirtC; hud.fillRect(gxE+46,wy0+14,Math.round(60*player.dirt),8);
+  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.strokeRect(gxE+46.5,wy0+14.5,59,7);
+
+  /* v0.17 : MINI-CARTE de l'arène (bas gauche) */
+  (function(){
+    var MX=6, MY=232, MW=104, MH=90;
+    hud.fillStyle='rgba(4,7,10,0.78)'; hud.fillRect(MX,MY,MW,MH);
+    hud.strokeStyle=HUD_ACC; hud.lineWidth=1; hud.strokeRect(MX+0.5,MY+0.5,MW-1,MH-1);
+    var cw=(MW-8)/COLS, ch=(MH-8)/ROWS;
+    for(var gy=0; gy<ROWS; gy++){
+      for(var gx=0; gx<COLS; gx++){
+        var idx=idxAt(gx,gy), c=null;
+        if(blocked[idx]) c='rgba(120,132,150,0.55)';
+        else if(cells[idx]===3) c='#8a5a2a';
+        else if(cells[idx]===0) c='rgba(150,120,80,0.35)';
+        else if(cells[idx]===2) c='rgba(95,189,240,0.75)';
+        else if(cells[idx]===4) c='rgba(95,208,122,0.75)';
+        else c='rgba(255,255,255,0.10)';
+        hud.fillStyle=c; hud.fillRect(MX+4+gx*cw, MY+4+gy*ch, Math.ceil(cw), Math.ceil(ch));
+      }
+    }
+    /* stations */
+    for(var si=0; si<LV.props.length; si++){
+      var sp2=LV.props[si];
+      if(sp2.k==='recharge'){ hud.fillStyle='#4dc8ff'; hud.fillRect(MX+4+sp2.gx*cw-1, MY+4+sp2.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2); }
+      if(sp2.k==='vidange'){ hud.fillStyle='#ffa63c'; hud.fillRect(MX+4+sp2.gx*cw-1, MY+4+sp2.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2); }
+    }
+    /* joueur + bot */
+    hud.fillStyle='#5fbdf0'; hud.fillRect(MX+4+player.gx*cw-1, MY+4+player.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2);
+    hud.fillStyle='#5fd07a'; hud.fillRect(MX+4+bot.gx*cw-1, MY+4+bot.gy*ch-1, Math.ceil(cw)+2, Math.ceil(ch)+2);
+    hudText('PLAN',MX+MW/2,MY-5,7,'#7ad8f0','center');
+  })();
+
+  if(player.water<=0 || player.dirt>=0.999){
+    var need = player.water<=0 ? 'RECHARGE EAU  ◄ HAUT GAUCHE' : 'VIDANGE  ► HAUT DROITE';
+    hudText(need, 320, 300, 9, (Math.floor(performance.now()/320)%2)?'#ffd45a':'#ff8a5a','center');
+  }
   if(player.water<=0){
     hudText('EAU VIDE — BONBONNE BLEUE',130,wy0+6,8,(Math.floor(performance.now()/300)%2)?'#ff6a5a':'#ffd45a');
   }
@@ -3752,6 +4054,7 @@ function drawHUD(){
     hudText('ENTREE = NIVEAU SUIVANT  ('+nx.name+')',320,258,12,(Math.floor(performance.now()/400)%2)?'#5fd8ec':'#eafcff','center');
     hudText('R = REJOUER   ·   ECHAP = CHOIX DES SALLES',320,282,8,'#8fa6b4','center','normal');
   }
+  if(window.__crt!==false) crtScanlines();
 }
 /* ---------- 15. HIGH SCORE (localStorage) ---------- */
 function lsGet(k){
@@ -3979,6 +4282,18 @@ function stickEnd(ev){
   });
 })();
 
+window.__spriteBox = function(){
+  /* bbox écran du sprite du joueur (pour la QA visuelle) */
+  var rx=Math.sin(player.angle), rz=Math.cos(player.angle);
+  var cx=player.wx+player.kox-0.34*rx, cz=player.wz+player.koz-0.62*rz;
+  var h=1.82, w=1.24;
+  var a=hudProject(cx-w/2, h, cz), b=hudProject(cx+w/2, 0, cz);
+  if(!a||!b) return null;
+  var r=document.getElementById('stage').getBoundingClientRect();
+  var k=r.width/OW, kx=OW/GW*k, ky=OH/GH*k;
+  return {x0:Math.round(r.left+a.x*kx), y0:Math.round(r.top+a.y*ky),
+          x1:Math.round(r.left+b.x*kx), y1:Math.round(r.top+b.y*ky)};
+};
 window.__playerScreen = function(){
   var p=hudProject(player.wx, 0.6, player.wz);
   if(!p) return null;
