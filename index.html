@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v0.15 — graphismes rehausses (960x540, persos détaillés)</title>
+<title>MOB RACER 3D v0.16 — choix 2D pixel, D-pad, eau et fusée</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -30,6 +30,25 @@
   #padRow{ display:flex; align-items:flex-end; justify-content:space-between; width:100%; }
   #padMid{ display:none; }
   #pad .side{ pointer-events:auto; display:flex; align-items:center; gap:3vw; min-width:0; }
+  #dpad{
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    gap:4px; width:min(46vw,210px); height:min(46vw,210px);
+    min-width:132px; min-height:132px; touch-action:none;
+  }
+  .dbtn{
+    -webkit-appearance:none; appearance:none; border:2px solid #0c0d10; border-radius:14%;
+    background:linear-gradient(#545a63,#2a2e35 60%,#171a1f);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -5px 10px rgba(0,0,0,.6), 0 5px 12px rgba(0,0,0,.5);
+    color:#eef4f8; font-size:min(5.4vw,26px); line-height:1; font-family:monospace;
+    display:flex; align-items:center; justify-content:center; padding:0;
+    touch-action:none; user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  .dbtn.down{ background:linear-gradient(#8fd0ff,#3d7fbf 60%,#22496f); color:#04222f;
+              box-shadow:inset 0 3px 8px rgba(0,0,0,.5); transform:translateY(1px); }
+  #dUp{ grid-area:1/2; } #dLeft{ grid-area:2/1; } #dRight{ grid-area:2/3; } #dDown{ grid-area:3/2; }
+  .dmid{ grid-area:2/2; border-radius:50%; margin:14%;
+         background:radial-gradient(circle at 50% 35%, #6b727b, #23262b 70%);
+         box-shadow:inset 0 2px 4px rgba(0,0,0,.7); }
   #stick{
     position:relative; width:min(32vw,148px); height:min(32vw,148px); min-width:92px; min-height:92px;
     border-radius:22%;
@@ -74,6 +93,7 @@
   #padMarquee, #padMid{ display:none; }
   #padLegend{ display:none; }
   #padTag{ display:none; }
+  #padStats{ display:none; }
   @media (orientation: portrait){
     #pad{
       flex-direction:column; justify-content:flex-end; align-items:stretch;
@@ -108,6 +128,17 @@
     #btnB.down{ transform:translateY(-12px) scale(.97); }
     .abtn small{ font-size:min(2.4vw,10px); }
     .abtn span{ font-size:min(6vw,24px); }
+    #padStats{
+      display:grid; grid-template-columns:repeat(5,1fr); gap:2px;
+      margin:0 4vw; padding:1.2vh 0; border-radius:10px;
+      background:rgba(255,255,255,0.045);
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    #padStats .st{ text-align:center; font-family:monospace; }
+    #padStats .st b{ display:block; font-size:min(4.4vw,17px); color:#eafcff; letter-spacing:.5px; }
+    #padStats .st i{ display:block; font-style:normal; font-size:min(2.1vw,8px);
+                     color:#7f96a3; letter-spacing:1px; margin-top:2px; }
+    #stBot{ color:#bff5c8 !important; } #stMe{ color:#bfe6ff !important; }
     #padLegend{
       display:block; text-align:center; font-family:monospace;
       font-size:min(2.5vw,10px); letter-spacing:1.4px; color:#8fa3b4;
@@ -143,14 +174,29 @@
   <div id="pad">
     <div id="padMarquee"><span>MOB RACER</span><em>· ARCADE ·</em></div>
     <div id="padTag">MOB RACER <i>SERVICE DE PROPRETE 3D</i></div>
+    <div id="padStats">
+      <div class="st"><b id="stPct">0%</b><i>PROPRE</i></div>
+      <div class="st"><b id="stTime">75</b><i>SECONDES</i></div>
+      <div class="st"><b id="stMe">0</b><i>TOI (BLEU)</i></div>
+      <div class="st"><b id="stBot">0</b><i>LAYA (VERT)</i></div>
+      <div class="st"><b id="stWater">100%</b><i>EAU</i></div>
+    </div>
     <div id="padRow">
-      <div class="side"><div id="stick"><div class="cross"></div><div id="knob"></div></div></div>
+      <div class="side">
+        <div id="dpad">
+          <button class="dbtn" id="dUp"    data-key="ArrowUp"    aria-label="Haut">▲</button>
+          <button class="dbtn" id="dLeft"  data-key="ArrowLeft"  aria-label="Gauche">◀</button>
+          <span class="dmid"></span>
+          <button class="dbtn" id="dRight" data-key="ArrowRight" aria-label="Droite">▶</button>
+          <button class="dbtn" id="dDown"  data-key="ArrowDown"  aria-label="Bas">▼</button>
+        </div>
+      </div>
       <div class="side">
         <button class="abtn" id="btnB"><small>VALIDER</small><span>B</span></button>
         <button class="abtn" id="btnA"><small>TORPILLE</small><span>A</span></button>
       </div>
     </div>
-    <div id="padLegend"><b>STICK</b> DIRECTION · <b>A</b> TORPILLE · <b>B</b> VALIDER</div>
+    <div id="padLegend"><b>FLÈCHES</b> DIRECTION · <b>A</b> TORPILLE · <b>B</b> VALIDER</div>
   </div>
 </div>
 <script>
@@ -1013,6 +1059,11 @@ var ICE_PIVOT=0.35;            // patinoire : pivot lent (0,35 s avant de tourne
 var NIVEAU_DUREE=75;           // duree d'un niveau (s)
 var SAVON_VITESSE_MUL=1.6, SAVON_DUREE=4.0, SAVON_REAPPARITION=12.0;
 var TORPILLE_ZONE=5, TORPILLE_CHARGE_AUTO=3.0;
+/* v0.16 : bonbonnes d'eau (recharges) + FUSÉE (déplacement libre limité) */
+var EAU_BONBONNES=3, EAU_RECHARGE=0.55, EAU_REAPPARITION=13.0;
+var FUSEE_NB=1, FUSEE_DUREE=4.5, FUSEE_REAPPARITION=22.0;
+var waterRespawn=[0], rocketRespawn=[0];
+function timeNow(){ return performance.now()/1000; }
 var DETRITUS_COEF=3, DETRITUS_MULT=2;
 var VITESSE_GRAND_MERE=0.10;   // case/s — ultra-lente
 var PIECE_INTERVAL=20.0, PIECE_POINTS=1;
@@ -1044,7 +1095,7 @@ var LEVELS=[
             {k:'neon', x:6.2, z:-8.8, c:[0.45,0.85,1.45]},
             {k:'pylon', x:-9.2, z:-3.0, c:[0.70,0.62,0.50]},
             {k:'pylon', x:9.2, z:-3.0, c:[0.70,0.62,0.50]}],
-    mobs:['gull','gull','dog','human','human'] },
+    mobs:['gull','gull','human','human','dog'] },
 
   /* ─────────── 2. RESTAURANT — SALLE + CUISINE (passe-plat) ─────────── */
   { id:'resto', num:2, name:'RESTAURANT', tag:'SALLE & CUISINE',
@@ -1075,7 +1126,7 @@ var LEVELS=[
             {k:'neon', x:-6.6, z:-8.6, c:[1.30,0.85,0.25]},
             {k:'pylon', x:-9.4, z:-6.0, c:[0.30,0.20,0.16]},
             {k:'pylon', x:9.4, z:-6.0, c:[0.30,0.20,0.16]}],
-    mobs:['dog','dog','human','human','human','raccoon'] },
+    mobs:['dog','human','human','raccoon','raccoon','gull'] },
 
   /* ─────────── 3. MUSEE — peintures, statues, vitrines ─────────── */
   { id:'museum', num:3, name:'MUSEE', tag:'PARQUET & CIMAISES',
@@ -1102,7 +1153,7 @@ var LEVELS=[
             {k:'pylon', x:9.4, z:-1.2, c:[0.66,0.64,0.68]},
             {k:'pylon', x:-9.4, z:2.4, c:[0.60,0.58,0.62]},
             {k:'pylon', x:9.4, z:2.4, c:[0.60,0.58,0.62]}],
-    mobs:['human','human','human','raccoon','raccoon','dog','dog'] },
+    mobs:['skeleton','skeleton','skeleton','human','raccoon','dog','gull']   /* musée : squelettes de dinosaure */ },
 
   /* ─────────── 4. PATINOIRE — glace, balustrades, buts ─────────── */
   { id:'rink', num:4, name:'PATINOIRE', tag:'GLACE & BALUSTRADES',
@@ -1122,7 +1173,7 @@ var LEVELS=[
     extras:[{k:'bleacher', x:0, z:-9.2, w:20},
             {k:'bleacher', x:0, z:9.6, w:20},
             {k:'wallOut', x:0, z:-12.4, w:26, h:3.8, c:[0.10,0.16,0.26]}],
-    mobs:['gull','dog','dog','human','human','human','raccoon','raccoon'] },
+    mobs:['human','human','dog','dog','gull','gull','raccoon','skeleton']   /* patinoire : un squelette de décor */ },
 
   /* ─────────── 5. APPLE STORE — plan reel + BACK OF HOUSE ─────────── */
   { id:'apple', num:5, name:'APPLE STORE', tag:'TABLES ALIGNEES & RESERVE',
@@ -1150,7 +1201,7 @@ var LEVELS=[
             {k:'neon', x:0, z:-9.2, c:[1.55,1.60,1.70]},
             {k:'neon', x:-7.4, z:-9.0, c:[0.55,0.75,1.45]},
             {k:'neon', x:7.4, z:-9.0, c:[0.55,0.75,1.45]}],
-    mobs:['gull','gull','gull','dog','dog','human','human','human','human','raccoon'] }
+    mobs:['human','human','human','human','gull','gull','dog','dog','raccoon','raccoon'] }
 ];
 
 
@@ -1203,11 +1254,11 @@ var POLL_SPEED={gull:1.85,dog:1.15,raccoon:0.95,human:0.62};
 var POLL_ACT  ={gull:0.55,dog:0.80,raccoon:1.45,human:0.70};
 var POLL_CD   ={gull:7.5, dog:10.0,raccoon:10.5,human:8.5};
 var POLL_DESC ={
-  mall:  'POLLUEURS : MOUETTES · HUMAINS SALES · CHIENS',
-  rink:  'POLLUEURS : HUMAINS SALES · CHIENS · MOUETTE',
-  resto: 'POLLUEURS : RATONS LAVEURS · HUMAINS SALES · CHIENS',
-  apple: 'POLLUEURS : HUMAINS SALES · MOUETTES · CHIENS · RATON',
-  museum:'POLLUEURS : TOURISTES · RATONS LAVEURS · CHIENS'
+  mall:  'POLLUEURS : MOUETTES · VISITEURS MALPROPRES · CHIENS',
+  rink:  'POLLUEURS : PATINEURS MALPROPRES · CHIENS · MOUETTES',
+  resto: 'POLLUEURS : RATONS LAVEURS · CLIENTS MALPROPRES · CHIENS',
+  apple: 'POLLUEURS : CLIENTS MALPROPRES · MOUETTES · CHIENS · RATONS',
+  museum:'POLLUEURS : SQUELETTES DE DINOSAURE · TOURISTES · RATONS'
 };
 
 /* ═════════ v0.14 : PERSONNAGES & VEHICULES DE NETTOYAGE ═════════
@@ -1215,34 +1266,34 @@ var POLL_DESC ={
    Chaque véhicule change la couleur de la machine, sa vitesse et son inertie. */
 var CHARS=[
   { id:'stg',  name:'LE STAGIAIRE',   tag:'TOUT JUSTE SORTI DE FORMATION',
-    desc:'Combinaison orange vif. Rapide sur ses pieds, un peu naif.',
+    desc:'Jeune, vif, un peu naif. Il court plus vite que les autres.',
     suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
     perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
   { id:'chef', name:'LA CHEF D EQUIPE', tag:'20 ANS DE CARRELAGE',
-    desc:'Combinaison violette, gestes surs. Son savon tient plus longtemps.',
+    desc:'Gestes surs. Son savon tient 35% plus longtemps.',
     suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
     perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
   { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
-    desc:'Vert de travail. Sa torpille laveuse couvre une zone plus large.',
+    desc:'Sa torpille laveuse couvre une zone plus large.',
     suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
     perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
   { id:'rob',  name:'L APPRENTI ROBOT', tag:'NE PREND JAMAIS DE PAUSE',
-    desc:'Blanc brillant. Ne derape presque pas, meme savonne.',
+    desc:'Ne derape presque pas, meme sur sol savonne.',
     suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
     perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
 ];
 var VEHICLES=[
-  { id:'auto', name:'AUTOLAVEUSE 3000', tag:'LA CLASSIQUE',
+  { id:'auto', perk:'VITESSE 100 · ADHERENCE 100', name:'AUTOLAVEUSE 3000', tag:'LA CLASSIQUE',
     desc:'Equilibree : vitesse et tenue de route moyennes.',
     chassis:[0.74,0.82,0.92], basin:[0.60,0.86,1.0], accent:[0.60,0.86,1.0], spd:1.0,  inertia:1.0 },
-  { id:'mono', name:'MONOBROSSE XL',    tag:'RAPIDE MAIS GLISSANTE',
-    desc:'La plus rapide du parc, mais elle glisse dans les virages.',
+  { id:'mono', perk:'VITESSE 116 · ADHERENCE 60', name:'MONOBROSSE XL',    tag:'RAPIDE MAIS GLISSANTE',
+    desc:'La plus rapide, mais elle glisse dans les virages.',
     chassis:[1.0,0.96,0.88], basin:[1.0,0.72,0.30], accent:[1.0,0.72,0.30], spd:1.16, inertia:1.7 },
-  { id:'indus',name:'L INDUSTRIEL',     tag:'LOURD ET STABLE',
-    desc:'Lente, mais elle ne derape jamais : ideale en patinoire.',
+  { id:'indus', perk:'VITESSE 88 · ADHERENCE 140', name:'L INDUSTRIEL', tag:'LOURD ET STABLE',
+    desc:'Lente, mais ne derape jamais. Ideale en patinoire.',
     chassis:[0.86,0.90,0.94], basin:[0.52,0.62,0.72], accent:[0.52,0.62,0.72], spd:0.90, inertia:0.35 },
-  { id:'mini', name:'LE MINI',          tag:'PETIT GABARIT',
-    desc:'Un peu plus vive que la moyenne et bien plus maniable.',
+  { id:'mini', perk:'VITESSE 108 · ADHERENCE 110', name:'LE MINI',          tag:'PETIT GABARIT',
+    desc:'Plus vive que la moyenne et bien plus maniable.',
     chassis:[1.04,1.04,1.06], basin:[0.72,1.0,0.62], accent:[0.72,1.0,0.62], spd:1.08, inertia:0.75 }
 ];
 var charIdx=0, vehIdx=0;
@@ -1273,6 +1324,7 @@ function newMach(gx,gy,id){
     kox:0, koz:0,                       /* rebond visuel */
     torpCharge:0,
     pivotT:0, iceCd:0,                  /* v0.9 : patinoire (pivot lent / glisse) */
+    water:1, rocketT:0,                 /* v0.16 : réservoir d'eau + fusée */
     _dirty:false
   };
 }
@@ -1281,6 +1333,10 @@ function newMach(gx,gy,id){
 var nests=[];                  // {gx,gy}
 var soap=null;                 // {gx,gy,t}
 var soapTimer=SAVON_REAPPARITION;
+/* v0.16 : bonbonnes d'eau (recharges) et FUSÉES (déplacement libre limité) */
+var waters=[];                 // [{gx,gy,t}]
+var rockets=[];                // [{gx,gy,t}]
+var waterWarn=0;
 var torp=null;                 // {gx,gy,t}
 var torpUsed=false;
 var wave=null;                  // {cx,cy,t}
@@ -1384,8 +1440,10 @@ function resetGame(mode0){
   /* nids, savon, torpille, grand-mere, pollueurs */
   nests=[]; soap=null; torp=null; wave=null; coins=[]; parts=[];
   soapTimer=SAVON_REAPPARITION; torpUsed=false;
+  waters=[]; rockets=[]; waterRespawn=[0]; rocketRespawn=[0]; waterWarn=0;
   placeNests();
   placeSoap();
+  placeWaters(); placeRockets();
   placeTorpille();
   placeGrandMere();
   spawnPolluters();
@@ -1431,6 +1489,49 @@ function placeTorpille(){
 }
 
 /* ── GRAND-MERE : obstacle mobile ultra-lent ── */
+function placeWaters(){
+  waters=[];
+  for(var i=0;i<EAU_BONBONNES;i++){
+    var p=randFreeCell(2,player);
+    if(p) waters.push({gx:p[0], gy:p[1], t:Math.random()*2});
+  }
+}
+function placeRockets(){
+  rockets=[];
+  for(var i=0;i<FUSEE_NB;i++){
+    var p=randFreeCell(3,bot);
+    if(p) rockets.push({gx:p[0], gy:p[1], t:Math.random()*2});
+  }
+}
+function pickWaters(m){
+  for(var i=waters.length-1;i>=0;i--){
+    var w=waters[i];
+    if(Math.abs(m.wx-(w.gx-7))>0.62 || Math.abs(m.wz-(w.gy-6))>0.62) continue;
+    waters.splice(i,1);
+    if(m===player){
+      player.water=Math.min(1, player.water+EAU_RECHARGE);
+      burst(m.wx,m.wz,14,[0.45,0.95,1.6]);
+      beep(880,0.10,0.05); beep(1180,0.08,0.04);
+      if(waterTimer>0) {} /* no-op */
+      waterRespawn[0]=EAU_REAPPARITION;
+    } else {
+      burst(m.wx,m.wz,8,[0.4,0.8,1.3]);
+    }
+  }
+}
+function pickRockets(m){
+  for(var i=rockets.length-1;i>=0;i--){
+    var r=rockets[i];
+    if(Math.abs(m.wx-(r.gx-7))>0.62 || Math.abs(m.wz-(r.gy-6))>0.62) continue;
+    rockets.splice(i,1);
+    if(m===player){
+      player.rocketT=FUSEE_DUREE;
+      burst(m.wx,m.wz,20,[1.7,0.9,0.35]);
+      beep(520,0.10,0.06); beep(900,0.12,0.05);
+      rocketRespawn[0]=FUSEE_REAPPARITION;
+    }
+  }
+}
 function placeGrandMere(){
   var p=randFreeCell(3,player) || [7,6];
   gm = {
@@ -1460,6 +1561,9 @@ function spawnPolluters(){
     if(type==='gull'){
       p.x=-6.0+Math.random()*12.0;
       p.z=-5.0+Math.random()*10.0;
+    } else if(type==='skeleton'){
+      var cs=randFreeCell(2,null)||[7,6];
+      p.x=cs[0]-7; p.z=cs[1]-6;
     } else if(type==='raccoon'){
       /* v0.9.1 : un raton laveur se tient près d'une POUBELLE (lecture immédiate) */
       var binList=[];
@@ -1572,7 +1676,10 @@ function doPollute(p){
     if(done>0){ burst(b.gx-7,b.gy-6,6,[1.1,0.95,0.60]); beep(190,0.07,0.03); }
     return;
   }
-  var kind = (p.type==='gull') ? 'splat' : ((p.type==='dog') ? 'mound' : 'trash');
+  var kind = (p.type==='gull') ? 'splat'
+           : (p.type==='dog')  ? 'mound'
+           : (p.type==='skeleton') ? 'bones'      /* v0.16 : os de dinosaure */
+           : 'trash';
   if(p.cell && soilCell(p.cell[0],p.cell[1],kind)) return;
   /* repli : une case propre autour de la cible */
   if(p.cell){
@@ -2059,6 +2166,33 @@ function drawSoap(s,t){
   box(x,0.66+Math.sin(t*3.0)*0.05,z, 0.09,0.09,0.09, null, [1.0,0.62,0.78], {ry:t*2.2, emit:0.9});
 }
 
+/* ── v0.16 : BONBONNE D'EAU (recharge du réservoir) ── */
+function drawWater(w,t){
+  var x=w.gx-7, z=w.gy-6;
+  var bob=Math.sin(t*2.8)*0.035;
+  drawMesh(QUAD_XZ, trs(x,0.035,z,0.50,1,0.50,0), T.suds, [0.45,0.95,1.5], {unlit:true, alpha:0.40});
+  drawMesh(CYL10, trs(x,0.24+bob,z, 0.40,0.50,0.40, 0), T.metal, [0.45,0.80,1.25], {});   /* bidon */
+  drawMesh(CYL10, trs(x,0.40+bob,z, 0.34,0.18,0.34, 0), T.metal, [0.85,1.10,1.45], {});   /* renflement */
+  drawMesh(CYL10, trs(x,0.50+bob,z, 0.20,0.10,0.20, 0), T.metal, [1.15,1.20,1.25], {});   /* bouchon */
+  box(x,0.24+bob,z, 0.10,0.36,0.42, null, [0.20,0.55,1.35], {alpha:0.9});                 /* niveau d'eau */
+  box(x+0.19,0.30+bob,z, 0.13,0.06,0.22, null, [1.9,1.95,2.0]);                           /* poignée */
+  box(x,0.62+bob,z, 0.30,0.05,0.30, null, [0.35,0.85,1.6], {emit:0.9});                   /* halo */
+  if(Math.floor(t*3)%3===0) box(x,0.86+Math.sin(t*3.4)*0.06,z, 0.13,0.13,0.13, null, [0.5,1.3,2.1], {emit:1.0});
+}
+
+/* ── v0.16 : FUSÉE (déplacement libre pendant quelques secondes) ── */
+function drawRocket(r,t){
+  var x=r.gx-7, z=r.gy-6;
+  var bob=Math.sin(t*4.0)*0.05;
+  drawMesh(QUAD_XZ, trs(x,0.035,z,0.52,1,0.52,0), T.suds, [1.5,0.85,0.35], {unlit:true, alpha:0.40});
+  drawMesh(CYL10, trs(x,0.32+bob,z, 0.24,0.66,0.24, 0), T.metal, [1.45,0.72,0.28], {});  /* fuselage */
+  box(x,0.74+bob,z, 0.24,0.14,0.24, null, [2.0,1.95,1.85]);                              /* ogive */
+  box(x,0.16+bob,z, 0.46,0.05,0.14, null, [1.25,0.28,0.22]);                             /* ailerons */
+  box(x,0.16+bob,z, 0.14,0.05,0.46, null, [1.25,0.28,0.22]);
+  box(x,0.10+bob,z, 0.20,0.14,0.20, null, [2.2,1.6,0.35], {emit:1.0});                    /* flamme */
+  if(Math.floor(t*3)%3===0) box(x,0.95+Math.sin(t*4)*0.06,z, 0.12,0.12,0.12, null, [2.2,1.4,0.3], {emit:1.0});
+}
+
 /* ── v0.8 : torpille laveuse (cylindre + ogive rouge) ── */
 function drawTorpille(o,t){
   var x=o.gx-7, z=o.gy-6;
@@ -2192,8 +2326,43 @@ function drawPolluters(t){
     if(p.type==='gull') drawGull(p,t);
     else if(p.type==='dog') drawDog(p,t);
     else if(p.type==='raccoon') drawRaccoon(p,t);
+    else if(p.type==='skeleton') drawSkeleton(p,t);
     else drawDirtyHuman(p,t);
   }
+}
+
+/* ── v0.16 : SQUELETTE DE DINOSAURE (musée) — os blanchis, laisse des os ── */
+function drawSkeleton(p,t){
+  var x=p.x, z=p.z, ry=p.dir, A={ry:ry};
+  var bone=[2.30,2.25,2.05], boneD=[1.55,1.50,1.35], boneL=[2.55,2.52,2.40];
+  var walk=Math.sin(t*3.4+p.step)*0.05;
+  var ex=Math.sin(ry), ez=Math.cos(ry);
+  drawMesh(QUAD_XZ, trs(x,0.02,z,0.62,1,0.62,0), T.suds, [0.05,0.05,0.06], {unlit:true, alpha:0.30});
+  /* colonne vertébrale + côtes */
+  box(x,0.42+walk,z, 0.12,0.10,0.56, T.noise, bone, A);
+  box(x,0.52+walk,z+0.02, 0.09,0.09,0.46, T.noise, boneL, A);
+  for(var r=0;r<4;r++){
+    var fr=-0.20+r*0.13;
+    box(x+ex*fr,0.40+walk,z+ez*fr, 0.46,0.055,0.055, T.noise, boneD, A);
+    box(x+ex*fr,0.30+walk,z+ez*fr, 0.52,0.05,0.05, T.noise, boneD, A);
+  }
+  /* crâne + mâchoire + œil + dents */
+  var hx=x+ex*0.42, hz=z+ez*0.42;
+  box(hx,0.50+walk,hz, 0.26,0.20,0.30, T.noise, bone, A);
+  box(hx+ex*0.14,0.40+walk,hz+ez*0.14, 0.18,0.08,0.22, T.noise, boneL, A);      /* museau */
+  box(hx+ex*0.24,0.36+walk,hz+ez*0.24, 0.10,0.05,0.14, T.noise, boneD, A);
+  box(hx+ex*0.05+0.07,0.55+walk,hz+ez*0.05, 0.05,0.06,0.05, null, [0.06,0.05,0.05], A); /* orbite */
+  box(hx+ex*0.05-0.07,0.55+walk,hz+ez*0.05, 0.05,0.06,0.05, null, [0.06,0.05,0.05], A);
+  /* pattes (4) */
+  box(x+0.20,0.18+walk,z+0.16, 0.075,0.34,0.075, T.noise, bone, A);
+  box(x-0.20,0.18-walk,z+0.16, 0.075,0.34,0.075, T.noise, bone, A);
+  box(x+0.20,0.18-walk,z-0.16, 0.075,0.34,0.075, T.noise, bone, A);
+  box(x-0.20,0.18+walk,z-0.16, 0.075,0.34,0.075, T.noise, bone, A);
+  /* queue */
+  box(x-ex*0.40,0.40+walk,z-ez*0.40, 0.10,0.09,0.20, T.noise, boneD, A);
+  box(x-ex*0.58,0.34+walk,z-ez*0.58, 0.07,0.07,0.16, T.noise, boneD, A);
+  /* aura « squelette » pour la lisibilité */
+  if(Math.floor(t*2.5)%4===0) box(x,0.86+Math.sin(t*3.5)*0.05,z, 0.09,0.09,0.09, null, [0.85,0.95,1.15], {emit:0.8});
 }
 
 /* ── taches laissees par les pollueurs (fiente blanche, tas, dechets) ── */
@@ -2206,6 +2375,12 @@ function drawMarks(){
     } else if(m.kind==='mound'){
       box(x,0.055,z, 0.25,0.11,0.21, T.fur, [0.78,0.52,0.28], {ry:m.ry});
       box(x-0.07,0.105,z+0.04, 0.13,0.07,0.11, T.fur, [0.58,0.37,0.20], {ry:m.ry});
+    } else if(m.kind==='bones'){
+      /* tas d'OS laissé par un squelette de dinosaure */
+      box(x-0.06,0.05,z+0.02, 0.30,0.055,0.075, T.noise, [2.25,2.20,1.95], {ry:m.ry});
+      box(x+0.10,0.045,z-0.07, 0.22,0.050,0.065, T.noise, [2.10,2.05,1.80], {ry:m.ry+0.9});
+      box(x-0.12,0.042,z-0.11, 0.10,0.075,0.10, T.noise, [2.35,2.30,2.10], {ry:m.ry+0.4});  /* tête d'os */
+      box(x+0.14,0.075,z+0.10, 0.14,0.11,0.05, T.noise, [2.15,2.10,1.90], {ry:m.ry+1.5});   /* côte */
     } else if(m.kind==='trash'){
       box(x,0.055,z, 0.14,0.10,0.14, T.noise, [2.25,0.48,0.42], {ry:m.ry, emit:0.25});
       box(x+0.14,0.040,z-0.06, 0.10,0.05,0.10, T.noise, [2.40,2.35,2.20], {ry:m.ry+1.1});
@@ -2563,6 +2738,8 @@ function drawPusher(m){
   /* ── bonus au sol ── */
   if(soap) drawSoap(soap,tNow);
   if(torp) drawTorpille(torp,tNow);
+  for(var w0=0;w0<waters.length;w0++) drawWater(waters[w0],tNow);
+  for(var r0=0;r0<rockets.length;r0++) drawRocket(rockets[r0],tNow);
   for(var c0=0;c0<coins.length;c0++) drawCoin(coins[c0],tNow);
 
   /* ── grand-mere ── */
@@ -2614,7 +2791,7 @@ function startMove(m,di){
   m.angle=Math.atan2(d[0],d[1]);
   m.t=0; m.moving=true;
   /* v0.8 : savon x1,6 / colere de la grand-mere x0,5 */
-  var sp=(m.soapT>0?SAVON_VITESSE_MUL:1)*(m.slowT>0?0.5:1)*(m.speedMul||1);
+  var sp=(m.soapT>0?SAVON_VITESSE_MUL:1)*(m.slowT>0?0.5:1)*(m.speedMul||1)*(m.rocketT>0?1.9:1);
   m.moveTime=MOVE_TIME/sp;
   if(m===player) beep(220,0.03,0.03);
   return true;
@@ -2638,10 +2815,19 @@ function arrive(m){
     }
   } else if(cells[i]===0){
     /* v0.9 : une case sale peut demander 1 ou 2 passages (niveau 4) */
+    /* v0.16 : le reservoir d'eau du joueur se vide à chaque case lavée.
+       Réservoir vide = plus aucun lavage : il faut aller chercher une bonbonne. */
+    if(m===player && player.water<=0){
+      if(!waterWarn || timeNow()-waterWarn>1.2){ waterWarn=timeNow(); beep(120,0.10,0.05); }
+      return;
+    }
     cleanHits[i]++;
     if(cleanHits[i]>=LV.passes){
       cleanHits[i]=0;
-      if(m===player){ cells[i]=2; score++; }
+      if(m===player){
+        cells[i]=2; score++;
+        player.water=Math.max(0, player.water - (player.rocketT>0?0.012:0.045));
+      }
       else { cells[i]=4; botScore++; }   /* v0.14 : trace verte */
       m._dirty=true;
     } else {
@@ -2658,6 +2844,36 @@ function arrive(m){
 }
 function removeNest(gx,gy){
   for(var i=nests.length-1;i>=0;i--) if(nests[i].gx===gx&&nests[i].gy===gy) nests.splice(i,1);
+}
+
+function updatePickups(dt){
+  /* respawn des bonbonnes d'eau */
+  if(waters.length<EAU_BONBONNES){
+    waterRespawn[0]-=dt;
+    if(waterRespawn[0]<=0){
+      var p=randFreeCell(2,player);
+      if(p){ waters.push({gx:p[0],gy:p[1],t:0}); waterRespawn[0]=EAU_REAPPARITION; }
+      else waterRespawn[0]=2.0;
+    }
+  }
+  /* respawn de la fusée */
+  if(rockets.length<FUSEE_NB){
+    rocketRespawn[0]-=dt;
+    if(rocketRespawn[0]<=0){
+      var q=randFreeCell(3,bot);
+      if(q){ rockets.push({gx:q[0],gy:q[1],t:0}); rocketRespawn[0]=FUSEE_REAPPARITION; }
+      else rocketRespawn[0]=2.0;
+    }
+  }
+  for(var i=0;i<waters.length;i++) waters[i].t+=dt;
+  for(var j=0;j<rockets.length;j++) rockets[j].t+=dt;
+  pickWaters(player); pickWaters(bot);
+  pickRockets(player);
+  /* la fusée s'éteint */
+  if(player.rocketT>0){
+    player.rocketT-=dt;
+    if(player.rocketT<=0){ player.rocketT=0; beep(200,0.12,0.04); }
+  }
 }
 
 function updateMachines(dt){
@@ -3021,6 +3237,12 @@ window.addEventListener('keydown',function(e){
   var di=keyMap[k];
   if(di===undefined) return;
   e.preventDefault();
+  /* ═══ v0.16 : DÉPLACEMENT STRICTEMENT CASE PAR CASE ═══
+     Un appui = une case. Les répétitions automatiques du clavier
+     (maintien de la touche) sont IGNORÉES… sauf pendant une FUSÉE,
+     où le déplacement redevient continu tant qu'elle est active. */
+  var rocket = (mode==='play' && player.rocketT>0);
+  if(e.repeat && !rocket) return;
   heldDir=di;
   if(mode!=='play') return;
   if(player.stun>0) return;
@@ -3099,6 +3321,126 @@ function hudStars(x,y,n,on){
   hud.fillText(s,x,y);
 }
 
+
+/* ═════════ v0.16 : PORTRAITS 2D PIXEL ART (esprit Street Fighter II) ═════════
+   Les écrans de choix n'utilisent plus le modèle 3D : ce sont de vrais
+   portraits 2D dessinés au pixel, avec ombrage 2 tons + contour, comme sur
+   les écrans de sélection des jeux de baston d'antan. */
+function pxr(x,y,w,h,col){ hud.fillStyle=col; hud.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); }
+function shade(col,k,add){
+  var a=add||0;
+  return 'rgb('+Math.max(0,Math.min(255,Math.round(col[0]*255*k+a)))+','
+              +Math.max(0,Math.min(255,Math.round(col[1]*255*k+a)))+','
+              +Math.max(0,Math.min(255,Math.round(col[2]*255*k+a)))+')';
+}
+/* portrait : x,y = coin haut-gauche, u = taille d'un pixel */
+function drawPortrait(C,x,y,u){
+  var suit={r:'rgb('+Math.round(C.suit[0]*200)+','+Math.round(C.suit[1]*200)+','+Math.round(C.suit[2]*200)+')'};
+  var suitD=shade(C.suit,0.72,0), suitL=shade(C.suit,1.10,10);
+  var skin=shade(C.skin,1.0,0), skinD=shade(C.skin,0.80,0), skinL=shade(C.skin,1.10,12);
+  var hair=shade([0.28,0.20,0.15],1.0,0), hairD=shade([0.22,0.15,0.11],1.0,0);
+  var cap=shade(C.cap,1.0,0), capD=shade(C.cap,0.74,0);
+  var OUT='#0b0d11', P='#f2f2ee', EYE='#101014', MOUTH=shade([0.55,0.22,0.20],1.0,0);
+  var team = (C.id==='chef') ? '#8e4bd6' : (C.id==='vet' ? '#3f9a4e' : (C.id==='rob' ? '#5cc8ff' : '#ff8a2a'));
+  function R(gx,gy,gw,gh,col){ pxr(x+gx*u, y+gy*u, gw*u, gh*u, col); }
+
+  /* fond (halo derrière le buste) */
+  R(1,1,20,22,'rgba(255,255,255,0.045)');
+  R(2,1,18,22,'rgba(120,190,255,0.05)');
+  /* épaules / torse / tablier */
+  R(3,19,16,3, OUT);                     /* contour bas */
+  R(4,18,14,4, suitD);
+  R(5,17,12,5, suit.r);
+  R(8,18,6,4, '#f4f4ee');                /* tablier */
+  R(8,18,6,1, '#ffffff');
+  R(6,17,3,2, suitD); R(13,17,3,2, suitD);  /* épaules ombrées */
+  R(10,15,3,2, skinD);                   /* cou */
+  /* tête : largeur par ligne (buste 3/4) */
+  var HW=[[7,8],[5,12],[4,14],[4,14],[3,16],[3,16],[3,16],[4,14],[4,14],[5,12],[6,10]];
+  for(var i=0;i<HW.length;i++){
+    R(HW[i][0]-1, 3+i, HW[i][1]+2, 1, OUT);       /* contour */
+  }
+  for(var j=0;j<HW.length;j++){
+    R(HW[j][0], 3+j, HW[j][1], 1, skin);
+  }
+  /* ombrage côté droit + lumière côté gauche */
+  for(var k=0;k<HW.length;k++){ R(HW[k][0]+HW[k][1]-2, 3+k, 2, 1, skinD); }
+  R(5,4,3,1, skinL); R(5,5,2,1, skinL);
+  /* cheveux (nuque + mèches) */
+  R(4,3,14,2, hair); R(3,4,2,3, hair); R(17,4,2,3, hairD);
+  R(4,5,2,2, hairD); R(16,5,2,2, hairD);
+  /* yeux : blanc + pupille + sourcil */
+  R(6,7,3,2, P); R(7,7,1,2, EYE);
+  R(12,7,3,2, P); R(13,7,1,2, EYE);
+  R(6,6,3,1, hairD); R(12,6,3,1, hairD);
+  /* nez + bouche */
+  R(10,9,2,1, skinD);
+  R(8,11,5,1, MOUTH); R(9,12,3,1, shade([0.45,0.18,0.18],1,0));
+  /* casquette : calotte + bandeau équipe + visière */
+  R(3,2,16,2, OUT);
+  R(4,1,14,2, cap); R(4,2,14,1, capD);
+  R(3,3,16,1, team);
+  R(2,3,3,1, capD); R(17,3,3,1, capD);
+  R(1,3,4,1, '#14161b');                /* visière sombre qui dépasse à gauche */
+  R(18,3,4,1, '#14161b');
+  R(9,0,4,1, capD);                     /* bouton */
+  /* accessoires spécifiques */
+  if(C.id==='chef'){                     /* lunettes */
+    R(5,7,4,2,'rgba(190,235,255,0.55)'); R(11,7,4,2,'rgba(190,235,255,0.55)');
+    R(9,7,2,1,'#0d1015');
+  }
+  if(C.id==='vet'){                      /* moustache + favoris */
+    R(8,10,5,1,'#2a1d14'); R(6,8,1,3,'#2a1d14'); R(15,8,1,3,'#2a1d14');
+  }
+  if(C.id==='rob'){                      /* antenne + visière lumineuse */
+    R(10,0,1,2,'#9fe0ff'); R(9,-1,3,1,'#ffd45a');
+    R(6,7,9,2,'rgba(90,200,255,0.35)');
+  }
+  if(C.id==='stg'){                      /* badge stagiaire */
+    R(15,19,3,2,'#ffd45a'); R(15,19,3,1,'#fff1b8');
+  }
+  /* contour final bas de la tête */
+  R(4,13,14,1, 'rgba(11,13,17,0.55)');
+}
+
+/* ── machine vue de PROFIL (2D pixel), palette par véhicule ── */
+function drawVehSprite(V,x,y,u){
+  var body=shade(V.chassis,1.0,0), bodyD=shade(V.chassis,0.70,0), bodyL=shade(V.chassis,1.12,10);
+  var basin=shade(V.basin,1.0,0), accent=shade(V.accent,1.0,0);
+  var OUT='#0b0d11', TYRE='#14161a', GLASS='rgba(150,215,255,0.85)', METAL='#c9d2da';
+  function R(gx,gy,gw,gh,col){ pxr(x+gx*u, y+gy*u, gw*u, gh*u, col); }
+  var W=26, H=14;
+  R(0,0,W,H,'rgba(255,255,255,0.04)');
+  /* châssis : profil avec nez à droite */
+  R(1,7,24,1, OUT);
+  R(2,3,20,4, OUT);
+  R(2,4,19,3, body);
+  R(2,6,19,1, bodyD);
+  R(3,4,7,1, bodyL);
+  /* bac à eau à l'arrière */
+  R(2,2,7,3, OUT); R(3,3,5,2, basin); R(3,3,5,1, shade(V.basin,1.18,14));
+  R(3,4,5,1, shade(V.basin,0.82,0));
+  /* bande de danger + plaque */
+  R(8,5,13,1, accent);
+  R(10,6,6,1, METAL);
+  /* cabine / écran de contrôle */
+  R(12,2,6,3, OUT); R(13,3,4,2,'#243447'); R(14,3,2,1,'#4de08a');
+  /* raclette avant (nez) + brosse */
+  R(22,6,3,2, OUT); R(22,6,3,1, accent);
+  R(21,9,4,1,'#9aa4ae');
+  /* roues */
+  R(4,9,4,4, OUT); R(5,10,2,2, TYRE); R(5,10,2,1,'#3b4048');
+  R(17,9,4,4, OUT); R(18,10,2,2, TYRE); R(18,10,2,1,'#3b4048');
+  /* guidon / arceau */
+  R(2,0,1,4, METAL); R(2,0,12,1, METAL); R(13,0,1,3, METAL);
+  /* reflet vitre + ombre au sol */
+  R(13,3,1,2, GLASS);
+  R(1,13,24,1,'rgba(0,0,0,0.45)');
+  if(V.id==='mono'){ R(20,8,3,2, accent); R(9,8,8,1,'#8b939c'); }   /* monobrosse : disque large */
+  if(V.id==='indus'){ R(2,1,10,2, OUT); R(3,1,8,2, shade(V.basin,0.9,0)); }  /* grande cuve */
+  if(V.id==='mini'){ R(1,6,2,3, OUT); R(23,5,2,3, OUT); }            /* petit gabarit */
+}
+
 /* ═════════ v0.14 : ECRAN DE CHOIX DU PERSONNAGE ═════════ */
 function drawPickGrid(title, subtitle, items, idx, kind){
   var t=performance.now()/1000;
@@ -3107,41 +3449,31 @@ function drawPickGrid(title, subtitle, items, idx, kind){
   hudText('MOB RACER',320,26,24,'#eafcff','center');
   hudText(title,320,50,13,'#ffd45a','center');
   hudText(subtitle,320,66,8,'#8fa6b4','center','normal');
-  var CW=286, CH=118, GX=26, GY=80;
+  var CW=286, CH=124, GX=26, GY=76;
   for(var i=0;i<items.length;i++){
     var it=items[i];
-    var cx=GX+(i%2)*(CW+12), cy=GY+((i/2)|0)*(CH+8);
+    var cx=GX+(i%2)*(CW+12), cy=GY+((i/2)|0)*(CH+6);
     var on=(i===idx);
     hud.fillStyle = on ? 'rgba(26,44,58,0.98)' : 'rgba(11,16,23,0.94)';
     hud.fillRect(cx,cy,CW,CH);
     hud.fillStyle = on ? (Math.floor(t*4)%2?'#ffd45a':'#ffeaa0') : 'rgba(120,150,170,0.5)';
     hud.fillRect(cx,cy,CW,3); hud.fillRect(cx,cy+CH-3,CW,3);
     hud.fillRect(cx,cy,3,CH); hud.fillRect(cx,cx+CW-3,3,CH);
-    /* aperçu : personnage ou machine */
-    var px0=cx+30, py0=cy+CH-26;
-    if(kind==='char'){
-      hud.fillStyle='rgb('+Math.round(it.suit[0]*190)+','+Math.round(it.suit[1]*190)+','+Math.round(it.suit[2]*190)+')';
-      hud.fillRect(px0-9,py0-30,18,20);                       /* combinaison */
-      hud.fillStyle='rgb('+Math.round(it.skin[0]*190)+','+Math.round(it.skin[1]*190)+','+Math.round(it.skin[2]*190)+')';
-      hud.fillRect(px0-6,py0-40,12,10);                        /* tête */
-      hud.fillStyle='rgb('+Math.round(it.cap[0]*190)+','+Math.round(it.cap[1]*190)+','+Math.round(it.cap[2]*190)+')';
-      hud.fillRect(px0-8,py0-44,16,5);                         /* casquette */
-      hud.fillStyle='rgb('+Math.round(it.pants[0]*190)+','+Math.round(it.pants[1]*190)+','+Math.round(it.pants[2]*190)+')';
-      hud.fillRect(px0-9,py0-10,18,10);                        /* jambes */
-    } else {
-      hud.fillStyle='rgb('+Math.round(it.chassis[0]*150)+','+Math.round(it.chassis[1]*150)+','+Math.round(it.chassis[2]*150)+')';
-      hud.fillRect(px0-18,py0-16,36,16);                       /* châssis */
-      hud.fillStyle='rgb('+Math.round(it.basin[0]*190)+','+Math.round(it.basin[1]*190)+','+Math.round(it.basin[2]*190)+')';
-      hud.fillRect(px0-12,py0-28,24,12);                       /* bac */
-      hud.fillStyle='rgba(255,255,255,0.85)';
-      hud.fillRect(px0-2,py0-36,4,8);                          /* arceau */
-    }
-    hudText(it.name,cx+56,cy+22,11,on?'#ffffff':'#c3d5e0');
-    hudText(it.tag,cx+56,cy+38,7,on?'#7ad8f0':'#6d8492','left','normal');
-    var lines=hudWrap(it.desc,52);
-    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],cx+56,cy+54+d*9,7,on?'#cfe3ff':'#8ea3b0','left','normal');
-    hudText(it.perk,cx+12,cy+CH-14,8,on?'#9fe0b0':'#6d8492');
-    if(on) hudText('▶',cx+CW-14,cy+16,12,'#ffd45a','center');
+    /* ── v0.16 : APERÇU 2D PIXEL, dans son cadre, à gauche ── */
+    hud.fillStyle = on ? 'rgba(8,16,24,0.9)' : 'rgba(6,10,15,0.85)';
+    hud.fillRect(cx+6, cy+8, 70, CH-16);
+    hud.strokeStyle = on ? 'rgba(255,212,90,0.45)' : 'rgba(120,150,170,0.25)';
+    hud.lineWidth=1; hud.strokeRect(cx+6.5, cy+8.5, 69, CH-17);
+    if(kind==='char'){ drawPortrait(it, cx+9, cy+10, 3.0); }
+    else { drawVehSprite(it, cx+6, cy+40, 3.1); }
+    /* ── texte à DROITE du portrait (plus aucun chevauchement) ── */
+    var tx=cx+84;
+    hudText(it.name,tx,cy+24,11,on?'#ffffff':'#c3d5e0');
+    hudText(it.tag,tx,cy+40,7,on?'#7ad8f0':'#6d8492','left','normal');
+    var lines=hudWrap(it.desc,30);
+    for(var d=0;d<lines.length && d<2;d++) hudText(lines[d],tx,cy+56+d*10,7,on?'#cfe3ff':'#8ea3b0','left','normal');
+    hudText(it.perk,tx,cy+CH-14,8,on?'#9fe0b0':'#6d8492');
+    if(on){ hud.fillStyle='#ffd45a'; hud.fillRect(cx+6, cy+8, 3, CH-16); }
   }
   hudText('FLECHES : CHOISIR   ·   ENTREE : VALIDER   ·   ECHAP : TITRE',320,338,8,'#cfe3ff','center','normal');
 }
@@ -3274,6 +3606,15 @@ function drawAttract(){
 
 function drawHUD(){
   hud.setTransform(1.5,0,0,1.5,0,0);   /* v0.15 : HUD dessiné en 640×360, rendu en 960×540 */
+  /* v0.16 : panneau d'état lisible sous le jeu (portrait mobile) */
+  if(window.__padOnFlag && (performance.now()|0)%4===0 && typeof stPct!=='undefined' && stPct){
+    var pctTxt = Math.round((totalCleanable>0 ? (totalCleanable-dirtyLeft)/totalCleanable : 1)*100)+'%';
+    stPct.textContent=pctTxt;
+    stTime.textContent=Math.max(0,Math.ceil(timeLeft));
+    stMe.textContent=score;
+    stBot.textContent=botScore;
+    stWater.textContent=Math.round(player.water*100)+'%';
+  }
   hud.clearRect(0,0,640,360);
   hudAccent();                       /* v0.11 : accent couleur de la salle */
   /* v0.9 : ecrans plein HUD */
@@ -3302,6 +3643,24 @@ function drawHUD(){
   hud.strokeStyle='rgba(255,255,255,0.22)'; hud.lineWidth=1; hud.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
 
   /* v0.14 : code couleur cohérent avec les traces au sol — BLEU = toi, VERT = Laya */
+  /* v0.16 : JAUGE D'EAU (le réservoir se vide à chaque case lavée) */
+  var wx0=196, wy0=300;
+  hudText('EAU',10,wy0+6,8,'#9fd8f0');
+  hud.fillStyle='rgba(255,255,255,0.14)'; hud.fillRect(40,wy0,86,9);
+  hud.fillStyle = player.water>0.35 ? '#3fb6f0' : (player.water>0 ? '#f0a83c' : '#e05555');
+  hud.fillRect(40,wy0,Math.round(86*player.water),9);
+  for(var wl=1;wl<4;wl++){ hud.fillStyle='rgba(0,0,0,0.45)'; hud.fillRect(40+Math.round(86*wl/4),wy0,1,9); }
+  hud.strokeStyle='rgba(255,255,255,0.25)'; hud.lineWidth=1; hud.strokeRect(40.5,wy0+0.5,85,8);
+  if(player.water<=0){
+    hudText('EAU VIDE — BONBONNE BLEUE',130,wy0+6,8,(Math.floor(performance.now()/300)%2)?'#ff6a5a':'#ffd45a');
+  }
+  /* v0.16 : fusée active */
+  if(player.rocketT>0){
+    hud.fillStyle='rgba(255,170,50,0.85)';
+    hud.fillRect(232,wy0,Math.round(70*Math.min(1,player.rocketT/FUSEE_DUREE)),9);
+    hudText('FUSEE',306,wy0+6,8,'#ffd45a');
+  }
+
   hud.fillStyle='#5fbdf0'; hud.fillRect(196,31,6,6);
   hudText('TOI '+score,206,35,8,'#bfe6ff');
   hud.fillStyle='#5fd07a'; hud.fillRect(258,31,6,6);
@@ -3368,7 +3727,7 @@ function drawHUD(){
   hudText('NIDS '+nidLeft,258,350,8,'#c39a63');
   if(LV.passes>1) hudText('LAVAGE x'+LV.passes,318,350,8,'#ff9a7a');
 
-  hudText((window.__padOnFlag ? 'STICK : DIRECTION  ·  A : TORPILLE  ·  B : VALIDER' : 'FLECHES/WASD  ·  E TORPILLE  ·  R REJOUER  ·  M SON'),628,350,7,'rgba(190,215,225,0.80)','right','normal');
+  hudText((window.__padOnFlag ? 'FLECHES : DIRECTION  ·  A : TORPILLE  ·  B : VALIDER' : 'FLECHES/WASD  ·  E TORPILLE  ·  R REJOUER  ·  M SON'),628,350,7,'rgba(190,215,225,0.80)','right','normal');
 
   if(mode==='over'||mode==='win'){
     hud.fillStyle='rgba(4,7,10,0.82)';
@@ -3432,8 +3791,11 @@ var cpuMs=0, cpuN=0, tFrame=0, lastLoggedDraws=0;
      · PORTRAIT → le jeu occupe le haut (16:9), la manette occupe le bas ;
      · PAYSAGE  → le jeu remplit l'écran, la manette flotte dans les coins.
    Calcul via visualViewport (barres d'URL) + safe-area (encoche). */
+var stPct=document.getElementById('stPct'), stTime=document.getElementById('stTime'),
+    stMe=document.getElementById('stMe'), stBot=document.getElementById('stBot'),
+    stWater=document.getElementById('stWater');
 var padEl=document.getElementById('pad'), knobEl=document.getElementById('knob'),
-    stickEl=document.getElementById('stick');
+    stickEl=document.getElementById('stick');   /* v0.16 : plus utilisé (D-PAD) */
 var PAD_ON=false, isTouch=false;
 var DEAD=0.20;                      /* zone morte du stick */
 var DIRKEYS={up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'};
@@ -3526,6 +3888,7 @@ if(btnFull) btnFull.addEventListener('click', function(){
 
 /* ── JOYSTICK 8 directions (zone morte + hystérésis + multi-touch) ── */
 function stickDir(dx,dy){
+  if(!stickEl) return null;
   var R=stickEl.getBoundingClientRect(), dead=R.width*DEAD;
   if(Math.sqrt(dx*dx+dy*dy) < dead) return null;
   var ang=Math.atan2(dy,dx);                  /* 0 = droite, PI/2 = bas */
@@ -3546,11 +3909,13 @@ function applyStick(dx,dy){
   if(nd.indexOf('right')>=0) sendKey(DIRKEYS.right, true);
 }
 function knobTo(dx,dy){
+  if(!stickEl||!knobEl) return;
   var R=stickEl.getBoundingClientRect(), max=R.width*0.30;
   var d=Math.sqrt(dx*dx+dy*dy), k=(d>max)? max/d : 1;
   knobEl.style.transform='translate(calc(-50% + '+(dx*k)+'px), calc(-50% + '+(dy*k)+'px))';
 }
 function stickStart(ev){
+  if(!stickEl) return;
   ev.preventDefault();
   if(stickState.id!==null) return;
   stickState.id=ev.pointerId;
@@ -3572,11 +3937,34 @@ function stickEnd(ev){
   knobEl.style.transform='translate(-50%,-50%)';
   for(var i=0;i<ALLDIRS.length;i++) sendKey(DIRKEYS[ALLDIRS[i]], false);
 }
-stickEl.addEventListener('pointerdown', stickStart);
-stickEl.addEventListener('pointermove', stickMove);
-stickEl.addEventListener('pointerup', stickEnd);
-stickEl.addEventListener('pointercancel', stickEnd);
-stickEl.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+/* v0.16 : le joystick analogique est remplacé par un D-PAD 4 FLÈCHES cliquables
+   (José : « le joystick n'est pas adapté, des flèches cliquables seraient plus
+   adaptés »). Chaque appui = UNE case, exactement comme au clavier. */
+(function(){
+  var btns=document.querySelectorAll('.dbtn');
+  for(var i=0;i<btns.length;i++){
+    (function(el){
+      var key=el.getAttribute('data-key');
+      function press(ev){
+        ev.preventDefault();
+        if(el.classList.contains('down')) return;
+        el.classList.add('down');
+        sendKey(key,true);
+      }
+      function release(ev){
+        if(ev) ev.preventDefault();
+        if(!el.classList.contains('down')) return;
+        el.classList.remove('down');
+        sendKey(key,false);
+      }
+      el.addEventListener('pointerdown', press);
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('pointerleave', release);
+      el.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    })(btns[i]);
+  }
+})();
 
 /* ── TAP sur l'écran de jeu = valider (Entrée) : rend le jeu jouable
    entièrement au doigt (titre → sélection → manche suivante). */
@@ -3599,6 +3987,17 @@ window.__playerScreen = function(){
   return { x: Math.round(r.left + p.x*(OW/GW)*s), y: Math.round(r.top + p.y*(OH/GH)*s) };
 };
 window.__endRound = function(){ timeLeft=0.01; };
+window.__setRocket = function(sec){ player.rocketT = sec; };
+window.__state = function(){
+  return {
+    mode: mode,
+    player: {gx:player.gx, gy:player.gy, water:player.water, rocketT:player.rocketT, moving:!!player.moving},
+    bot:    {gx:bot.gx, gy:bot.gy},
+    waters: waters.length, rockets: rockets.length,
+    score: score, botScore: botScore,
+    polluters: polluters.map(function(p){return p.type;})
+  };
+};
 window.__cellStates = function(){
   var c=[0,0,0,0,0];
   for(var i=0;i<cells.length;i++) c[cells[i]]++;
@@ -3621,6 +4020,7 @@ function frame(now){
     demoT-=dt;
     if(demoT<=0) resetGame('attract');
   }
+  updatePickups(dt);      /* v0.16 : bonbonnes d'eau + fusée */
   updateMachines(dt);
   updateEntities(dt);
 
