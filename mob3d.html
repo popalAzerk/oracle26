@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MOB RACER 3D v1.8 — passe de contour pixel art</title>
+<title>MOB RACER 3D v2.0 — rendu 720x405 agrandi ×3, palette et trame 16-bit</title>
 <style>
   *{ box-sizing:border-box; }
   html,body{
@@ -260,7 +260,7 @@ function nmat(model){
 
 /* ---------- 2. ETAT GLOBAL / CONSTANTES ---------- */
 var COLS=15, ROWS=13;
-var GW=2160, GH=1215;          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
+var GW=720, GH=405;   /* v2.0 : 3D rendue en 720×405 puis agrandie ×3 ENTIER en NEAREST (2160×1215) — de vrais gros pixels, sans échelle bâtarde */          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
 var OW=2160, OH=1215;         // canvas final (960×540 → ×1,5)
 
 var glCanvas=document.getElementById('gl');
@@ -300,6 +300,8 @@ var FS = [
 'uniform vec3 uLight;',
 'uniform float uVig;',
 'uniform float uOutline;',
+'uniform float uQuant;',
+'uniform sampler2D uBayer;',
 'uniform vec2 uTexel;',
 'uniform vec4 uGrade;',
 'varying vec3 vNor;',
@@ -315,6 +317,12 @@ var FS = [
 '  vec3 lum = vec3(dot(col, vec3(0.299,0.587,0.114)));',
 '  col = mix(lum, col, uGrade.w) * uGrade.rgb;',
 '  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);',
+'  /* v1.9 : PALETTE 7 NIVEAUX + TRAMAGE ORDONNE 4x4 (discipline des jeux 16-bit) */',
+'  if(uQuant > 0.5){',
+'    float th = texture2D(uBayer, gl_FragCoord.xy * 0.25 / 4.0).r;',
+'    float L = 12.0;',
+'    col = floor(col * L + (th - 0.5) * 0.62) / L;',
+'  }',
 '  /* v1.8 : CONTOUR 1 texel - gradient de luminance sur la couleur deja rendue */',
 '  if(uOutline > 0.5){',
 '    float c0 = dot(col, vec3(0.299,0.587,0.114));',
@@ -323,7 +331,7 @@ var FS = [
 '    float cu = dot(texture2D(uTex, vUV - vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
 '    float cd = dot(texture2D(uTex, vUV + vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
 '    float gg = max(max(abs(c0-cl),abs(c0-cr)), max(abs(c0-cu),abs(c0-cd)));',
-'    col = mix(col, col * 0.46, smoothstep(0.045, 0.15, gg));',
+'    col = mix(col, col * 0.38, smoothstep(0.020, 0.085, gg));',
 '  }',
 '  /* v1.7 : scanlines CRT calculées sur le GPU (le remplissage Canvas coûtait 3 ms) */',
 '  col *= 0.945 + 0.055 * step(1.0, mod(floor(gl_FragCoord.y * 0.5), 2.0));',
@@ -367,6 +375,8 @@ var U = {
   light: gl.getUniformLocation(prog,'uLight'),
   vig: gl.getUniformLocation(prog,'uVig'),
   outline: gl.getUniformLocation(prog,'uOutline'),
+  quant: gl.getUniformLocation(prog,'uQuant'),
+  bayer: gl.getUniformLocation(prog,'uBayer'),
   texel: gl.getUniformLocation(prog,'uTexel'),
   grade: gl.getUniformLocation(prog,'uGrade')
 };
@@ -1150,7 +1160,8 @@ function drawMesh(m, model, tex, color, opt){
   gl.uniform1f(U.unlit, opt.unlit?1:0);
   gl.uniform1f(U.emit, opt.emit||0);
   gl.uniform1f(U.alpha, opt.alpha===undefined?1:opt.alpha);
-  gl.uniform1f(U.outline, 0);   /* contour uniquement à la passe finale */
+  gl.uniform1f(U.outline, 0);
+  gl.uniform1f(U.quant, 0);     /* palette + trame : passe finale uniquement */
   gl.uniform3f(U.color, color[0],color[1],color[2]);
   gl.uniform1f(U.vig, opt.vig?1:0);
   if(tex){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex); }
@@ -3542,9 +3553,30 @@ function drawPusher(m){
   if(drawCalls>maxDrawCalls) maxDrawCalls=drawCalls;   /* budget boites < 250 (plafonne a DRAW_BUDGET) */
 }
 
+
+/* matrice de Bayer 4x4 : tramage ordonné, celui des consoles 16-bit */
+var BAYER_TEX=(function(){
+  var M=[0,8,2,10, 12,4,14,6, 3,11,1,9, 15,7,13,5];
+  var c=document.createElement('canvas'); c.width=4; c.height=4;
+  var g=c.getContext('2d');
+  for(var y=0;y<4;y++) for(var x=0;x<4;x++){
+    var v=Math.round(M[y*4+x]/16*255);
+    g.fillStyle='rgb('+v+','+v+','+v+')'; g.fillRect(x,y,1,1);
+  }
+  var t=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  return t;
+})();
+
 function drawBlit(){
   gl.uniform4f(U.grade,1,1,1,1);   /* blit : pas d'étalonnage */
   gl.uniform1f(U.outline, 1);      /* v1.8 : contour actif sur la passe finale */
+  gl.uniform1f(U.quant, window.__noQuant ? 0 : 1);   /* v1.9 : palette 7 niveaux + trame Bayer */
   gl.uniform2f(U.texel, 1/GW, 1/GH);
   var id=ident();
   gl.uniformMatrix4fv(U.mvp,false,id);
@@ -3556,6 +3588,9 @@ function drawBlit(){
   gl.uniform1f(U.alpha,1);
   gl.uniform3f(U.color,1,1,1);
   gl.uniform1f(U.vig,1);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, BAYER_TEX);
+  gl.uniform1i(U.bayer, 1);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D,fbTex);
   bindMesh(QUAD_XY);
