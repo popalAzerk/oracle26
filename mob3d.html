@@ -4613,8 +4613,8 @@ function glossSphere(cx,cy,r){
     hud.fillStyle='rgb('+v+','+(v+2)+','+(v+8)+')';
     hud.beginPath(); hud.arc(cx,cy,i,0,Math.PI*2); hud.fill();
   }
-  hud.fillStyle='rgba(255,255,255,0.88)';
-  hud.beginPath(); hud.ellipse(cx-r*0.34, cy-r*0.42, r*0.30, r*0.17, -0.6, 0, Math.PI*2); hud.fill();
+  hud.fillStyle='rgba(255,255,255,0.55)';
+  hud.beginPath(); hud.ellipse(cx-r*0.40, cy-r*0.46, r*0.24, r*0.13, -0.6, 0, Math.PI*2); hud.fill();
   hud.fillStyle='rgba(255,255,255,0.30)';
   hud.beginPath(); hud.ellipse(cx-r*0.20, cy-r*0.55, r*0.11, r*0.06, -0.6, 0, Math.PI*2); hud.fill();
   hud.strokeStyle='rgba(150,190,230,0.55)'; hud.lineWidth=1;
@@ -4672,9 +4672,14 @@ function drawGarage(title, subtitle, items, idx, kind){
   hud.save();
   hud.beginPath(); hud.arc(scx,scy,sr-4,0,Math.PI*2); hud.clip();
   /* ombre de contact dans la sphère */
-  /* halo de vitrine : détache la machine du noir de la sphère */
-  hud.fillStyle='rgba(120,170,225,0.17)';
-  hud.beginPath(); hud.ellipse(scx, scy-4, vw*0.54, vh2*0.66, 0, 0, Math.PI*2); hud.fill();
+  /* lumière diffuse de la vitrine : dégradé radial, sans bord visible
+     (l'ancien halo était une ellipse à plat qui se lisait comme un cercle pâle) */
+  var gradL = hud.createRadialGradient(scx, scy-6, 3, scx, scy-6, sr*0.92);
+  gradL.addColorStop(0.00, 'rgba(148,188,232,0.20)');
+  gradL.addColorStop(0.45, 'rgba(120,164,214,0.10)');
+  gradL.addColorStop(1.00, 'rgba(120,164,214,0.00)');
+  hud.fillStyle = gradL;
+  hud.beginPath(); hud.arc(scx, scy-4, sr-4, 0, Math.PI*2); hud.fill();
   hud.fillStyle='rgba(0,0,0,0.60)';
   hud.beginPath(); hud.ellipse(scx, scy+vh2*0.5+2, vw*0.46, 6, 0, 0, Math.PI*2); hud.fill();
   drawVehSprite(V, scx-vw/2, scy-vh2/2+2, vw);
