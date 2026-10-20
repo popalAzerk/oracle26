@@ -280,12 +280,13 @@ var VS = [
 'uniform mat4 uMVP;',
 'uniform mat3 uNMat;',
 'uniform vec2 uUvScale;',
+'uniform vec2 uUvOff;',
 'varying vec3 vNor;',
 'varying vec2 vUV;',
 'void main(){',
 '  gl_Position = uMVP * vec4(aPos,1.0);',
 '  vNor = normalize(uNMat * aNor);',
-'  vUV = aUV * uUvScale;',
+'  vUV = aUV * uUvScale + uUvOff;',
 '}'
 ].join('\n');
 
@@ -366,6 +367,7 @@ var U = {
   mvp: gl.getUniformLocation(prog,'uMVP'),
   nmat: gl.getUniformLocation(prog,'uNMat'),
   uvScale: gl.getUniformLocation(prog,'uUvScale'),
+  uvOff: gl.getUniformLocation(prog,'uUvOff'),
   tex: gl.getUniformLocation(prog,'uTex'),
   useTex: gl.getUniformLocation(prog,'uUseTex'),
   unlit: gl.getUniformLocation(prog,'uUnlit'),
@@ -902,6 +904,41 @@ function makeTex(canvas,repeat){
   return t;
 }
 
+/* ═════════ v2.1 : FAÇADES DE RAYON GARNIES ═════════
+   Mesure : une gondole projette 30x18 px (buf 720), donc une tablette = 4-5 px de haut.
+   La QA a montré qu'aucun rendu 3D réduit ne survit à cette taille : il faut DESSINER
+   à la résolution cible. Ces 4 bandeaux (4 produits de 8x8 px) sont donc dessinés au
+   pixel : silhouettes variées, 2-3 teintes par produit, base sombre, ligne d'étagère.
+   Encodage palette + RLE (~650 car.), décodage synchrone : fichier unique respecté. */
+var SHELF_PAL='1a181e|3a363c|9c8038|cf803e|f2f0ea|feffff|fef9e4|be3932|fafbfe|f0e4c0|ced5df|f2c06f|c4c8d0|787c84|fffff8|ffd686|fffff6|f2f0e6|f4f0e4|d6d0c0|d0caba|fafdff|d4e8fa|5c7cba|686c74|-|7996aa|bdd5a1|e3c09a|b28269|fad2ea|b5a991';
+var SHELF_RLE='0111243126312631291102114b5c651102117b8c951102117bacb5110211c2d4c4d4c4d4c4d2110211ebfcg5110211hbbci5110211jb3ck5110211c2d4c4d4c4d4c4d2110211lje9110211m7cch9110211njj9110211c2d4c4d4c4d4c4d2110211os110211ps110211ps11021124b126b126b1291102115bg8m91102118bi8a9110211abk8q9110211c2d4c4d4c4d4c4d2110211eb6c45110211hb9c75110211jbbc75110211c2d4c4d4c4d4c4d2110211f7lcr9110211b7mcr911021137ncd9110211c2d4c4d4c4d4c4d2110211os110211ps110211ps11021134b136b136b1391102116be8691102119bh8s9110211bbj8t9110211c2d4c4d4c4d4c4d2110211gb58u9110211ib88u9110211kba8v9110211c2d4c4d4c4d4c4d211021147ecf911021177hcb911021177jc39110211c2d4c4d4c4d4c4d2110211os110211ps110211ps11021134b136b136b139110211lbm8e9110211cba8h9110211nbq8j9110211c2d4c4d4c4d4c4d2110211ebl8g9110211hbm8i9110211jbn8k9110211c2d4c4d4c4d4c4d211021157uc6911021187uc99110211a7vcb9110211c2d4c4d4c4d4c4d2110211os110211ps110211ps1101';
+var SHELF_TEX=null, SHELF_W=32, SHELF_H=64;
+function shelfVariantCanvas(v){
+  var pal=SHELF_PAL.split('|'), D='0123456789abcdefghijklmnopqrstuvwxyz';
+  var W=32, H=16, c=document.createElement('canvas'); c.width=W; c.height=H;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  var startRow=v*H, endRow=startRow+H;
+  var i=0, k=0;
+  while(k+1<SHELF_RLE.length){
+    var vi=D.indexOf(SHELF_RLE.charAt(k)), cnt=D.indexOf(SHELF_RLE.charAt(k+1)); k+=2;
+    var col=pal[vi];
+    for(var q=0;q<cnt;q++){
+      var row=(i/32)|0;
+      if(col!=='-' && row>=startRow && row<endRow){
+        g.fillStyle='#'+col;
+        g.fillRect(i%32, row-startRow, 1, 1);
+      }
+      i++;
+    }
+  }
+  return c;
+}
+var SHELF_TEXV=[null,null,null,null];
+function texShelf(v){
+  if(!SHELF_TEXV[v]) SHELF_TEXV[v] = makeTex(shelfVariantCanvas(v), false);
+  return SHELF_TEXV[v];
+}
+
 function texGlow(){
   var c=document.createElement('canvas'); c.width=c.height=128;
   var g=c.getContext('2d');
@@ -1084,6 +1121,7 @@ function bakeMesh(m, model, tex, color, opt){
   var key = (tex?tex.__id:0)+'|'+color[0].toFixed(2)+','+color[1].toFixed(2)+','+color[2].toFixed(2)
           + '|'+(opt.emit||0)+'|'+(opt.alpha===undefined?1:opt.alpha)+'|'+(opt.unlit?1:0)
           + '|'+(opt.uvScale?opt.uvScale[0]+','+opt.uvScale[1]:'1,1')
+          + '|'+(opt.uvOff?opt.uvOff[0].toFixed(3)+','+opt.uvOff[1].toFixed(3):'0,0')
           + '|'+(opt.vig?1:0);
   var b = bakeBuckets[key];
   if(!b){
@@ -1128,6 +1166,7 @@ function drawStaticProps(){
     gl.uniformMatrix4fv(U.mvp,false,PV);
     gl.uniformMatrix3fv(U.nmat,false,nmat(I));
     gl.uniform2f(U.uvScale, o.uvScale?o.uvScale[0]:1, o.uvScale?o.uvScale[1]:1);
+    gl.uniform2f(U.uvOff, o.uvOff?o.uvOff[0]:0, o.uvOff?o.uvOff[1]:0);
     gl.uniform1f(U.useTex, s2.tex?1:0);
     gl.uniform1f(U.unlit, o.unlit?1:0);
     gl.uniform1f(U.emit, o.emit||0);
@@ -1156,6 +1195,7 @@ function drawMesh(m, model, tex, color, opt){
   gl.uniformMatrix4fv(U.mvp,false,mvp);
   gl.uniformMatrix3fv(U.nmat,false,nmat(model));
   gl.uniform2f(U.uvScale, opt.uvScale?opt.uvScale[0]:1, opt.uvScale?opt.uvScale[1]:1);
+  gl.uniform2f(U.uvOff, opt.uvOff?opt.uvOff[0]:0, opt.uvOff?opt.uvOff[1]:0);
   gl.uniform1f(U.useTex, tex?1:0);
   gl.uniform1f(U.unlit, opt.unlit?1:0);
   gl.uniform1f(U.emit, opt.emit||0);
@@ -1482,17 +1522,17 @@ var CHARS=[
     perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
 ];
 var VEHICLES=[
-  { id:'auto', perk:'VITESSE 100 · ADHERENCE 100', name:'AUTOLAVEUSE 3000', tag:'LA CLASSIQUE',
-    desc:'Equilibree : vitesse et tenue de route moyennes.',
+  { id:'auto', perk:'VITESSE 100 · ADHERENCE 100', name:'LA PORTEUSE', tag:'LA SEULE OU ON S ASSOIT',
+    desc:'L autoportee : on s assoit, on tourne le volant, on ecrase tout.',
     chassis:[0.74,0.82,0.92], basin:[0.60,0.86,1.0], accent:[0.60,0.86,1.0], spd:1.0,  inertia:1.0 },
-  { id:'mono', perk:'VITESSE 116 · ADHERENCE 60', name:'MONOBROSSE XL',    tag:'RAPIDE MAIS GLISSANTE',
-    desc:'La plus rapide, mais elle glisse dans les virages.',
+  { id:'mono', perk:'VITESSE 116 · ADHERENCE 60', name:'LE PERCHOIR', tag:'ON CONDUIT DEBOUT',
+    desc:'Debout sur la plateforme : la plus rapide, mais elle glisse.',
     chassis:[1.0,0.96,0.88], basin:[1.0,0.72,0.30], accent:[1.0,0.72,0.30], spd:1.16, inertia:1.7 },
-  { id:'indus', perk:'VITESSE 88 · ADHERENCE 140', name:'L INDUSTRIEL', tag:'LOURD ET STABLE',
-    desc:'Lente, mais ne derape jamais. Ideale en patinoire.',
+  { id:'indus', perk:'VITESSE 88 · ADHERENCE 140', name:'LA BROSSEUSE XL', tag:'LARGE ET TENACE',
+    desc:'Large brosse : lente, mais elle ne derape jamais. Ideale en patinoire.',
     chassis:[0.86,0.90,0.94], basin:[0.52,0.62,0.72], accent:[0.52,0.62,0.72], spd:0.90, inertia:0.35 },
-  { id:'mini', perk:'VITESSE 108 · ADHERENCE 110', name:'LE MINI',          tag:'PETIT GABARIT',
-    desc:'Plus vive que la moyenne et bien plus maniable.',
+  { id:'mini', perk:'VITESSE 108 · ADHERENCE 110', name:'LA POUSSETTE', tag:'PETIT GABARIT',
+    desc:'Poussee a la main : vive, maniable, increvable.',
     chassis:[1.04,1.04,1.06], basin:[0.72,1.0,0.62], accent:[0.72,1.0,0.62], spd:1.08, inertia:0.75 }
 ];
 var charIdx=0, vehIdx=0;
@@ -2415,16 +2455,17 @@ function drawProps(){
       box(x,0.20,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);           /* tablette basse */
       box(x,0.46,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);
       box(x,0.72,z, 0.90,0.05,0.56, T.metal, [1.15,1.20,1.26]);
-      /* marchandises : petits blocs colorés = lecture « rayon rempli » */
-      var goods=[[2.1,0.35,0.30],[0.40,0.85,0.55],[0.45,0.65,1.30],[1.85,1.65,0.55],[1.55,0.80,0.25],[0.85,0.60,1.35]];
-      for(var gi=0; gi<5; gi++){
-        var gxx=x-0.32+gi*0.16;
-        box(gxx,0.32,z+0.22, 0.14,0.20,0.14, T.noise, goods[gi%6]);
-        box(gxx,0.60,z+0.22, 0.14,0.22,0.14, T.noise, goods[(gi+2)%6]);
-        box(gxx,0.86,z+0.22, 0.13,0.17,0.13, T.noise, goods[(gi+4)%6]);
-        /* et sur le dessus, pour la lecture « rayon plein » vue de dessus */
-        box(gxx,1.00,z, 0.14,0.14,0.44, T.noise, goods[(gi+1)%6]);
-      }
+             /* ── v2.1 : FAÇADES GARNIES ─────────────────────────────────────────
+          Avant : 15 boîtes de couleur par gondole (≈3 px chacune = des points).
+          Maintenant : 3 bandeaux de 4 produits DESSINÉS à la taille finale, posés
+          sur chaque tablette. Variante choisie par (gx+gy) : une allée continue
+          n'affiche jamais deux fois le même bandeau. */
+       /* ── v2.1 : FAÇADES GARNIES issues des rendus Blender ─────────────────
+          Une texture 32x16 PAR VARIANTE : fronton, 3 tablettes de produits
+          (planogramme : runs de 2-3 facings identiques, hauteurs variées),
+          nez clair/sombre, montants. Posée à plat sur la face avant. */
+       var vbase = ((p.gx||0) + (p.gy||0)) % 4;
+       box(x, 0.52, z+0.272, 0.90, 0.78, 0.020, texShelf(vbase), [1.12,1.12,1.12]);
       box(x,0.16,z+0.26, 0.86,0.05,0.03, T.noise, [2.2,2.2,1.9]);        /* étiquettes de prix */
     } else if(p.k==='freezer'){
       /* ── CONGELATEUR vitré : caisson + vitre + produits + froid ── */
@@ -4192,114 +4233,116 @@ function shade(col,k,add){
               +Math.max(0,Math.min(255,Math.round(col[2]*255*k+a)))+')';
 }
 /* portrait : x,y = coin haut-gauche, u = taille d'un pixel */
-function drawPortrait(C,x,y,u){
-  var suit={r:'rgb('+Math.round(C.suit[0]*200)+','+Math.round(C.suit[1]*200)+','+Math.round(C.suit[2]*200)+')'};
-  var suitD=shade(C.suit,0.72,0), suitL=shade(C.suit,1.10,10);
-  var skin=shade(C.skin,1.0,0), skinD=shade(C.skin,0.80,0), skinL=shade(C.skin,1.10,12);
-  var hair=shade([0.28,0.20,0.15],1.0,0), hairD=shade([0.22,0.15,0.11],1.0,0);
-  var cap=shade(C.cap,1.0,0), capD=shade(C.cap,0.74,0);
-  var OUT='#0b0d11', P='#f2f2ee', EYE='#101014', MOUTH=shade([0.55,0.22,0.20],1.0,0);
-  var team = (C.id==='chef') ? '#8e4bd6' : (C.id==='vet' ? '#3f9a4e' : (C.id==='rob' ? '#5cc8ff' : '#ff8a2a'));
-  function R(gx,gy,gw,gh,col){ pxr(x+gx*u, y+gy*u, gw*u, gh*u, col); }
-
-  /* fond (halo derrière le buste) */
-  R(1,1,20,22,'rgba(255,255,255,0.045)');
-  R(2,1,18,22,'rgba(120,190,255,0.05)');
-  /* épaules / torse / tablier */
-  R(3,19,16,3, OUT);                     /* contour bas */
-  R(4,18,14,4, suitD);
-  R(5,17,12,5, suit.r);
-  R(8,18,6,4, '#f4f4ee');                /* tablier */
-  R(8,18,6,1, '#ffffff');
-  R(6,17,3,2, suitD); R(13,17,3,2, suitD);  /* épaules ombrées */
-  R(10,15,3,2, skinD);                   /* cou */
-  /* tête : largeur par ligne (buste 3/4) */
-  var HW=[[7,8],[5,12],[4,14],[4,14],[3,16],[3,16],[3,16],[4,14],[4,14],[5,12],[6,10]];
-  for(var i=0;i<HW.length;i++){
-    R(HW[i][0]-1, 3+i, HW[i][1]+2, 1, OUT);       /* contour */
+/* ═════════ v2.2 : PORTRAITS issus de la chaîne FLUX + re-pixelisation ═════════
+   Planche de 4 portraits 96x96 (stg, chef, vet, rob) encodée en palette + RLE base36,
+   générée hors-ligne puis re-pixelisée (palette verrouillée 13 tons, contour continu,
+   traits du visage réinjectés depuis les minima de luminance de la source). */
+var CAST_PAL='-|8c8894|302c3a|565060|100f14|804c34|c4482c|e8a830|b07c5c|e2b48a|ceccd2|fad8b2|3074b0|48a878';
+var CAST_RLE='0z0j112231230z0z0u2313260z0z0r2h0z0z0m2m0z0z0i2q0z0z0e2s410z0z0b2u430z0z082w440z0z042y450z0z022z2145210z0z2z21460z0y2z22470z0w2z23480z0u2z25470z0t2z26480z0r2z27480z0r2z27490z0p2z28490z0p2z284a0z0o2z284a0z0n2z294323440z0n2z2g430z0n2e5727432l420z0n2a5j432k420z0n2542215n234326422a0z0m23435t452344280z0m22435i645b432244290z0k22435f675f2343290z0j22435d69435563562245270z0i22435c6a596c44270z0i21445c6u716243260z0h455361596q726272632142240z0g465163546c81648866726371642142230z0f465263536b72876285657368250z0f465164426281687292856485647369240z0f45516542618365827193855144528364726a230z0g442165425181556183958342512343518264726a210z0l21654252422342829842912352438164726a210z0l2171635142514251225242819g8563726a210z0l217262514251429244819l8263716a220z0k2172625142529u8163716b220z0j2271625142519v8163726b210z0k21716251429w826272697161220z0j21716292429v71816272697261220z0i2171614291429u7281627265716374220z0h217192239v7182617365716375220z0g21422201219e819g72817464726475220z0g42210221994282439g7664716476210z0h4203219a42829i766976220z0g4203219w7665426277220z0k429v766342516378220z0j429v756354637891210z0j429e8543997562556478210z0j216196446742819a7662546578210z0i226296839k7563546578220z0g2262429r72617363546579210z0f2263429r716273635466766171210z0d237164429q63726453677662210z0b23726551429o637363556772617262220z0344214221736652429m64726455687166220z0344766653429k647264566f71210z052291756654429i81647264566f71220z052192736656429f8252637164586f71210z042291726857429d8154627263596f71210z0342736a574299835463716442576g220z014274816a574251965142556271645142576h220z4321836a59425343566272645142586g71220z0222826b5l63716642586f73220z022191826a5k63726642586g73420z012191816453645a815865726542586d9223430z01228362526659826155648272816442586d92210z0742238267584282615386738342a15242556e91210z0b2467588c73814281a45242546e91210z0e21926642558d914281a79142546f220z0d22936383558c9224a842536c23430z0d219332845588270225a5514251649362240z0i31922132a4425242849182210c21a6548291260z0j342231a6448392a3210c21a52681220z0m362131aj210a24a22a0z0m362131aj220724022e0z0k362131ak210426042g0z0h3621am28052j0z0f3621aq230728322305220z0d362111ao23082831213207230z0b3621ap2208293121310a230z09113521aq2108293121310c21110z08113521ar210421012a330e110z073621as210126a127330g110z053621at23a527330h120z03362131aza128320i130z02352131aza131223223330j120z0137aza23621330k130y37aza23a0m120x37aza23a0n120v38aza23b0o220t38aza33a06210i220s1137aza33a06220i230r1235aza33b06210k220q1335aza23b06220k220p143aav3c05220l220o32123hap3b06210m220n34213maj3b06220m220m34223sad3323342205220m220l3z36a6362331a22105210n230k3z3a12372211a22104220n230j3z3b153512a22104210p220i3z3c153312a12601220p220i3z3c153311a1220221a1240p220h3z3e133321112201210121a2220r210g3z3e2532230223a2210z0a3z3e2532220321a3220z0a3z3f23332203250z0b3z3z3z3z3z3z3z3z3z3z3k1z1a3z3s15aza6163z3p112z2aa3163z3l220z0922a7123z3f12310z0e22a8123z3c120z0h28a2133z3a0z0q23a43z3512310v2102270n21a53z3411210k23032aa5240k22a4123z31220j23a125ah220k22a4133x220i23a21ka4240i22a5113s13220h24a21qa3260e24a43r12210i22a21wa5230f21a53o13220g23a11z11a5230d23a43n12210h22a21z15a4210f21a53l11a1220e24a11z19a2230d24a3123h12220f21a21z1ea1220f21a4113g12220f22a11i921va1230d21a5113e12a1210f22a11i941wa1220c21a6113c12a1220f21a11h951ya1220b25a2123a12a2210e231i931z12a1210f21a4113912a2210d22a21z1o220e21a4123711a3220b23a21z1q220d21a5123512a1230c21a31l871z230b24a3123312a1220e21a3133418827h811sa2230c21a4113212a1220f21a3123514857j861na3210c22a41221a1220f22a3123612827s851ka2240a23a311230g21a41236837w83193219a3210d21a3230g22a41235827z7182173418a3240a22a2220g22a51234827z7483143716a5240821a2210h21a71133827z7683133716a7220821a2210h21a832827z7883143715a6210822a2210c210223a784778555847p83143614a62108250a26a89182788259877m4282133911a62408220a21ac9281755244538d447l82143712a82109210922ab9381725a8m7i83143612a82207220822ab9383598r7h82143512a92107220722a994845421548q547g815131123611a9220f21a71491845324538s567c533912a9210f21a614845425538s5c8156223912a9210e22a614835525528t5f283612aa210e22a614825625528u522l3512aa210f21a813815526528v512m3412aa210f21a81342523226518x2c35263312aa210f21a8173226518a9h872b39223312aa210f21ad12322651899j86312a39223312aa210f21ad12322651899k8632283a213312aa210f21ad123226825332849d8d32293c13a9220d22ac133226824235829c4251468632283d16a6210d21ad1233268634429a8142548a32293c15a6220b22ac1332278733829a8i32283c15a7220a21a7183327863384998d948232283c16a111a4210922a31b332883378399843684948231273d18a4220722a51a33243123833784998242322234829284253f19a4210821a41a34233323831234811183319b32223684253h19a4210821a41a33243323821334133798223211382532823e18a42105220121a41a3325322395149281379a12933724853d18a42105220121a419342434229b8292b191328192b39942338c3c19a3210821a4193325359fb2924292b4988296893d18a3210821a4183427339eb392814291b8948197893d18a3210623a51635273493b191b296b495b9934298873e18a2210621a71634293393b595b495b89f863f17a2210622a615352a3293b594b497b79f8532223c16a3210721a615342b3293b396b49t8531233c16a3210722a515342c31819bb49w82243d15a3210821a5153423322731819kb39n82253d16a2220721a515392731819f8293b99h81263e15a3210721a51539288193b49342928393ba9g273e14a4210721a5143a288193b5948394bb9f31273e15a2220721a5143b278194b49abc9b4232273f15a2210821a5143b288193b498be99822133263g15a2210821a5143221382993b29abe99812b3g15a2210821a514322138299ibb98812342273g15a2210821a5143222372998829gb397822243273a213515a2210821a515322137299743844a91b497812343263b253214a2210821a51532233629978e93b497812343253b263214a2210821a51532233629988a94b597812244263b263214a2210821a5153323352a9kb597822244263b263214a2210821a5163224342b9hb796832244263a263215a2210821a5163324332c9eb9968322422839273215a2210821a517332i8194b392bc9585512b36293216a2210821a518322f42228193bf9785512b36293216a2210821a519322f42228192bf9587512b36293117a2210821a51a332i8191be9489512b35293217a2210821a51a332h4292b191b9948b512d34283217a2210821a51c332e538195b3968992825124532634273218a2210821a51d332b554281998a94835122542534263316a5210821a51f3229588j96824221552434263217a5210821a51f33255d428e9782572434263218a5210821a51h32245d8g9782572334263119a6210821a51h3552825a8f988473522235253219a6210821a51i3353825a8e998374533524331aa6210822a41i325285598c9b8176543324331ca5210921a41i8152827183588b9d775c321ba6210822a9188652817382588b9c785d8218a8220721aa1292118b748257899f79578915aa210622a8967883758256879h7n8494aa210621a8957c81758156869h7s8295a8210522a8937e81758156869g7x93a82101210123a7b1927g81758155879e7z7392a625a8b2927m8154869f7z7493a2b1a522a8b1917o8153849i7z7791b3a422a7b1927o8153839j7z7793b3a222a6b2917p53829k7z7993b2a222a6b27q53819l7z7b92a322a5b27r53819l7z7c92a222a5b1917r5231829k7z7d9322a5927r52328196b19d7z7e922z22342z2z2z2z2z26432z2z2z25422z2z2z2z2z2z2g3z3z3z33221z1z1z1z1z1z1z1z12524851331z1z1o425e42511z1z1l52425l311z1z1c53425m44511z1z1852425v1z1z155z551z1z5z591z1w5z5b421z1r51425z5d1z1p5z5h421z1n5z5k1z1l5z5m1z1i325z5n1z1h315z5n421z1f315z5r1z1d315j2355235w421z1b315d234e225x311z19315c244k5u421z18315a234o245r1z183158234s21425r1z163157244v235q1z153156234z41235n1z153154244z44225l421z143153234z47225m1z133251244z49235k321z1132254g2c4i225j421z1131244e2k4f225k1z1131234d2o4e225j1z1131224d265221522h4c225i421y31214b255l274b235h1x32224a245q254b225h1x31224b225v2549225h1w312249235y2449225g1w312347235z522348225g311v31244425568n5a2248215g311v31254225548t582149225e321u312b538y552843215f311u312b518z83532942225e311u3229518z85522943215d321v3228518k422a89512b42225b321w31285227518a422c89422d5b321w312h5288522e5286512b42215b321w322h4287532e4285422b425a22311x32275a89548b524285512f58231y3225895389528e4285422e58231z1131238c51428u422f57231z1131238d428v512c42215722311z11322286558f4223428d512c42225622311z1233844224428d4281512351428c2c42235522311z1233824282248i422283428b2b43245322311z14318242824221428t94842c422453231z14428z8296842i53231z14428z998329842551251z14428y988528862a1z148p91899a842787291z158p92869b852689281z148c9489928191839d85268927311z13328c938c9g86268927311z13328c928d9f872542814285271z14328c928e91819c8725834285261z1531428t9b882451835285251z1631428951875587988b24518a241z1632428851428551255285998a258924321z153251892355275186978b258924311z153351872i5285948d258824321z153351852m4284938c51258823311z1632213151842o5283948b51258823311z143324822s5183938b42248723321z14332z5183928b5125518623311z15312z235182928a5225518523311z16312z24428c51278424311z15322j532j518b42268324311z16322h5283532h518a512d311z17312g4287532g5183518451284422311z15332f518c522f5484512845211z14332g528d52312f562944221z13322i3d52332j522a43211z14322g3725382w42211z15332c3925392v42211z16322a39273c2s42211z1632253e273f2q421z143m283h2p321z123n283l2m311z113o283n2k311z113o2332243o2j321y3o2332243r2i311w3p22342338213i2i331u3p22342338223h2h351r3q22352339223e2i371q3q2136233a213d2j3321351o3p2236233b213c2h3524331l3r2236233b223c2f3823331k3r2236233j21362e3923321k3r2236233j22352d3c22311j3s2236233j23332e3c22311i3t2236233f213423312e3i1g392131223f2237233f22332i3i1f3a243f2237233g22322h3l1d3a243f2138223h22332g3j21311d3a253n223g23332g3i22311d3a253n223g23332e3j23311d3b243n223h2j3j233119843b253m223g2j3j2431188391813b263l223g2j3j2515273d253l223g2i3k250m2z2u0z0a23a112czcja213a1220z0822a212czcn13a1210z0524a112czcq13230z0321a212czcu12a1230y2312czcy12a1220x21a112czczc212220u23a111czczc412220s22a112czczc612220r2112cj1xa714cg12210q2211ch15aza514cf11230n2112cg16aza813cga1210m2211cf16azaa14cg120k2211cf16azad14cf120j12cf14azah14cf120h12cf14ar173512ad14cf230d2112ce15ar3e14ab15cea1210c2211ce14aq3l18a514ce220a2211ce13ap113qc413a414ce120921cf12an143rc612a414ce120623ce12an113uc813a413ce12052111cd13ak143o2235c912a612ce120412cd12af12a2133r2631ca12a612ce11210311cc13ae163t2731cb12a612ce230121cb12ag153t2931ca12a712cf23ca12ag143v2931cb12a713cd1221c912ah1331233t2832cb12a713cc1221c812ai1231263s21322432cb12a812cd22c712ai12312f3d223fcb12a813cb22c612aj122l35253gcb11a913ca22c513ai122w36c338ca11aa12ca22c512aj122w34c638ca11aa12c922c412aj11322w34c836ca11ab12c822c312ak113224c82k34c93322ca11ac12c722c213aj113224ch2g32c73422c912ac11c722c212ak11332131cr2831c83323c813ac11c622c112al11d133ct2732c73323c912ad11c522c111am11d131cx2434c63324c811ae11c52212am11d1cz38c43523c811ae12c42112an12czc138c33523c811af12c32111ao12czc237c43325c611ah11c322ao12czc436c23524c611ai11c222ao12czc436c13525c611ai12c122ao11czc73a25c5d111aj11c122ao11czc83925c4d211aj1222ao11czc83826c512ak1221ao12czc73826c512al1121ao12czc73727c512al22ao1132czc63727c512al22ao113123czc43528c612al22ao1225cz3629c612al22ao1225cq22c73629c612al22ap1125cp23c93429c612al22ar24cp28c3342ac612al22ar24cq2731c2342ac612al22ar24cr26352cc611am22ar24cs25342dc6an22ar25cs25312fc6an22ar26cr2lc6an22aq3127cr2kc6an22ap3227cr2kc6an22an113229cp2lc6an22an112bck2qc6an22an112bch2j3327c6an22an112bch2j3426c6an22an112acj2i3525c7am22ao1127cn27c332253524c7am22ao1225cp24c631283224c7am22ar23czc12fc7am22at11cz2hc6am22at12cy2hc6am22au11cx2ic7al22avcw2kc6al22avcw2lc6ak22avcv2nc6aj22av21ct2qc4aj22au25co2sc412ah22at1127cl2tc413ag22as11c227cj2uc512ag22ar11c52dc82gc72a32c312ag22ap12c82yca2734c312af22ao12ca2xcb24c9d111af22am1233ca2wcod211ae22al1233cb2wcq11ae22aj1135cc2wcq11ae22ai1234ck2pcr11ad22ah1234cm2pcr12ab22ag12cr2pcrd111ab22af32c8d6c1d2cb2ncu11ab22ae33c7dcc92lcw11ab22ab12c133c6ddc92jcy12aa1121aa12c233c6ddc92icz12a91221a91236c5ddca2gczc312a71321a81236c5d212daca2eczc513a61321a81137c515d9cf29czc514a51222a71137c518d6czcu14a412c122a61137c51ad4czcv14a214c12111a61137c41bd4czc4d2cp19c22112a51137c418a113d3czc2d1c1d5cf35c218c32113a41137c319a212d3ctd9c1d4cg35c218c32212a41138c316a412d6cpd9c2d2ch36c217c422c112a31139c315a511d8cldfch36c216c522c112a212322138c314a413d7cjdgcg37c216c522c215322239c215a413d5c3d2cddfci37c215c622c215322338c315a512d4c2d3cbdfci39c215c622c31432233ac214a8d8c6djci3ac313c722c51232243ac212abduch3ccd22c732243bc211addsch3ccd22c831253b11af11dqcg3dcd22c831263a11aj12djch3fcc22c8273a11aj12djcf3e2231cc112g39122k122w3f2e12';
+var CAST_CV=null;
+function castAtlas(){
+  if(CAST_CV) return CAST_CV;
+  var pal=CAST_PAL.split('|'), D='0123456789abcdefghijklmnopqrstuvwxyz';
+  var W=112, HH=112*4;
+  var c=document.createElement('canvas'); c.width=W; c.height=HH;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  var i=0,k=0;
+  while(k+1<CAST_RLE.length){
+    var vi=D.indexOf(CAST_RLE.charAt(k)), n=D.indexOf(CAST_RLE.charAt(k+1)); k+=2;
+    var col=pal[vi];
+    if(col!=='-' && n>0){
+      g.fillStyle='#'+col;
+      var y=(i/W)|0, x=i%W, rem=n;
+      while(rem>0){
+        var take=Math.min(rem, W-x);
+        g.fillRect(x,y,take,1);
+        x+=take; rem-=take;
+        if(x>=W){ x=0; y+=1; }
+      }
+    }
+    i+=n;
   }
-  for(var j=0;j<HW.length;j++){
-    R(HW[j][0], 3+j, HW[j][1], 1, skin);
-  }
-  /* ombrage côté droit + lumière côté gauche */
-  for(var k=0;k<HW.length;k++){ R(HW[k][0]+HW[k][1]-2, 3+k, 2, 1, skinD); }
-  R(5,4,3,1, skinL); R(5,5,2,1, skinL);
-  /* cheveux (nuque + mèches) */
-  R(4,3,14,2, hair); R(3,4,2,3, hair); R(17,4,2,3, hairD);
-  R(4,5,2,2, hairD); R(16,5,2,2, hairD);
-  /* yeux : blanc + pupille + sourcil */
-  R(6,7,3,2, P); R(7,7,1,2, EYE);
-  R(12,7,3,2, P); R(13,7,1,2, EYE);
-  R(6,6,3,1, hairD); R(12,6,3,1, hairD);
-  /* nez + bouche */
-  R(10,9,2,1, skinD);
-  R(8,11,5,1, MOUTH); R(9,12,3,1, shade([0.45,0.18,0.18],1,0));
-  /* casquette : calotte + bandeau équipe + visière */
-  R(3,2,16,2, OUT);
-  R(4,1,14,2, cap); R(4,2,14,1, capD);
-  R(3,3,16,1, team);
-  R(2,3,3,1, capD); R(17,3,3,1, capD);
-  R(1,3,4,1, '#14161b');                /* visière sombre qui dépasse à gauche */
-  R(18,3,4,1, '#14161b');
-  R(9,0,4,1, capD);                     /* bouton */
-  /* accessoires spécifiques */
-  if(C.id==='chef'){                     /* lunettes */
-    R(5,7,4,2,'rgba(190,235,255,0.55)'); R(11,7,4,2,'rgba(190,235,255,0.55)');
-    R(9,7,2,1,'#0d1015');
-  }
-  if(C.id==='vet'){                      /* moustache + favoris */
-    R(8,10,5,1,'#2a1d14'); R(6,8,1,3,'#2a1d14'); R(15,8,1,3,'#2a1d14');
-  }
-  if(C.id==='rob'){                      /* antenne + visière lumineuse */
-    R(10,0,1,2,'#9fe0ff'); R(9,-1,3,1,'#ffd45a');
-    R(6,7,9,2,'rgba(90,200,255,0.35)');
-  }
-  if(C.id==='stg'){                      /* badge stagiaire */
-    R(15,19,3,2,'#ffd45a'); R(15,19,3,1,'#fff1b8');
-  }
-  /* contour final bas de la tête */
-  R(4,13,14,1, 'rgba(11,13,17,0.55)');
+  CAST_CV=c; return c;
 }
-
-/* ── machine vue de PROFIL (2D pixel), palette par véhicule ── */
-function drawVehSprite(V,x,y,u){
-  var body=shade(V.chassis,1.0,0), bodyD=shade(V.chassis,0.70,0), bodyL=shade(V.chassis,1.12,10);
-  var basin=shade(V.basin,1.0,0), accent=shade(V.accent,1.0,0);
-  var OUT='#0b0d11', TYRE='#14161a', GLASS='rgba(150,215,255,0.85)', METAL='#c9d2da';
-  function R(gx,gy,gw,gh,col){ pxr(x+gx*u, y+gy*u, gw*u, gh*u, col); }
-  var W=26, H=14;
-  R(0,0,W,H,'rgba(255,255,255,0.04)');
-  /* châssis : profil avec nez à droite */
-  R(1,7,24,1, OUT);
-  R(2,3,20,4, OUT);
-  R(2,4,19,3, body);
-  R(2,6,19,1, bodyD);
-  R(3,4,7,1, bodyL);
-  /* bac à eau à l'arrière */
-  R(2,2,7,3, OUT); R(3,3,5,2, basin); R(3,3,5,1, shade(V.basin,1.18,14));
-  R(3,4,5,1, shade(V.basin,0.82,0));
-  /* bande de danger + plaque */
-  R(8,5,13,1, accent);
-  R(10,6,6,1, METAL);
-  /* cabine / écran de contrôle */
-  R(12,2,6,3, OUT); R(13,3,4,2,'#243447'); R(14,3,2,1,'#4de08a');
-  /* raclette avant (nez) + brosse */
-  R(22,6,3,2, OUT); R(22,6,3,1, accent);
-  R(21,9,4,1,'#9aa4ae');
-  /* roues */
-  R(4,9,4,4, OUT); R(5,10,2,2, TYRE); R(5,10,2,1,'#3b4048');
-  R(17,9,4,4, OUT); R(18,10,2,2, TYRE); R(18,10,2,1,'#3b4048');
-  /* guidon / arceau */
-  R(2,0,1,4, METAL); R(2,0,12,1, METAL); R(13,0,1,3, METAL);
-  /* reflet vitre + ombre au sol */
-  R(13,3,1,2, GLASS);
-  R(1,13,24,1,'rgba(0,0,0,0.45)');
-  if(V.id==='mono'){ R(20,8,3,2, accent); R(9,8,8,1,'#8b939c'); }   /* monobrosse : disque large */
-  if(V.id==='indus'){ R(2,1,10,2, OUT); R(3,1,8,2, shade(V.basin,0.9,0)); }  /* grande cuve */
-  if(V.id==='mini'){ R(1,6,2,3, OUT); R(23,5,2,3, OUT); }            /* petit gabarit */
+function drawPortrait(C,x,y,s){
+  var i=0;
+  for(var q=0;q<CHARS.length;q++) if(CHARS[q]===C || (C && CHARS[q].id===C.id)) i=q;
+  var cv=castAtlas();
+  hud.imageSmoothingEnabled=false;
+  hud.drawImage(cv, 0, i*112, 112, 112, Math.round(x), Math.round(y), Math.round(s), Math.round(s));
 }
-
-/* ═════════ v0.14 : ECRAN DE CHOIX DU PERSONNAGE ═════════ */
+/* machines : planche 104x60 par véhicule (4 empilés), palette + RLE base36 */
+var VEHS_PAL='-|5e6474|404654|282c36|9ea4b0|7e8492|c0c5cd|0e0f14|eecc8e|c86824|e49e40|a0401a|d0463a';
+var VEHS_RLE='0p1422370z0z0l1322380z0z0l1321390z0z0l133a21330z0z0g143i0h33110z0q143i12310c312313310z0o13213i150a112104120z0o13213g214214092206120z0n13223e2215093121053101120z0m135311362715220922033302120z0m12581c2508233211413201120z0n311359162611330522013151213301120z0l33511224551329125131052133221103320z0j3342511426112b1252310432531302220z0j324452172c12543102331702220z0i324a1826125634514111211501220z0j314461491623125c1221112115210z0k314i155f122214210z0l314j5711566154122212310z0n314f61425d645316340z0k314h5c4168421364350z0g314h57416e41136246350z0c314h56416g13514b340z09314h51426k12534d340z06314i6o5343634a310z0631614h6z6444310z0532644e6z6345310z0531694a66416t47310z05316d4666416r49310z05316g436e416h4b320z04316x416f4e310z04316z6641654e72310z0431621152116z41654c74310z0422176z644a76310z032813416z62487741310z02312913416z61467743310z022711266z61447745310z02244411266z427747310z01244611256y427649310z01312248266x42744b310y3223435343256x42724d310y31511122435343256x4h310y3151112243534325316w4h310y3151112343524324356t4a5731210x31422348243301346q4859220x31413223472605356m465a3123120u330124452709346j4559322415310v2e0d356f4458322615210w2b310i356423644258322813230x28310o34251141614255332g0z240u251121114353332i0z0y211144112111415222312714280z0z224511281353132512310z0z012241534152225a1226120z0z03224153415c122a0z0z0322455a122c0z0z04224459112a140z0z04312111253453112a140z0z053126033412215227110z0z092308311235230z0z0k230z0z0t250z0z0r3225310z0z0o331222320z0z0n33511223310z0z0m33511223310z0z0m335112230z0x140l213252112211210z0w16310h312812220z0u16230g28115211220z0r3116250f31261352230z0p3116260g312511280z0o3115280h2451270z0p32132a0i3154240z0r132c0i3553310z0r132b0n3152320z0q142b0i364151310z0r132c0g334651310z0r132c0e334851340z0o132c0c3382495182350z0j142b0b33844562411286340z0g132c0834874462125694310z0g132c06338e62125496310z0g132c05328m5197310z0f142b06318ma297310z0f13283321033201318ka299340z0c13263503358j9f350z08132534053153418i9ba3819154340z05132235073153418ga19aa28551a254330z021421340931538ha199a187a254a291310z02311222320b3151628ha1968ca593310z04230b33638ha1948fa295310z0g3341648ha18j97310z0534053541678ea18h99310z053142361134416b8aa18da19c310z05314a336g86a18ca19b42310z05314d6j8ga19944310z05314f6m8ba19746310z04324f6q87a19548310z0431514e516u83a192514a310z0431514e53116t81534b310z0431514d24136q4g310z0431514b2713416o4g310z0431514b2a116o4g310z043154472443266n4b55310z043357422345256n4858310z06345321522346256m465a140z063161512211512251425242256m455a1121170z023161521323425342256l4458261621310z316151320223425243256l4357281522310z3404224725336i42562a1324310z0132052211452602356e42542b1127310z09112111215127073465112362415312261527310z0b11290b35112112215515551328310z0c270h312111425f1228310z0g2131210k22415f11290z0z0621425d2c310z0z0521425b112d310z0z0531215141521157112d0z0z072133122136231129110z0l35250z0z0m3353250z0z0l335325310z0z0k11325424310z0z0k2211542351210z0z0k3124132352310731120z0z09312412221121533105170z0z0729013252310331190z0z06270431523201311b0z0z0623073153331b310z0z0f32561a0z0z0h315718310z0z0h31591221120z0z0j3253335112220z0z0m3153310132120z0z0o31533102310z0z0q3252310z0z0u3152360z0z0p31544251150z0z0l31425416340z0z0h31435217514232120z0z0c3343521251465216310z0z0633435312475118350z0z3346534652175343330z0w324753465442544651120z0v324v52130z0v3141544p52150z0v31435242514k5214b113310z0s324q5214b2115241350z0n324p5214b21245614151310z0n31654j5214b2124852310z0n3143654e5313b2124854310z0n3146664b52164756310z0n314a66475213524658310z0n314e654264495a310z0n314h6d425c310z0n314l69415d310z0n314p64415e310z0n314121134p5e310z0m25144n5e310z0l2a114m5e310z0k312b114l5e310z0k2443264l5e310z0k234551254k5e310z0j2447254j5e31210z0i2351435143254j5d23310z0i2251425343244j5b25110z0h312342534323324i5927110z0h31234253432331114h5829110z0i234823324h572a0z0j11234726334d54122a310z0j122345260334534752122b0z0l31122d0631574351112d0z0o2b08315a122e0z0o31270a3259112e310z0r230d3357112e0z0z0b3256112d310z0z0c2255122b0z0z0f243311290z0z0i240z0z032531223101350z0z0j25312131033152320z0z0i2531053153310z0z0j3121083252320z0z0t3153310z0z0t3252310z0z0u3152320z0z0t3153320z0z0s3253310z0z0t3153310z0z0t3252310z0z0u3152320z0z0t3153310z0z0t3252310z0z0u3152320z0z0t3153310z0z0t314251310z0z0t324151310z0z0u3142320z0z0t314251310z0z0t324151310z0z0u314151340z0z0r31425241340z0z0o3142524252350z0z0k31425a340z0z0f3343514b350z0z09334c5247340z0z04334b5648c1310z0z03324d5548c2310z0z02324pc4310z0z0231544kc5b1320z0z0131574fc4b5330z0y31a3584ac3b69152340z0t33a7415645c4b593518351310z0t3186a757c291b5938453310z0t318aa654c191b4948355310z0t318da65192b2948357310z0t318ha391b293834158310z0t318ka2854259310z0t318q5c310z0t3181128m5d310z0t2113228j5e310z0r29418h5e310z0q2b8h5e310z0q2c8g5e310z0p2445258f5c230z0p2347248f5b240z0p2211435143258e5812250z0p23425343248e57280z0q22425442248e5529310z0q22435243258d532a110z0r221147258d522b0z0t22114526338a512b0z0v245127033289512b0z0w2a053122814185512a110z0x27083241514154221226120z0z230b1151415141523114270z0z0f3251422313260z0z0i31132334210z0z0n13210z0a';
+var VEHS_CV=null;
+function vehAtlas(){
+  if(VEHS_CV) return VEHS_CV;
+  var pal=VEHS_PAL.split('|'), D='0123456789abcdefghijklmnopqrstuvwxyz';
+  var W=104, HH=60*4;
+  var c=document.createElement('canvas'); c.width=W; c.height=HH;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  var i=0,k=0;
+  while(k+1<VEHS_RLE.length){
+    var vi=D.indexOf(VEHS_RLE.charAt(k)), n=D.indexOf(VEHS_RLE.charAt(k+1)); k+=2;
+    var col=pal[vi];
+    if(col!=='-' && n>0){
+      g.fillStyle='#'+col;
+      var y=(i/W)|0, x=i%W, rem=n;
+      while(rem>0){
+        var take=Math.min(rem, W-x);
+        g.fillRect(x,y,take,1);
+        x+=take; rem-=take;
+        if(x>=W){ x=0; y+=1; }
+      }
+    }
+    i+=n;
+  }
+  VEHS_CV=c; return c;
+}
+function drawVehSprite(V,x,y,w){
+  var i=0;
+  for(var q=0;q<VEHICLES.length;q++) if(VEHICLES[q]===V || (V && VEHICLES[q].id===V.id)) i=q;
+  var cv=vehAtlas();
+  var h=Math.round(w*60/104);
+  hud.imageSmoothingEnabled=false;
+  hud.drawImage(cv, 0, i*60, 104, 60, Math.round(x), Math.round(y), Math.round(w), h);
+}
+/* ═════════ v0.14 : PERSONNAGES & VEHICULES DE NETTOYAGE ═════════
+   Chaque personnage a un look ET un petit avantage réel (appliqué dans le jeu).
+   Chaque véhicule change la couleur de la machine, sa vitesse et son inertie. */
+var CHARS=[
+  { id:'stg',  name:'LE STAGIAIRE',   tag:'TOUT JUSTE SORTI DE FORMATION',
+    desc:'Jeune, vif, un peu naif. Il court plus vite que les autres.',
+    suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
+    perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
+  { id:'chef', name:"LA CHEF D'EQUIPE", tag:'20 ANS DE CARRELAGE',
+    desc:'Gestes sûrs. Son savon tient 35 % plus longtemps.',
+    suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
+    perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
+  { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
+    desc:'Sa torpille laveuse couvre une zone plus large.',
+    suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
+    perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
+  { id:'rob',  name:"L'APPRENTI ROBOT", tag:'NE PREND JAMAIS DE PAUSE',
+    desc:"Ne dérape presque pas, même sur sol savonneux.",
+    suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
+    perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
+];
+var VEHICLES=[
+  { id:'auto', perk:'VITESSE 100 · ADHERENCE 100', name:'LA PORTEUSE', tag:'LA SEULE OU ON S ASSOIT',
+    desc:'L autoportee : on s assoit, on tourne le volant, on ecrase tout.',
+    chassis:[0.74,0.82,0.92], basin:[0.60,0.86,1.0], accent:[0.60,0.86,1.0], spd:1.0,  inertia:1.0 },
+  { id:'mono', perk:'VITESSE 116 · ADHERENCE 60', name:'LE PERCHOIR', tag:'ON CONDUIT DEBOUT',
+    desc:'Debout sur la plateforme : la plus rapide, mais elle glisse.',
+    chassis:[1.0,0.96,0.88], basin:[1.0,0.72,0.30], accent:[1.0,0.72,0.30], spd:1.16, inertia:1.7 },
+  { id:'indus', perk:'VITESSE 88 · ADHERENCE 140', name:'LA BROSSEUSE XL', tag:'LARGE ET TENACE',
+    desc:'Large brosse : lente, mais elle ne derape jamais. Ideale en patinoire.',
+    chassis:[0.86,0.90,0.94], basin:[0.52,0.62,0.72], accent:[0.52,0.62,0.72], spd:0.90, inertia:0.35 },
+  { id:'mini', perk:'VITESSE 108 · ADHERENCE 110', name:'LA POUSSETTE', tag:'PETIT GABARIT',
+    desc:'Poussee a la main : vive, maniable, increvable.',
+    chassis:[1.04,1.04,1.06], basin:[0.72,1.0,0.62], accent:[0.72,1.0,0.62], spd:1.08, inertia:0.75 }
+];
+var charIdx=0, vehIdx=0;
 var BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 
 var LOGO_FONT = {
@@ -4542,139 +4585,163 @@ function drawPixelWord(word, x, y, u, gap, pal){
 }
 
 function drawPickGrid(title, subtitle, items, idx, kind){
-  var t = performance.now()/1000;
-  var blinkSlow = Math.floor(t*2.4)%2===0;
-  hud.fillStyle = 'rgba(5,9,15,0.94)';
-  hud.fillRect(0,0,640,360);
-  drawDitherRect(0, 0, 640, 360, 'rgba(18,32,48,0.35)', 0.25, 2);
-  drawStripeBorder();
+  drawGarage(title, subtitle, items, idx, kind);
+}
 
-  /* ── Bandeau d'en-tête structuré (pas d'empilement) ── */
-  drawArcadeBox(14, 11, 612, 36, '#0d1520', '#2e4458', '#ffd45a', 2, false);
-  var stepTxt = (kind==='char') ? 'ETAPE 1/3 · PILOTE' : 'ETAPE 2/3 · MACHINE';
-  pxr(20, 16, 128, 26, '#162638');
-  hudText(stepTxt, 84, 24, 8, '#7ad8f0', 'center');
-  var pageNum = ((idx/2)|0) + 1;
-  hudText('PAGE '+pageNum+'/2  ·  CHOIX '+(idx+1)+'/'+items.length, 84, 36, 7, '#ffd45a', 'center', 'normal');
-
-  hudText(title, 320, 23, 13, '#ffd45a', 'center');
-  hudText(subtitle, 320, 37, 7, '#a8c2d4', 'center', 'normal');
-
-  /* Rappel du choix précédent à droite */
-  pxr(482, 16, 138, 26, '#162638');
-  if(kind==='veh'){
-    hudText('PILOTE RETENU', 551, 23, 7, '#8fa6b4', 'center', 'normal');
-    hudText(CHARS[charIdx].name, 551, 35, 8, '#6ff0c8', 'center');
+/* ═════════ v2.1 : ECRAN GARAGE ═════════════════════════════════════════════
+   Construction reprise de l'ecran de garage de Death Rally (1996), demandee par
+   Jose : symetrie portrait / sphere de vehicule, panneau central granit, jauges
+   a segments rouges, vehicule mis en vitrine dans une sphere noire lustree.
+   Adaptation a MOB RACER : fond oxblood + accent ambre, textes bitmap blancs
+   contours noirs, tout dessine en code (zero asset). */
+function granitePanel(x,y,w,h){
+  pxr(x,y,w,h,'#6b6862');
+  for(var yy=0; yy<h; yy+=2){
+    for(var xx=0; xx<w; xx+=2){
+      var n=(xx*7+yy*13)%11;
+      if(n<4) pxr(x+xx,y+yy,2,2,'#77746e');
+      else if(n>8) pxr(x+xx,y+yy,2,2,'#5e5b56');
+    }
+  }
+  pxr(x,y,w,2,'#9b9791'); pxr(x,y,2,h,'#9b9791');           /* biseau clair */
+  pxr(x,y+h-2,w,2,'#3f3d3a'); pxr(x+w-2,y,2,h,'#3f3d3a');   /* biseau sombre */
+}
+function glossSphere(cx,cy,r){
+  for(var i=r; i>0; i--){
+    var t=i/r;
+    var v=Math.round(6+26*t*t);
+    hud.fillStyle='rgb('+v+','+(v+2)+','+(v+8)+')';
+    hud.beginPath(); hud.arc(cx,cy,i,0,Math.PI*2); hud.fill();
+  }
+  hud.fillStyle='rgba(255,255,255,0.88)';
+  hud.beginPath(); hud.ellipse(cx-r*0.34, cy-r*0.42, r*0.30, r*0.17, -0.6, 0, Math.PI*2); hud.fill();
+  hud.fillStyle='rgba(255,255,255,0.30)';
+  hud.beginPath(); hud.ellipse(cx-r*0.20, cy-r*0.55, r*0.11, r*0.06, -0.6, 0, Math.PI*2); hud.fill();
+  hud.strokeStyle='rgba(150,190,230,0.55)'; hud.lineWidth=1;
+  hud.beginPath(); hud.arc(cx,cy,r-1,Math.PI*0.15,Math.PI*0.85); hud.stroke();
+  hud.strokeStyle='rgba(20,26,34,0.9)';
+  hud.beginPath(); hud.arc(cx,cy,r,0,Math.PI*2); hud.stroke();
+}
+function segGauge(x,y,w,label,val,col,hideZero){
+  hudText(label, x, y+5, 6.5, '#f2efe6', 'left', 'normal');
+  var bx=x+66, bw=w-66, segs=14, sw=Math.floor((bw-(segs-1)*2)/segs);
+  var on=Math.round(val*segs);
+  /* code couleur : >=10 vert, 5-9 ambre, <5 rouge */
+  var c = on>=10 ? '#4fd07a' : (on>=5 ? '#e8c44a' : '#e0453a');
+  for(var i=0;i<segs;i++){
+    pxr(bx+i*(sw+2), y-2, sw, 10, '#3a2a2c');
+    pxr(bx+i*(sw+2), y-2, sw, 1, '#4d3a3c');
+    if(i<on){
+      pxr(bx+i*(sw+2), y-2, sw, 10, c);
+      pxr(bx+i*(sw+2), y-2, sw, 2, 'rgba(255,255,255,0.38)');
+    }
+  }
+  if(on===0){
+    pxr(bx, y-2, sw, 10, '#5a4a2e');
+    hudText('MIN', bx+bw+8, y+5, 6.5, '#c8b0a8', 'right', 'normal');
   } else {
-    hudText('EQUIPE J1 (BLEU)', 551, 23, 7, '#8fa6b4', 'center', 'normal');
-    hudText('VS LAYA (VERT)', 551, 35, 8, '#5fd07a', 'center');
+    hudText(on+'/'+segs, bx+bw+8, y+5, 6.5, '#c8b0a8', 'right', 'normal');
   }
+}
+function drawGarage(title, subtitle, items, idx, kind){
+  var t=performance.now()/1000, blink=Math.floor(t*2.4)%2===0;
+  var it=items[idx]||items[0];
+  /* fond oxblood + bruit */
+  hud.fillStyle='#2a0a10'; hud.fillRect(0,0,640,360);
+  for(var yy=0; yy<360; yy+=3)
+    for(var xx=0; xx<640; xx+=3){
+      var n=(xx*5+yy*9)%13;
+      if(n<3) pxr(xx,yy,3,3,'#3a0f16');
+      else if(n>10) pxr(xx,yy,3,3,'#1e070c');
+    }
+  drawStripeBorder();
+  hudText(title, 320, 16, 12, '#ffd45a', 'center');
+  hudText(subtitle, 320, 28, 7, '#e8b8a8', 'center', 'normal');
 
-  /* ── Grille 2×2 de grandes cartes (CW=298, CH=132) ── */
-  var CW=298, CH=132, GX=16, GY=52, GAPX=12, GAPY=8;
+  /* ── COLONNE GAUCHE (14..158) : portrait + vitrine ── */
+  hudText(kind==='char' ? 'PILOTE' : 'PILOTE RETENU', 86, 36, 6.5, '#ffd45a', 'center', 'normal');
+  granitePanel(14, 42, 144, 124);
+  pxr(20, 48, 132, 112, '#140a0e');
+  drawDitherRect(22, 50, 128, 108, 'rgba(120,60,80,0.18)', 0.25, 2);
+  drawPortrait(kind==='char' ? it : CHARS[charIdx], 30, 48, 112);
+
+  var scx=86, scy=248, sr=68;
+  glossSphere(scx,scy,sr);
+  var V = (kind==='veh') ? it : VEHICLES[vehIdx];
+  var vw = 104, vh2 = 60;   /* sprite 104x60 dessiné 1:1 : aucun upscale */
+  hud.save();
+  hud.beginPath(); hud.arc(scx,scy,sr-4,0,Math.PI*2); hud.clip();
+  /* ombre de contact dans la sphère */
+  /* halo de vitrine : détache la machine du noir de la sphère */
+  hud.fillStyle='rgba(120,170,225,0.17)';
+  hud.beginPath(); hud.ellipse(scx, scy-4, vw*0.54, vh2*0.66, 0, 0, Math.PI*2); hud.fill();
+  hud.fillStyle='rgba(0,0,0,0.60)';
+  hud.beginPath(); hud.ellipse(scx, scy+vh2*0.5+2, vw*0.46, 6, 0, 0, Math.PI*2); hud.fill();
+  drawVehSprite(V, scx-vw/2, scy-vh2/2+2, vw);
+  hud.restore();
+  hudText(V.name, 86, 322, 6.5, '#cfd8e4', 'center', 'normal');
+
+  /* ── PANNEAU CENTRAL (174..466, centré) ── */
+  granitePanel(174, 42, 292, 266);
+  pxr(180, 48, 280, 254, '#20262e');
+  hudText(it.name, 320, 64, 11, '#ffffff', 'center');
+  hudText(it.tag, 320, 76, 6.5, '#6fe4ff', 'center', 'normal');
+  var lines=hudWrap(it.desc, 54);
+  for(var d=0; d<lines.length && d<2; d++)
+    hudText(lines[d], 187, 90+d*10, 6.5, '#d8ecff', 'left', 'normal');
+  pxr(187, 116, 266, 1, '#3c4650');
+  hudText(kind==='char' ? 'AVANTAGES DU PILOTE' : 'CARACTERISTIQUES MACHINE', 187, 128, 7, '#ffd45a');
+
+  var gA,gB,gC,gD;
+  if(kind==='char'){
+    gA=Math.max(0,Math.min(1,(it.spd-0.96)/0.14)); gB=Math.max(0,Math.min(1,1-(it.inertiaMul-0.2)/1.5));
+    gC=Math.max(0,Math.min(1,(it.soapMul-1)/0.4));  gD=it.torpBonus?1:0.4;
+  } else {
+    gA=Math.max(0,Math.min(1,(it.spd-0.86)/0.32)); gB=Math.max(0,Math.min(1,1-(it.inertia-0.3)/1.5));
+    gC=0.5; gD=0.5;
+  }
+  segGauge(187, 144, 266, 'VITESSE',    gA, '#e0453a');
+  segGauge(187, 164, 266, 'ADHERENCE',  gB, '#e0453a');
+  segGauge(187, 184, 266, kind==='char'?'DUREE SAVON':'MANIABILITE', gC, kind==='char'?'#e0453a':'#8a4a44');
+  segGauge(187, 204, 266, kind==='char'?'TORPILLE':'FREINAGE',       gD, kind==='char'?'#e0453a':'#8a4a44');
+
+  /* encart POUVOIR */
+  pxr(185, 222, 270, 66, '#1a1014');
+  pxr(185, 222, 270, 2, '#ffd45a');
+  hudText(kind==='char' ? 'POUVOIR' : 'EN CHIFFRES', 195, 234, 8, '#ffd45a');
+  var perkl = (kind==='char')
+    ? hudWrap(it.perk, 40)
+    : ['VITESSE  x'+it.spd.toFixed(2), 'GLISSE   x'+it.inertia.toFixed(2)];
+  for(var q=0; q<perkl.length && q<2; q++)
+    hudText(perkl[q], 195, 248+q*12, 8, '#6ff0c8');
+  hudText(kind==='char' ? ('MACHINE : '+VEHICLES[vehIdx].name) : ('PILOTE : '+CHARS[charIdx].name),
+          195, 278, 6.5, '#a8c2d4', 'left', 'normal');
+
+  /* ── COLONNE DROITE (474..628) : liste ── */
+  hudText(kind==='char' ? 'EQUIPIERS' : 'MACHINES', 551, 36, 6.5, '#ffd45a', 'center', 'normal');
   for(var i=0; i<items.length; i++){
-    var it = items[i];
-    var baseX = GX + (i%2)*(CW+GAPX);
-    var baseY = GY + ((i/2)|0)*(CH+GAPY);
-    var on = (i===idx);
-
-    /* Léger agrandissement (+3px de chaque côté) et contraste fort pour la carte sélectionnée */
-    var cx = on ? baseX-3 : baseX;
-    var cy = on ? baseY-2 : baseY;
-    var cw = on ? CW+6    : CW;
-    var ch = on ? CH+4    : CH;
-
-    var bgCol = on ? '#172d42' : '#0b1119';
-    var bdrCol = on ? (blinkSlow ? '#ffd45a' : '#fff3b0') : '#2c3d4f';
-    var crnCol = on ? (blinkSlow ? '#ffffff' : '#ffd45a') : '#4d657a';
-    drawArcadeBox(cx, cy, cw, ch, bgCol, bdrCol, crnCol, on ? 3 : 2, on);
-
-    /* Bandeau supérieur interne de la carte */
-    pxr(cx+3, cy+3, cw-6, 18, on ? '#224360' : '#111a26');
-
-    /* ── Aperçu 2D Pixel AGRANDI (×1.42 à ×1.48 vs u=3.0/3.1 d'origine) ── */
-    var pBoxW = (kind==='char') ? 104 : 122;
-    var pBoxH = ch - 14;
-    var pBoxX = cx + 7;
-    var pBoxY = cy + 7;
-    pxr(pBoxX, pBoxY, pBoxW, pBoxH, on ? '#0c1824' : '#070c12');
-    /* damier tramé subtil dans le cadre du portrait */
-    drawDitherRect(pBoxX+2, pBoxY+2, pBoxW-4, pBoxH-4, on ? 'rgba(90,190,255,0.12)' : 'rgba(255,255,255,0.04)', 0.25, 2);
-    pxr(pBoxX, pBoxY, pBoxW, 1, on ? '#ffd45a' : '#2c3d4f');
-    pxr(pBoxX, pBoxY+pBoxH-1, pBoxW, 1, on ? '#ffd45a' : '#2c3d4f');
-    pxr(pBoxX, pBoxY, 1, pBoxH, on ? '#ffd45a' : '#2c3d4f');
-    pxr(pBoxX+pBoxW-1, pBoxY, 1, pBoxH, on ? '#ffd45a' : '#2c3d4f');
-
-    if(kind==='char'){
-      /* Portrait 2D : u = 4.3 (non sélectionné, ×1.43) / 4.45 (sélectionné, ×1.48) */
-      var uChar = on ? 4.45 : 4.30;
-      drawPortrait(it, pBoxX + 5, pBoxY + 9, uChar);
-    } else {
-      /* Machine vue de profil : u = 4.35 (×1.40) / 4.45 (×1.44) */
-      var uVeh = on ? 4.45 : 4.35;
-      /* Sol carrelé stylisé sous la machine */
-      pxr(pBoxX+4, pBoxY+pBoxH-18, pBoxW-8, 12, '#132638');
-      pxr(pBoxX+4, pBoxY+pBoxH-18, pBoxW-8, 2, '#3d7ca8');
-      drawVehSprite(it, pBoxX + 3, pBoxY + 26, uVeh);
-    }
-
-    /* Badge d'index et état de sélection */
-    pxr(pBoxX+2, pBoxY+2, 16, 10, on ? '#ffd45a' : '#1d2b3a');
-    hudText('#'+(i+1), pBoxX+10, pBoxY+7, 6.5, on ? '#091018' : '#8fa6b4', 'center');
-
-    /* ── Colonne d'informations à droite du portrait ── */
-    var tx = pBoxX + pBoxW + 8;
-    var availW = (cx + cw - 8) - tx;
-    var maxChars = Math.max(22, Math.floor(availW / 4.3));
-
-    /* Nom + pastille SELECTION */
-    hudText(it.name, tx, cy+12, 10, on ? '#ffffff' : '#c7d9e5');
-    if(on){
-      var selW = 46;
-      pxr(cx+cw-selW-6, cy+5, selW, 13, blinkSlow ? '#ffd45a' : '#6ff0c8');
-      hudText('ACTIF', cx+cw-selW/2-6, cy+12, 7, '#081018', 'center');
-    }
-
-    /* Sous-titre métier */
-    hudText(it.tag, tx, cy+26, 7, on ? '#6fe4ff' : '#6e8796', 'left', 'normal');
-
-    /* Description courte (2 lignes max) */
-    var lines = hudWrap(it.desc, maxChars);
-    for(var d=0; d<lines.length && d<2; d++){
-      hudText(lines[d], tx, cy+38+d*10, 7, on ? '#d8ecff' : '#8ea3b0', 'left', 'normal');
-    }
-
-    /* ── Caractéristiques en BARRES (VITESSE / ADHERENCE, zéro nombre nu) ── */
-    var st = getItemStats(it, kind);
-    var barX = tx + 56;
-    var barW = Math.max(60, (cx + cw - 8) - barX);
-
-    hudText('VITESSE', tx, cy+64, 7, on ? '#9fd8f0' : '#7b93a2');
-    drawSegmentedBar(barX, cy+59, barW, 8, st.spd,
-      on ? '#38b6ff' : '#2878a8', on ? '#a8e8ff' : null, 8,
-      'rgba(255,255,255,0.10)', on ? '#7ad8f0' : '#3a5064');
-
-    hudText('ADHERENCE', tx, cy+78, 7, on ? '#a6f4c0' : '#7b93a2');
-    drawSegmentedBar(barX, cy+73, barW, 8, st.adh,
-      on ? '#46dc78' : '#2d8a50', on ? '#b8ffd0' : null, 8,
-      'rgba(255,255,255,0.10)', on ? '#7af0a0' : '#3a5064');
-
-    /* ── Bandeau d'avantage / spécialité au bas de la carte ── */
-    var perkY = cy + ch - 23;
-    var perkW = (cx + cw - 7) - tx;
-    pxr(tx, perkY, perkW, 16, on ? '#0e2030' : '#080d14');
-    pxr(tx, perkY, 3, 16, on ? '#ffd45a' : '#3a5064');
-    pxr(tx, perkY, perkW, 1, on ? 'rgba(255,212,90,0.55)' : 'rgba(120,150,170,0.25)');
-    pxr(tx, perkY+15, perkW, 1, on ? 'rgba(255,212,90,0.55)' : 'rgba(120,150,170,0.25)');
-    hudText(st.badge, tx+7, perkY+8, 6.5, on ? '#ffd45a' : '#7f96a3');
+    var on=(i===idx), ry=42+i*54;
+    granitePanel(474, ry, 154, 46);
+    pxr(478, ry+4, 146, 38, on ? '#2c3a4a' : '#1a1e24');
+    if(on) pxr(478, ry+4, 146, 2, blink?'#ffd45a':'#fff3b0');
+    pxr(482, ry+7, 32, 30, on ? '#0f1822' : '#0b1016');
+    if(kind==='char') drawPortrait(items[i], 486, ry+9, 28);
+    else drawVehSprite(items[i], 484, ry+12, 30);
+    hudText(items[i].name, 520, ry+15, 7, on ? '#ffffff' : '#9fb0be');
+    hudText(items[i].tag,  520, ry+27, 5.5, on ? '#6fe4ff' : '#6d7d8a', 'left', 'normal');
+    if(on) hudText('>', 622, ry+22, 8, '#ffd45a', 'right');
   }
+  /* bouton valider, aligné sur le bas du panneau central */
+  granitePanel(474, 276, 154, 32);
+  pxr(478, 280, 146, 24, blink ? '#c8a22e' : '#e8c44a');
+  hudText('VALIDER >', 551, 292, 9, '#241a06', 'center');
 
-  /* ── Pied d'écran : commandes adaptées au périphérique + curseur de page ── */
-  drawArcadeBox(14, 329, 612, 20, '#0d1520', '#2e4458', null, 1, false);
-  var footCmd = window.__padOnFlag
-    ? 'CROIX : CHOISIR CARTE   ·   BOUTON B / TOUCHER : VALIDER   ·   PAGE '+pageNum+'/2'
-    : 'FLECHES / WASD : CHOISIR   ·   ENTREE / ESPACE : VALIDER   ·   ECHAP : TITRE   ·   PAGE '+pageNum+'/2';
-  hudText(footCmd, 320, 339, 7, '#d8ecff', 'center', 'normal');
+  /* pied pleine largeur */
+  pxr(0, 332, 640, 28, 'rgba(12,4,8,0.72)');
+  hudText(window.__padOnFlag
+    ? 'CROIX : CHOISIR   ·   B : VALIDER   ·   CHOIX '+(idx+1)+'/'+items.length
+    : 'FLECHES : CHOISIR   ·   ENTREE : VALIDER   ·   ECHAP : RETOUR   ·   CHOIX '+(idx+1)+'/'+items.length,
+    320, 340, 7, '#f0d8c8', 'center', 'normal');
 }
 function drawCharPick(){ drawPickGrid('CHOISIS TON PERSONNAGE','CHAQUE EQUIPIER POSSEDE UN AVANTAGE UNIQUE', CHARS, charIdx, 'char'); }
 function drawVehPick(){ drawPickGrid('CHOISIS TA MACHINE',' COMPARE LES BARRES DE VITESSE ET D ADHERENCE', VEHICLES, vehIdx, 'veh'); }
