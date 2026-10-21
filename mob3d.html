@@ -2757,11 +2757,54 @@ function drawGull(p,t){
   var f=(Math.sin(t*9.5+p.wing*3.1)>0)?1:0;
   critterBillboard(p,'gull', 0.74, 0.52, y, 0, f);
 }
+/* ═════════ v5.5 : LE CHIEN EST UN SPRITE DU MODÈLE PIXEL ART ═════════
+   José a choisi la définition 48x42 sur la planche de comparaison : c'est la plus
+   nette des quatre (contour franc, détails du visage sur la grille) et elle vaut
+   exactement la taille d'affichage du chien (0,62 unité ≈ 42 px du canvas).
+   Encodage identique aux machines : palette + RLE base36, '-' = transparent,
+   donc aucun fichier externe et ~700 caractères pour le sprite entier. */
+var DOG48_W=48, DOG48_H=42;
+var DOG48_PAL='-|565060|100f14|c4482c|e8a830|e2b48a|302c3a|804c34|b07c5c';
+var DOG48_RLE='0d110z0c210z0c210z0c210z0c2309210z21012109220y21012207230y2c01210y2231482111210y213141314811210y2132514431423161210y22413142317122413171220x23432102224171220x22012141210123012171220w227521716121012171220w2131236131413122614171220w2181237242714331220w22147132714371220x27612173230x2d0z022a0z032263250z04216133712161210z0223611262240z22115543220z21125544230x21125546210x21125546220w211255423144220v2261018152417161317143220v22716171115121617121713143220v2172130171432134210v236112017142280u28422262413171210u23612442224431210u29312171324172220t2b713221714131210t2231246121712232214132210t223171236121712272317132210q25312431226172317161250o213122317123417122422131270o2p0c';
+var DOG48_TEX=null;
+function dog48Tex(){
+  if(DOG48_TEX) return DOG48_TEX;
+  var pal=DOG48_PAL.split('|'), D='0123456789abcdefghijklmnopqrstuvwxyz';
+  var W=DOG48_W, H=DOG48_H;
+  function build(flip){
+    var c=document.createElement('canvas'); c.width=W; c.height=H;
+    var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+    var i=0,k=0;
+    while(k+1<DOG48_RLE.length){
+      var vi=D.indexOf(DOG48_RLE.charAt(k)), n=D.indexOf(DOG48_RLE.charAt(k+1)); k+=2;
+      var col=pal[vi];
+      if(col!=='-' && n>0){
+        g.fillStyle='#'+col;
+        var y=(i/W)|0, x=i%W, rem=n;
+        while(rem>0){
+          var take=Math.min(rem, W-x);
+          g.fillRect(flip? (W-x-take):x, y, take, 1);
+          x+=take; rem-=take;
+          if(x>=W){ x=0; y+=1; }
+        }
+      }
+      i+=n;
+    }
+    return c;
+  }
+  /* deux images : normale et miroir — la démarche alterne sans animation coûteuse */
+  var ca=build(false), cb=build(true);
+  DOG48_TEX={ a: makeTex(ca, false), b: makeTex(cb, false), ca: ca, cb: cb };
+  return DOG48_TEX;
+}
+window.__dogTex = function(){ var T=dog48Tex(); return T.ca.toDataURL('image/png'); };
 function drawDog(p,t){
-  /* v5.0 : sprite dessiné (le chien n'est plus un empilement de boîtes) */
+  /* v5.5 : sprite issu du modèle pixel art, choisi par José (48x42).
+     Cadrage : 0,86 x 0,62 unité, soit la taille réelle du chien à l'écran. */
   var f=(Math.sin(p.step*7.0)>0)?1:0;
-  var v=Math.abs(Math.round(p.x*5+p.z*3))%3;
-  critterBillboard(p,'dog', 0.86, 0.62, 0.02, v, f);
+  var camY=Math.atan2(EYE[0],EYE[2]);
+  var tex=dog48Tex()[f?'b':'a'];
+  drawMesh(QUAD_XY, trs(p.x, 0.02+0.62*0.5, p.z, 0.86, 0.62, 1, camY), tex, [1,1,1], {unlit:true});
 }
 function drawRaccoon(p,t){
   /* v5.0 : raton laveur dessiné, queue annelée */
