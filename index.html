@@ -180,6 +180,8 @@
       <div class="st"><b id="stMe">0</b><i>TOI (BLEU)</i></div>
       <div class="st"><b id="stBot">0</b><i>LAYA (VERT)</i></div>
       <div class="st"><b id="stWater">100%</b><i>EAU</i></div>
+      <div class="st"><b id="stDirt">0%</b><i>CRASSE</i></div>
+      <div class="st"><b id="stSoap">0</b><i>SAVON</i></div>
     </div>
     <div id="padRow">
       <div class="side">
@@ -311,18 +313,24 @@ var FS = [
 '  vec4 t = (uUseTex > 0.5) ? texture2D(uTex, vUV) : vec4(1.0);',
 '  vec3 n = normalize(vNor);',
 '  float d = max(dot(n, uLight), 0.0);',
-'  float shade = 0.40 + 0.60 * d;',
+'  float shade = 0.86 + 0.22 * d;   /* v3.0 : faces peu contrastees — pas d ombre dure */',
 '  shade = mix(shade, 1.0, uUnlit);',
 '  shade = mix(shade, 1.0, uEmit);',
 '  vec3 col = uColor * t.rgb * shade;',
 '  vec3 lum = vec3(dot(col, vec3(0.299,0.587,0.114)));',
 '  col = mix(lum, col, uGrade.w) * uGrade.rgb;',
-'  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);',
+'  col = clamp(pow(max(col, vec3(0.0)), vec3(0.80)) * 1.02, 0.0, 1.0);   /* v2.9 : gamma, plus d offset qui delave */',
+'  float l2 = dot(col, vec3(0.299,0.587,0.114));',
+'  col = clamp(mix(vec3(l2), col, 1.60), 0.0, 1.0);',
+'  col = max(col, vec3(0.16));   /* v3.0 : plancher — pas de noir pur a l ecran */',
 '  /* v1.9 : PALETTE 7 NIVEAUX + TRAMAGE ORDONNE 4x4 (discipline des jeux 16-bit) */',
 '  if(uQuant > 0.5){',
-'    float th = texture2D(uBayer, gl_FragCoord.xy * 0.25 / 4.0).r;',
 '    float L = 12.0;',
-'    col = floor(col * L + (th - 0.5) * 0.62) / L;',
+'    /* v4.1 : TRAME SUPPRIMEE — cause du moire. Le motif Bayer etait calcule dans les',
+'       coordonnees du canvas 2160x1215, ensuite REDUIT a 1440 (bureau) ou 390 (telephone) :',
+'       le motif de 4 px battait avec la grille d affichage et dessinait un treillis sur',
+'       les aplats. On garde la quantification 12 niveaux (esprit 16-bit) sans motif. */',
+'    col = floor(col * L + 0.5) / L;',
 '  }',
 '  /* v1.8 : CONTOUR 1 texel - gradient de luminance sur la couleur deja rendue */',
 '  if(uOutline > 0.5){',
@@ -332,14 +340,14 @@ var FS = [
 '    float cu = dot(texture2D(uTex, vUV - vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
 '    float cd = dot(texture2D(uTex, vUV + vec2(0.0,uTexel.y)).rgb, vec3(0.299,0.587,0.114));',
 '    float gg = max(max(abs(c0-cl),abs(c0-cr)), max(abs(c0-cu),abs(c0-cd)));',
-'    col = mix(col, col * 0.38, smoothstep(0.020, 0.085, gg));',
+'    col = mix(col, col * 0.55, smoothstep(0.030, 0.120, gg));   /* v3.0 : contour moins noir et plus fin */',
 '  }',
 '  /* v1.7 : scanlines CRT calculées sur le GPU (le remplissage Canvas coûtait 3 ms) */',
-'  col *= 0.945 + 0.055 * step(1.0, mod(floor(gl_FragCoord.y * 0.5), 2.0));',
+'  col *= 0.975 + 0.025 * step(1.0, mod(floor(gl_FragCoord.y * 0.5), 2.0));   /* v2.8 : scanlines discretes */',
 '  if(uVig > 0.5){',
 '    vec2 q = (gl_FragCoord.xy - vec2(640.0,360.0)) / vec2(640.0,360.0);',
 '    float d = length(q * vec2(0.92,1.0));',
-'    col *= 1.0 - 0.34 * smoothstep(0.42,1.14,d);',
+'    col *= 1.0 - 0.06 * smoothstep(0.42,1.14,d);   /* v2.8 : vignette quasi nulle */',
 '  }',
 '  gl_FragColor = vec4(col, t.a * uAlpha);',
 '}'
@@ -406,10 +414,7 @@ function texTileClean(){
     px(g,1,1,'#eef4ee',1,30);           // bevel gauche
     px(g,1,30,'#c0c9c3',30,1);          // ombre bas
     px(g,30,1,'#c0c9c3',1,30);
-    for(var i=0;i<22;i++){
-      var x=3+((i*11)%26), y=3+((i*7)%25);
-      px(g,x,y,'rgba(150,168,158,0.55)');
-    }
+    /* v3.2 : plus de pixels de bruit — l'aplat reste un aplat (consigne Jose) */
     px(g,6,7,'rgba(255,255,255,0.35)',3,1);
   });
 }
@@ -429,10 +434,7 @@ function texTileDirty(){
       px(g,s[0],s[1],'rgba(104,84,52,0.55)',s[2],s[3]);
       px(g,s[0]+1,s[1]+1,'rgba(78,60,36,0.55)',Math.max(1,s[2]-2),Math.max(1,s[3]-2));
     }
-    for(var k=0;k<30;k++){
-      var x=(k*13)%30+1, y=(k*17)%30+1;
-      px(g,x,y,'rgba(70,56,35,0.45)');
-    }
+    /* v3.2 : bruit de texture retire */
     px(g,12,0,'rgba(60,48,30,0.25)',2,32);   // coulure
     px(g,3,14,'rgba(255,255,255,0.10)',6,2);
   });
@@ -476,9 +478,7 @@ function texBrick(){
         px(g,x+1+((row*5+bx*7)%20),y+4,'rgba(0,0,0,0.12)',5,3);
       }
     }
-    for(var k=0;k<40;k++){
-      px(g,(k*23)%64,(k*29)%64,'rgba(0,0,0,0.10)');
-    }
+    /* v3.2 : bruit de texture retire */
     px(g,0,0,'rgba(255,255,255,0.05)',64,64);
   });
 }
@@ -562,14 +562,26 @@ function texFur(){
 function texNoise(){
   return texCanvas(32,32,function(g,w,h){
     px(g,0,0,'#ffffff',w,h);
-    for(var k=0;k<80;k++){
-      var x=(k*7)%32, y=(k*11)%32;
-      px(g,x,y,'rgba(0,0,0,0.07)');
-    }
+    /* v3.2 : plus de semis de points — cette texture sert de multiplicateur a presque
+       tous les objets : son grain faisait lire TOUT le decor comme trame. Aplat pur. */
     px(g,0,0,'rgba(255,255,255,0.5)',w,1);
   });
 }
 
+function texShadowFlat(){
+  /* v4.0 : OMBRE FRANCHE a la 16-bit (Secret of Mana, Zelda ALTTP). Les ombres de
+     ces jeux ne sont ni des dégradés ni des trames : une forme pleine, bord net,
+     posee au sol et decalee dans le sens de la lumière. */
+  return texCanvas(32,32,function(g,w,h){
+    g.clearRect(0,0,w,h);
+    g.fillStyle='rgba(255,255,255,1)';
+    /* rectangle a coins arrondis, dessine en dur (pas d'anti-aliasing : pixel art) */
+    g.fillRect(6,2,20,28); g.fillRect(2,6,28,20);
+    g.fillRect(4,4,24,24);
+    g.fillStyle='rgba(255,255,255,0.55)';   /* un seul cran d'adoucissement sur le bord */
+    g.fillRect(1,9,30,14); g.fillRect(9,1,14,30);
+  });
+}
 function texShadow(){
   /* v0.7 : ombre TRAMÉE (matrice de Bayer 4×4) — un dégradé lisse jurait
      avec le pixel art. Chaque texel est allumé/éteint selon le motif. */
@@ -665,13 +677,13 @@ var FLOOR_PAL = {
      Galerie = marbre crème doré · Restaurant = damier rouge/blanc franc
      Musée = parquet brun miel · Patinoire = glace blanche bleutée ·
      Apple Store = dalles blanches ultra-claires. */
-  mall:  {pat:'tile',   grout:'#c0a878', base:'#f7eec8', alt:'#eee0b0', hi:'#fffbe6', lo:'#d5c290',
-          dirt1:'rgba(96,78,50,0.50)', dirt2:'rgba(64,50,32,0.58)', nest1:'#4a3c28', nest2:'rgba(24,18,10,0.86)'},
+  mall:  {pat:'tile',   grout:'#f0d8ac', base:'#ffe6c2', alt:'#ffdcae', hi:'#fff3dc', lo:'#e8bc86',
+          dirt1:'rgba(158,132,92,0.40)', dirt2:'rgba(126,102,68,0.46)', nest1:'#a3906c', nest2:'rgba(96,82,60,0.50)'},
   rink:  {pat:'ice',    grout:'#8fc0e0', base:'#dcefff', alt:'#c6e3fb', hi:'#ffffff', lo:'#a9d0ea',
           dirt1:'rgba(88,94,100,0.40)', dirt2:'rgba(124,124,116,0.46)', nest1:'#6f7a80', nest2:'rgba(40,48,54,0.82)'},
   resto: {pat:'checker',grout:'#6b2f24', base:'#f8f1de', alt:'#a8352a', hi:'#fffdf5', lo:'#cbb69c',
           dirt1:'rgba(70,48,26,0.55)', dirt2:'rgba(48,32,16,0.62)', nest1:'#4a3524', nest2:'rgba(24,16,8,0.86)'},
-  apple: {pat:'stone',  grout:'#d6dbe1', base:'#eef1f5', alt:'#e4e8ee', hi:'#ffffff', lo:'#d2d8df',
+  apple: {pat:'stone',  grout:'#4f9a3c', base:'#8ed36c', alt:'#7ec65c', hi:'#a6e585', lo:'#6db44e',
           dirt1:'rgba(104,98,86,0.44)', dirt2:'rgba(78,72,62,0.52)', nest1:'#5a564c', nest2:'rgba(30,28,24,0.82)'},
   museum:{pat:'parquet',grout:'#432b13', base:'#966331', alt:'#82552a', hi:'#c68f4e', lo:'#6a4420',
           dirt1:'rgba(58,40,20,0.52)', dirt2:'rgba(36,24,10,0.58)', nest1:'#3d2a16', nest2:'rgba(20,12,4,0.88)'}
@@ -718,24 +730,22 @@ function texFloor(pal,state){
       px(g,18,19,'rgba(255,255,255,0.30)',9,1);
     } else if(pal.pat==='stone'){
       /* dalles XXL : 1 seule dalle par case, joint tres fin, reflet poli */
-      px(g,0,0,pal.grout,w,h);
-      px(g,1,1,pal.base,30,30);
-      px(g,1,1,pal.hi,30,1);
-      px(g,1,1,pal.hi,1,30);
-      px(g,1,30,'rgba(0,0,0,0.07)',30,1);
-      px(g,30,1,'rgba(0,0,0,0.05)',1,30);
+      /* v4.1 : aplat (le joint + les 4 aretes faisaient le meme moire que le carrelage) */
+      px(g,0,0,pal.base,w,h);
       px(g,5,6,'rgba(255,255,255,0.55)',14,1);
       px(g,9,10,'rgba(255,255,255,0.30)',9,1);
       for(var k3=0;k3<10;k3++) px(g,(k3*13)%30+1,(k3*7)%30+1,'rgba(120,118,110,0.10)',2,1);
     } else { /* 'tile' : carreaux brillants a bevel */
-      px(g,0,0,pal.grout,w,h);
-      for(var ty2=0;ty2<2;ty2++){
-        for(var tx2=0;tx2<2;tx2++){
+      /* v4.1 : APLAT PUR. Le quadrillage de joints (deux carreaux de 16 px dans une
+         texture de 32 px) tombait sur 48 px a l ecran : a la minification x1,5 avec
+         filtrage NEAREST, les lignes de 1 px atterrissaient entre les pixels et
+         produisaient un moire en treillis. Consigne Jose : un aplat. */
+      px(g,0,0,pal.base,w,h);
+      for(var ty2=0;ty2<1;ty2++){
+        for(var tx2=0;tx2<1;tx2++){
           px(g,tx2*16+1,ty2*16+1,pal.base,14,14);
-          px(g,tx2*16+1,ty2*16+1,pal.hi,14,1);
-          px(g,tx2*16+1,ty2*16+1,pal.hi,1,14);
-          px(g,tx2*16+1,ty2*16+14,pal.lo,14,1);
-          px(g,tx2*16+13,ty2*16+1,pal.lo,1,13);
+          /* v3.3 : les 4 bevels de chaque carreau faisaient un micro-damier sur
+             60 % de l ecran : le sol devient un aplat a joints. */
         }
       }
       px(g,4,4,'rgba(255,255,255,0.55)',6,2);    /* reflet brillant */
@@ -840,13 +850,13 @@ function texWood(){
 }
 function texLeaf(){
   return texCanvas(32,32,function(g,w,h){
-    px(g,0,0,'#2c7438',w,h);
-    for(var k=0;k<74;k++){
-      var x=(k*13)%31, y=(k*7)%31;
-      px(g,x,y,(k%3)?'rgba(74,156,74,0.85)':'rgba(20,80,38,0.85)',2,2);
-    }
-    px(g,4,6,'rgba(168,224,144,0.45)',6,3);
-    px(g,18,18,'rgba(168,224,144,0.35)',5,2);
+    px(g,0,0,'#4a9c50',w,h);
+    /* v3.3 : touffes DESSINEES au lieu d un semis regulier (le semis se lisait comme
+       une grille de transparence, pas comme du feuillage). */
+    px(g,2,3,'#3f8446',11,5); px(g,9,9,'#3f8446',13,4); px(g,4,17,'#3f8446',9,5);
+    px(g,15,2,'#3f8446',12,3); px(g,19,22,'#3f8446',10,5);
+    px(g,4,5,'#63b768',6,2); px(g,12,11,'#63b768',7,2); px(g,21,24,'#63b768',6,2);
+    px(g,7,20,'#2d6b34',8,3); px(g,20,6,'#2d6b34',7,3);
   });
 }
 function texWallPanel(base,hi,lo,seam){
@@ -859,7 +869,7 @@ function texWallPanel(base,hi,lo,seam){
         px(g,x*32+1,y*16+13,lo,30,2);
       }
     }
-    for(var k=0;k<18;k++) px(g,(k*17)%63,(k*23)%63,'rgba(0,0,0,0.06)',3,1);
+    /* v3.3 : tirets retires — murs en aplats a joints */
   });
 }
 function texBoards(){
@@ -955,9 +965,9 @@ function texContactShadow(){
   var c=document.createElement('canvas'); c.width=c.height=128;
   var g=c.getContext('2d');
   var rg=g.createRadialGradient(64,64,0,64,64,62);
-  rg.addColorStop(0.00,'rgba(0,0,0,0.55)');
-  rg.addColorStop(0.45,'rgba(0,0,0,0.38)');
-  rg.addColorStop(0.80,'rgba(0,0,0,0.12)');
+  rg.addColorStop(0.00,'rgba(45,36,30,0.26)');
+  rg.addColorStop(0.45,'rgba(45,36,30,0.17)');
+  rg.addColorStop(0.80,'rgba(45,36,30,0.06)');
   rg.addColorStop(1.00,'rgba(0,0,0,0.00)');
   g.fillStyle=rg; g.fillRect(0,0,128,128);
   return c;
@@ -976,6 +986,7 @@ var T = {
   glow:  makeTex(texGlow(),false),
   cshadow:makeTex(texContactShadow(),false),   /* v1.2 */
   shadow:makeTex(texShadow(),false),
+  sflat: makeTex(texShadowFlat(),false),   /* v4.0 : ombre franche (bord net) */
   nest:  makeTex(texNest(),false),
   soap:  makeTex(texSoap(),false),
   fabric:makeTex(texFabric(),false),
@@ -1246,9 +1257,19 @@ var EYE_0=[0,11.20,12.40], TARGET_0=[0,0.25,1.30];   /* v1.6 : plongée ~42° (a
 var EYE = rotAroundY(EYE_0, CAM_ROT, CAM_DIST);
 var TARGET = rotAroundY(TARGET_0, CAM_ROT, CAM_DIST);
 var FOV=45*Math.PI/180;
+var CAM_ZOOM=1.0, PROJ_YOFF=0.090;   /* v2.6 : réglables — le portrait n'a plus de barres HUD sur l'arène */
 var PROJ = persp(FOV, GW/GH, 2.0, 120);
-PROJ[9] = 0.090;   // decalage vertical (laisse la place aux barres HUD)
+PROJ[9] = PROJ_YOFF;
 PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
+/* v2.6 : reconstruit la projection quand le cadrage change (portrait : zoom + pas de décalage) */
+function rebuildCam(zoom, yoff){
+  CAM_ZOOM = zoom; PROJ_YOFF = yoff;
+  EYE = rotAroundY(EYE_0, CAM_ROT, CAM_DIST*CAM_ZOOM);
+  TARGET = rotAroundY(TARGET_0, CAM_ROT, CAM_DIST*CAM_ZOOM);
+  PROJ = persp(FOV, GW/GH, 2.0, 120);
+  PROJ[9] = PROJ_YOFF;
+  PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
+}
 /* v0.15 : mode QA « ?closeup » — caméra rapprochée pour inspecter les sprites */
 if(/sprtest/.test(location.search)){ window.__sprTest=true; }
 if(/closeup/.test(location.search)){
@@ -1281,12 +1302,12 @@ var HIGH_SCORE_CLE='mobracer_highscore_v09_';
    le nombre de nids et le nombre de passages de lavage par case.
    Duree identique partout (75 s) pour que la comparaison reste lisible. */
 var LEVELS=[
-  /* ─────────── 1. SUPERMARCHÉ DE NUIT — allées, caisses, station de recharge ─────────── */
-  { id:'mall', num:1, name:'SUPERMARCHE DE NUIT', tag:'ALLEES & CAISSES',
+  /* ─────────── 1. SUPERMARCHÉ — allées, caisses, station de recharge ─────────── */
+  { id:'mall', num:1, name:'GALERIES MARCHANDES', tag:'ALLEES & CAISSES',
     desc:'Rayons garnis, congeles, caisses et reserve. Station RECHARGE en haut a gauche, VIDANGE en haut a droite.',
     coef:0.95, diffLabel:'FACILE', stars:1, nests:4, passes:1,
-    floor:'mall', wall:'wallMall', wallCol:[1.02,1.00,0.96], wallH:1.75,
-    accent:[1.0,0.80,0.34], sky:[0.085,0.090,0.125], ground:[0.26,0.26,0.30],
+    floor:'mall', wall:'wallMall', wallCol:[0.52,0.94,0.84], wallH:1.75,   /* v3.0 : murs menthe — trois familles de teintes distinctes */
+    accent:[1.0,0.80,0.34], sky:[0.44,0.70,0.96], ground:[0.74,0.70,0.60],
     props:[/* ── RÉSERVE (haut) : palettes de cartons ── */
            {k:'pallet',gx:3,gy:1},{k:'pallet',gx:4,gy:1},{k:'pallet',gx:5,gy:1},{k:'pallet',gx:10,gy:1},{k:'pallet',gx:11,gy:1},{k:'pallet',gx:12,gy:1},
            /* ── STATIONS (traversables) ── */
@@ -1313,25 +1334,33 @@ var LEVELS=[
            /* ── v1.1 : modélisation 3D — enseignes suspendues, luminaires, chariots, tapis ── */
            {k:'aislesign',gx:4,gy:5,solid:false,v:0},{k:'aislesign',gx:10,gy:5,solid:false,v:1},
            {k:'aislesign',gx:7,gy:2,solid:false,v:2},
-           {k:'ceilinglight',gx:3,gy:6,solid:false},{k:'ceilinglight',gx:11,gy:6,solid:false},
-           {k:'ceilinglight',gx:7,gy:4,solid:false},{k:'ceilinglight',gx:7,gy:10,solid:false},
+           /* v3.1 : les 4 luminaires de plafond (et leurs halos au sol) sont retires —
+              consigne Jose : ils nuisaient a la visibilite de l aire de jeu. */
            {k:'cart3d',gx:1,gy:8},{k:'cart3d',gx:13,gy:8},
            {k:'beltitem',gx:2,gy:10,solid:false},{k:'beltitem',gx:5,gy:10,solid:false},
            {k:'beltitem',gx:9,gy:10,solid:false},{k:'beltitem',gx:12,gy:10,solid:false}],
-    extras:[{k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.20,0.22,0.30]},
+    extras:[            /* v3.2 : parvis de la galerie marchande — arbres, haies, bacs, bancs, voitures */
+            {k:'hedge', x:-8.9, z:1.6, w:2.6}, {k:'hedge', x:8.9, z:1.6, w:2.6},
+            {k:'tree', x:-8.8, z:-1.6}, {k:'tree', x:8.8, z:-1.6},
+            {k:'tree', x:-11.4, z:2.6}, {k:'tree', x:11.4, z:2.6},
+            {k:'planter', x:-8.4, z:5.4}, {k:'planter', x:8.4, z:5.4},
+            {k:'bench', x:-8.7, z:7.6}, {k:'bench', x:8.7, z:7.6},
+            {k:'car', x:-12.6, z:-5.6, c:[1.30,0.42,0.38]}, {k:'car', x:-12.6, z:-1.6, c:[0.44,0.78,1.30]},
+            {k:'car', x:12.6, z:-5.6, c:[1.28,1.12,0.42]}, {k:'car', x:12.6, z:-1.6, c:[0.58,1.18,0.72]},
+            {k:'wallOut', x:0, z:-10.6, w:23, h:4.2, c:[0.20,0.22,0.30]},
             {k:'neon', x:-6.2, z:-8.8, c:[0.45,0.85,1.55]},
             {k:'neon', x:6.2, z:-8.8, c:[1.45,0.90,0.35]},
             {k:'neon', x:0, z:-9.4, c:[0.85,0.60,1.45]},
             {k:'pylon', x:-9.2, z:-3.0, c:[0.42,0.46,0.54]},
             {k:'pylon', x:9.2, z:-3.0, c:[0.42,0.46,0.54]}],
-    mobs:['human','human','gull','gull','dog'] },
+    mobs:['human','human','human','dog','dog'] },
 
   /* ─────────── 2. RESTAURANT — SALLE + CUISINE (passe-plat) ─────────── */
-  { id:'resto', num:2, name:'RESTAURANT', tag:'SALLE & CUISINE',
+  { id:'resto', num:2, name:'RESTAURANT DE BORD DE MER', tag:'SALLE & CUISINE',
     desc:'Salle en damier et CUISINE derriere le passe-plat : piano, friteuse, plonge. Les ratons fouillent les poubelles.',
     coef:1.15, diffLabel:'NORMAL', stars:2, nests:5, passes:1,
     floor:'resto', wall:'brick', wallCol:[0.96,0.72,0.58], wallH:1.95,
-    accent:[1.15,0.46,0.20], sky:[0.105,0.070,0.055], ground:[0.24,0.16,0.12],
+    accent:[1.15,0.46,0.20], sky:[0.64,0.52,0.44], ground:[0.58,0.44,0.34],
     /* cloison de cuisine : mur le long de la ligne gy=3, ouverture = PASSE-PLAT en gx 7-8 */
     walls:[{dir:'h', gy:3, gx1:0, gx2:14, h:1.30, gaps:[[7,3],[8,3]], pass:true}],
     props:[/* — CUISINE (gy 0..2) — */
@@ -1350,19 +1379,28 @@ var LEVELS=[
            {k:'table',gx:7,gy:8},{k:'table',gx:7,gy:11},
            {k:'lamp',gx:4,gy:7},{k:'lamp',gx:10,gy:7},{k:'lamp',gx:7,gy:10},
            {k:'bin',gx:2,gy:12},{k:'bin',gx:12,gy:12}],
-    extras:[{k:'wallOut', x:0, z:-10.2, w:22, h:3.6, c:[0.13,0.08,0.06]},
+    extras:[            /* v3.3 : LA MER — bande large au fond, ecume et sable mouille */
+            {k:'wallOut', x:0, z:-8.2, w:26, h:0.30, c:[0.26,0.60,0.95]},
+            {k:'wallOut', x:0, z:-7.7, w:26, h:0.16, c:[0.86,0.95,1.00]},
+            {k:'wallOut', x:0, z:-7.3, w:26, h:0.14, c:[0.98,0.90,0.66]},
+            /* v3.2 : terrasse en bord de mer — parasols, bancs, haies de dune */
+            {k:'parasol', x:-8.9, z:2.2, c:[1.55,0.55,0.45]}, {k:'parasol', x:8.9, z:2.2, c:[0.50,0.85,1.55]},
+            {k:'parasol', x:-8.9, z:6.0, c:[1.50,1.10,0.40]}, {k:'parasol', x:8.9, z:6.0, c:[0.95,0.60,1.45]},
+            {k:'bench', x:-11.6, z:4.0}, {k:'bench', x:11.6, z:4.0},
+            {k:'hedge', x:-8.6, z:-2.4, w:2.4}, {k:'hedge', x:8.6, z:-2.4, w:2.4},
+            {k:'wallOut', x:0, z:-10.2, w:22, h:3.6, c:[0.13,0.08,0.06]},
             {k:'neon', x:0, z:-8.6, c:[1.55,0.42,0.18]},
             {k:'neon', x:-6.6, z:-8.6, c:[1.30,0.85,0.25]},
             {k:'pylon', x:-9.4, z:-6.0, c:[0.30,0.20,0.16]},
             {k:'pylon', x:9.4, z:-6.0, c:[0.30,0.20,0.16]}],
-    mobs:['dog','human','human','raccoon','raccoon','gull'] },
+    mobs:['gull','gull','gull','dog','human'] },
 
   /* ─────────── 3. MUSEE — peintures, statues, vitrines ─────────── */
   { id:'museum', num:3, name:'MUSEE', tag:'PARQUET & CIMAISES',
     desc:'Parquet verni, peintures encadrees, statues sur socle, vitrines et cordons de velours.',
     coef:1.35, diffLabel:'DIFFICILE', stars:3, nests:6, passes:1,
     floor:'museum', wall:'wallApple', wallCol:[0.34,0.46,0.40], wallH:2.15,
-    accent:[1.05,0.82,0.34], sky:[0.055,0.070,0.062], ground:[0.16,0.20,0.17],
+    accent:[1.05,0.82,0.34], sky:[0.56,0.58,0.60], ground:[0.52,0.55,0.52],
     props:[/* peintures accrochees au mur nord */
            {k:'painting',gx:1,gy:0,v:0},{k:'painting',gx:3,gy:0,v:1},{k:'painting',gx:5,gy:0,v:2},
            {k:'painting',gx:9,gy:0,v:0},{k:'painting',gx:11,gy:0,v:1},{k:'painting',gx:13,gy:0,v:2},
@@ -1377,19 +1415,23 @@ var LEVELS=[
            {k:'carpet',gx:7,gy:8,len:3.2},{k:'carpet',gx:7,gy:11,len:3.2},
            {k:'mbench',gx:7,gy:9},
            {k:'bin',gx:1,gy:12},{k:'bin',gx:13,gy:12}],
-    extras:[{k:'wallOut', x:0, z:-10.8, w:24, h:4.8, c:[0.11,0.10,0.13]},
+    extras:[            /* v3.2 : parvis du musée — haies taillées et arbres en alignement */
+            {k:'hedge', x:-8.8, z:-1.0, w:3.2}, {k:'hedge', x:8.8, z:-1.0, w:3.2},
+            {k:'tree', x:-8.9, z:3.4}, {k:'tree', x:8.9, z:3.4},
+            {k:'bench', x:-8.6, z:6.6}, {k:'bench', x:8.6, z:6.6},
+            {k:'wallOut', x:0, z:-10.8, w:24, h:4.8, c:[0.11,0.10,0.13]},
             {k:'pylon', x:-9.4, z:-1.2, c:[0.66,0.64,0.68]},
             {k:'pylon', x:9.4, z:-1.2, c:[0.66,0.64,0.68]},
             {k:'pylon', x:-9.4, z:2.4, c:[0.60,0.58,0.62]},
             {k:'pylon', x:9.4, z:2.4, c:[0.60,0.58,0.62]}],
-    mobs:['skeleton','skeleton','skeleton','human','raccoon','dog','gull']   /* musée : squelettes de dinosaure */ },
+    mobs:['human','human','human','dog']   /* musée : squelettes de dinosaure */ },
 
   /* ─────────── 4. PATINOIRE — glace, balustrades, buts ─────────── */
   { id:'rink', num:4, name:'PATINOIRE', tag:'GLACE & BALUSTRADES',
     desc:'Glace et publicites sur les balustrades : la machine DERAPE en permanence.',
     coef:1.55, diffLabel:'TRES DIFFICILE', stars:4, nests:7, passes:2, ice:true,
     floor:'rink', wall:'board', wallCol:[0.98,1.02,1.08], wallH:1.22,
-    accent:[0.42,0.78,1.15], sky:[0.045,0.075,0.135], ground:[0.24,0.40,0.52],
+    accent:[0.42,0.78,1.15], sky:[0.54,0.70,0.90], ground:[0.58,0.72,0.82],
     props:[{k:'boardAd',gx:2,gy:0,a:0},{k:'boardAd',gx:5,gy:0,a:1},{k:'boardAd',gx:9,gy:0,a:2},{k:'boardAd',gx:12,gy:0,a:0},
            {k:'scoreboard',gx:7,gy:1},
            {k:'boardAdS',gx:0,gy:2,a:0},{k:'boardAdS',gx:0,gy:5,a:1},{k:'boardAdS',gx:0,gy:8,a:2},
@@ -1399,17 +1441,24 @@ var LEVELS=[
            {k:'lineH',gx:7,gy:6},{k:'dot',gx:4,gy:4},{k:'dot',gx:10,gy:8},
            {k:'rail',gx:5,gy:3},{k:'rail',gx:9,gy:3},
            {k:'bin',gx:1,gy:9},{k:'bin',gx:13,gy:9}],
-    extras:[{k:'bleacher', x:0, z:-9.2, w:20},
+    extras:[            /* v3.3 : tribunes — l exterieur de la patinoire etait nu */
+            {k:'bleacher', x:-12.2, z:0.5, w:5.0},
+            {k:'bleacher', x:12.2, z:0.5, w:5.0},
+            /* v3.2 : abords de la patinoire — bancs et arbres */
+            {k:'bench', x:-8.8, z:1.2}, {k:'bench', x:8.8, z:1.2},
+            {k:'bench', x:-8.8, z:5.2}, {k:'bench', x:8.8, z:5.2},
+            {k:'tree', x:-11.8, z:3.0}, {k:'tree', x:11.8, z:3.0},
+            {k:'bleacher', x:0, z:-9.2, w:20},
             {k:'bleacher', x:0, z:9.6, w:20},
             {k:'wallOut', x:0, z:-12.4, w:26, h:3.8, c:[0.10,0.16,0.26]}],
-    mobs:['human','human','dog','dog','gull','gull','raccoon','skeleton']   /* patinoire : un squelette de décor */ },
+    mobs:['human','human','human','dog','dog']   /* patinoire : un squelette de décor */ },
 
   /* ─────────── 5. APPLE STORE — plan reel + BACK OF HOUSE ─────────── */
-  { id:'apple', num:5, name:'APPLE STORE', tag:'TABLES ALIGNEES & RESERVE',
+  { id:'apple', num:5, name:'VERGER', tag:'TABLES ALIGNEES & RESERVE',
     desc:'Tables en bois alignees, Genius Bar, murs d accessoires et ARRIERE-BOUTIQUE (back of house).',
     coef:1.85, diffLabel:'EXPERT', stars:5, nests:8, passes:2,
     floor:'apple', wall:'wallApple', wallCol:[1.06,1.06,1.05], wallH:1.95,
-    accent:[0.82,0.90,1.00], sky:[0.075,0.095,0.165], ground:[0.62,0.62,0.60],
+    accent:[0.82,0.90,1.00], sky:[0.62,0.82,1.00], ground:[0.44,0.74,0.36],
     /* cloison de la RESERVE : mur vertical en gx=11, porte en gy=3 */
     walls:[{dir:'v', gx:11, gy1:0, gy2:6, h:1.95, gaps:[[11,3]]}],
     props:[/* tables Avenue alignees (2 rangees de 3) */
@@ -1426,11 +1475,16 @@ var LEVELS=[
            {k:'crate',gx:12,gy:1},{k:'crate',gx:13,gy:1},{k:'shelf',gx:12,gy:2},
            {k:'cart',gx:13,gy:4},{k:'desk',gx:13,gy:5},
            {k:'bin',gx:9,gy:11},{k:'bin',gx:1,gy:11}],
-    extras:[{k:'wallOut', x:0, z:-10.9, w:25, h:3.4, c:[0.12,0.16,0.28]},
+    extras:[            /* v3.2 : le verger — rangees d arbres fruitiers */
+            {k:'tree', x:-9.0, z:-5.0}, {k:'tree', x:-9.0, z:-1.0}, {k:'tree', x:-9.0, z:3.0}, {k:'tree', x:-9.0, z:7.0},
+            {k:'tree', x:9.0, z:-5.0}, {k:'tree', x:9.0, z:-1.0}, {k:'tree', x:9.0, z:3.0}, {k:'tree', x:9.0, z:7.0},
+            {k:'tree', x:-12.4, z:1.0}, {k:'tree', x:12.4, z:1.0},
+            {k:'bench', x:-8.6, z:9.6}, {k:'bench', x:8.6, z:9.6},
+            {k:'wallOut', x:0, z:-10.9, w:25, h:3.4, c:[0.12,0.16,0.28]},
             {k:'neon', x:0, z:-9.2, c:[1.55,1.60,1.70]},
             {k:'neon', x:-7.4, z:-9.0, c:[0.55,0.75,1.45]},
             {k:'neon', x:7.4, z:-9.0, c:[0.55,0.75,1.45]}],
-    mobs:['human','human','human','human','gull','gull','dog','dog','raccoon','raccoon'] }
+    mobs:['raccoon','raccoon','gull','gull','human'] }
 ];
 
 
@@ -1477,7 +1531,7 @@ var levelIdx=0, LV=LEVELS[0], selIdx=0;
    une ambiance d'un coup d'oeil (chaud/resto, froid/patinoire, or/musée,
    neutre lumineux/Apple, doré/galerie). [teinte r,g,b ; saturation] */
 var GRADES = {
-  mall:  [1.14,1.05,0.86, 1.10],
+  mall:  [1.05,1.04,1.00, 1.26],
   resto: [1.12,0.95,0.82, 1.16],
   museum:[1.02,0.98,0.86, 0.86],
   rink:  [0.86,0.97,1.14, 1.08],
@@ -2073,6 +2127,14 @@ function drawShadow(x,z,size,alpha){
    un quad horizontal sombre plaque au sol sous chaque objet bloquant.
    Pas de shadow map, pas d'ombre longue : l'empreinte seule, opacite 0.22-0.32. */
 var CONTACT_SIZE = { bin:0.85, plant:0.95, column:0.95, lamp:0.70, tree:1.00, jug:0.80, statue:1.00 };   /* defaut 1.25 */
+/* v4.0 : ombre portee — decalage proportionnel a la taille de l'objet, direction
+   de lumiere constante (haut-gauche -> bas-droite), opacite franche. */
+function dropShadow(x,z,size,alpha,lift){
+  var k=(lift===undefined?1:lift);
+  var dx=0.26*k, dz=0.19*k;
+  drawMesh(QUAD_XZ, trs(x+dx,0.022,z+dz,size*0.5,1,size*0.5,0), T.sflat,
+    [0.11,0.13,0.33], {unlit:true, alpha:alpha});   /* teinte froide : ne se confond pas avec la crasse brune */
+}
 function contactShadow(x,z,size,alpha){
   drawMesh(QUAD_XZ, trs(x,0.03,z,size*0.5,1,size*0.5,0), T.cshadow, [0,0,0], {unlit:true, alpha:alpha});
 }
@@ -2086,20 +2148,20 @@ function drawContactShadows(){
     var pp=LV.props[i];
     if(pp.solid===false || pp.k==='ceilinglight') continue;
     if(!blocked[idxAt(pp.gx,pp.gy)]) continue;
-    contactShadow(pp.gx-7, pp.gy-6, CONTACT_SIZE[pp.k]||1.25, 0.30);
+    dropShadow(pp.gx-7, pp.gy-6, (CONTACT_SIZE[pp.k]||1.25)*1.05, 0.34, 1.0);   /* v4.0 : ombre portee franche */
   }
   /* machines (joueur + bot) et leurs personnages (sprites, decales derriere la machine) */
   var ms=[player,bot];
   for(var mi=0;mi<2;mi++){
     var m=ms[mi], mx=m.wx+m.kox, mz=m.wz+m.koz;
-    contactShadow(mx, mz, 1.45, 0.32);
-    contactShadow(mx-0.34*Math.sin(m.angle), mz-0.62*Math.cos(m.angle), 0.80, 0.26);
+    dropShadow(mx, mz, 1.50, 0.38, 1.35);   /* la machine est haute : ombre plus decalee */
+    dropShadow(mx-0.34*Math.sin(m.angle), mz-0.62*Math.cos(m.angle), 0.86, 0.30, 1.10);
   }
-  if(gm) contactShadow(gm.x, gm.z, 1.00, 0.28);
+  if(gm) dropShadow(gm.x, gm.z, 1.05, 0.30, 0.9);
   /* pollueurs : la mouette vole, sa tache est plus petite et plus pale */
   for(var pI=0;pI<polluters.length;pI++){
     var po=polluters[pI];
-    contactShadow(po.x, po.z, po.type==='gull'?0.80:0.95, po.type==='gull'?0.22:0.28);
+    dropShadow(po.x, po.z, po.type==='gull'?0.86:1.00, po.type==='gull'?0.32:0.36, 0.6);   /* meme decalage pour tous : une seule source de lumiere */
   }
   gl.depthMask(true);
   gl.disable(gl.BLEND);
@@ -3418,7 +3480,7 @@ function drawPusher(m){
   var FL=FLOORS[LV.floor];
 
   // sol exterieur (decor propre au niveau)
-  drawMesh(QUAD_XZ, trs(0,-0.02,0,40,1,34,0), T.metal, LV.ground, {uvScale:[56,56]});
+  drawMesh(QUAD_XZ, trs(0,-0.02,0,40,1,34,0), T.noise, LV.ground, {uvScale:[1,1]});   /* v3.3 : aplat, la texture metal repetee 56x faisait un damier */
 
   // sol de l'arene : 4 batches (sale / propre / trainee / NID de detritus)
   if(floorCnt[0]) drawFloorMesh(floorMeshes[0], FL.dirty);
@@ -3535,6 +3597,30 @@ function drawPusher(m){
         box(e.x,0.12,e.z, 0.70,0.24,0.70, T.noise, [0.42,0.42,0.46]);
         box(e.x,1.60,e.z, 0.44,3.00,0.44, T.noise, e.c||[0.62,0.60,0.64], {uvScale:[1,3]});
         box(e.x,3.16,e.z, 0.62,0.16,0.62, T.noise, [0.72,0.70,0.74]);
+      } else if(e.k==='hedge'){          /* haie taillee */
+        box(e.x, 0.42, e.z, e.w||2.30, 0.84, 0.74, T.leaf, [0.62,1.10,0.48], {uvScale:[2,1]});
+        box(e.x, 0.86, e.z, (e.w||2.30)-0.22, 0.20, 0.64, T.leaf, [0.76,1.22,0.56], {uvScale:[2,1]});
+      } else if(e.k==='tree'){           /* arbre : tronc + deux masses de feuilles */
+        box(e.x, 0.42, e.z, 0.28, 0.84, 0.28, T.wood, [1.24,1.00,0.70]);
+        box(e.x, 1.52, e.z, 1.60, 1.24, 1.60, T.leaf, [0.74,1.12,0.56], {ry:0.4});
+        box(e.x-0.20, 2.24, e.z+0.12, 0.98, 0.72, 0.98, T.leaf, [0.90,1.24,0.64], {ry:1.1});
+      } else if(e.k==='planter'){        /* bac a fleurs */
+        box(e.x, 0.20, e.z, 0.88, 0.40, 0.88, T.noise, [1.02,0.58,0.38]);
+        box(e.x, 0.44, e.z, 0.74, 0.10, 0.74, T.noise, [0.36,0.26,0.18]);
+        box(e.x, 0.82, e.z, 0.80, 0.66, 0.80, T.leaf, [0.98,1.14,0.64], {ry:0.7});
+      } else if(e.k==='bench'){          /* banc public */
+        box(e.x, 0.32, e.z, 1.34, 0.12, 0.50, T.wood, [1.12,1.00,0.86]);
+        box(e.x, 0.52, e.z-0.21, 1.34, 0.30, 0.10, T.wood, [1.02,0.90,0.76]);
+        box(e.x, 0.16, e.z, 1.02, 0.30, 0.36, T.metal, [0.64,0.68,0.72]);
+      } else if(e.k==='car'){            /* voiture garee */
+        var cc=e.c||[1.30,0.42,0.38];
+        box(e.x, 0.20, e.z, 1.86, 0.34, 3.30, T.metal, [0.26,0.28,0.32], {ry:e.ry||0});
+        box(e.x, 0.56, e.z, 1.76, 0.48, 3.10, T.metal, cc, {ry:e.ry||0});
+        box(e.x, 1.02, e.z, 1.54, 0.46, 1.70, T.glass, [0.74,0.90,0.98], {ry:e.ry||0});
+      } else if(e.k==='parasol'){        /* parasol de terrasse */
+        box(e.x, 1.30, e.z, 0.10, 2.60, 0.10, T.metal, [0.82,0.86,0.90]);
+        box(e.x, 2.56, e.z, 2.12, 0.16, 2.12, T.noise, e.c||[1.55,0.55,0.45], {ry:0.6});
+        box(e.x, 2.40, e.z, 1.72, 0.14, 1.72, T.noise, e.c||[1.35,0.48,0.40], {ry:0.6});
       } else if(e.k==='bleacher'){
         for(var bl=0; bl<4; bl++){
           box(e.x, 0.25+bl*0.30, e.z-bl*0.55, e.w, 0.30+bl*0.30, 0.52, T.noise, [0.34+bl*0.05,0.36+bl*0.05,0.42+bl*0.05]);
@@ -4077,10 +4163,13 @@ window.addEventListener('keydown',function(e){
     var list = (mode==='charPick')?CHARS:VEHICLES;
     var isChar = (mode==='charPick');
     var cur = isChar?charIdx:vehIdx;
-    if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); cur=(cur%2===0)?Math.min(cur+1,list.length-1):cur-1; }
-    else if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); cur=(cur%2===1)?cur-1:Math.min(cur+1,list.length-1); }
-    else if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); cur=Math.min(cur+2,list.length-1); }
-    else if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); cur=Math.max(cur-2,0); }
+    /* v2.6 : les cartes forment une LISTE VERTICALE — haut/bas = ±1.
+       Le ±2 venait d'une grille 2×2 abandonnée : depuis, « bas » sautait une carte
+       (1 → 3 → 4) et « haut » n'en remontait qu'une sur deux. */
+    if(k==='ArrowDown'||k==='s'||k==='S'){ e.preventDefault(); cur=Math.min(cur+1,list.length-1); }
+    else if(k==='ArrowUp'||k==='w'||k==='W'){ e.preventDefault(); cur=Math.max(cur-1,0); }
+    else if(k==='ArrowRight'||k==='d'||k==='D'){ e.preventDefault(); cur=Math.min(cur+1,list.length-1); }
+    else if(k==='ArrowLeft'||k==='a'||k==='A'){ e.preventDefault(); cur=Math.max(cur-1,0); }
     else if(k==='Enter'||k===' '){
       e.preventDefault();
       if(isChar){ charIdx=cur; mode='vehPick'; beep(720,0.07,0.04); }
@@ -4990,7 +5079,14 @@ function drawAttract(){
 function drawHUD(){
   hud.setTransform(2.25,0,0,2.25,0,0);   /* v1.7 : HUD rendu en 1440×810 (coût Canvas 2D ÷3), étiré sur le stage 2160 */
   var CRT_PAT=null;
-  function crtScanlines(){
+  /* v2.6 : sur un téléphone l'arène ne fait que ~220 px de haut — la mini-carte (114×123)
+   et la console de jauges (508×40) mangeaient le quart bas du terrain. En mode compact
+   elles disparaissent du canvas : les valeurs vivent dans la barre de stats sous le jeu. */
+function hudCompact(){
+  var L=window.__layout;
+  return !!(L && (L.scale < 0.42 || L.drawW < 760));
+}
+function crtScanlines(){
     /* v1.7 : un motif 1×2 mis en cache puis rempli d'un seul coup — 180 fillRect par
        frame devenaient le premier poste de coût du HUD en 2160×1215 */
     if(!CRT_PAT){
@@ -5009,6 +5105,8 @@ function drawHUD(){
     stMe.textContent=score;
     stBot.textContent=botScore;
     stWater.textContent=Math.round(player.water*100)+'%';
+    if(stDirt) stDirt.textContent=Math.round(player.dirt*100)+'%';
+    if(stSoap) stSoap.textContent=Math.round((player.soapT||0))+'s';
   }
   hud.clearRect(0,0,640,360);
   hudAccent();
@@ -5108,7 +5206,7 @@ function drawHUD(){
   hudText(LV.passes>1 ? ('LAVAGE x'+LV.passes) : ('RECORD '+(highScores[LV.id]||0)), 630, 36, 7, '#9fd8f0', 'right');
 
   /* ═════════ 4. MINI-CARTE (bas gauche : bordure lisible, liseré murs, légende) ═════════ */
-  (function(){
+  if(!hudCompact()) (function(){
     var MX=6, MY=214, MW=114, MH=123;
     drawArcadeBox(MX, MY, MW, MH, 'rgba(6,10,16,0.92)', HUD_ACC, '#7ad8f0', 2, false);
     /* En-tête de la mini-carte */
@@ -5191,7 +5289,7 @@ function drawHUD(){
   /* ═════════ 3. CONSOLE DE JAUGES (grille unique, écarts constants, icônes pixel) ═════════
      4 modules alignés sur la même ligne (y=297..337) à droite de la mini-carte (x=126..634),
      avec écart constant GAP=10px et tous les labels bilingues AU-DESSUS de leur barre. */
-  drawArcadeBox(126, 297, 508, 40, 'rgba(7,12,19,0.92)', '#2e4458', null, 2, false);
+  if(!hudCompact()) drawArcadeBox(126, 297, 508, 40, 'rgba(7,12,19,0.92)', '#2e4458', null, 2, false);
 
   /* Alerte contextuelle au-dessus des jauges si Eau vide ou Bac plein */
   if(player.water<=0 || player.dirt>=0.999 || waterCrit){
@@ -5216,9 +5314,11 @@ function drawHUD(){
      Col 4 (FUSEE / ROCKET) : x=528, w=98  (fin 626)  [écart = 10]
      Ligne des icônes : y=301 · Ligne des labels bilingues : y=307 · Ligne des barres : y=317 */
   var Y_ICON = 301, Y_LBL = 307, Y_BAR = 317, H_BAR = 11;
+  var _hudGaugesOn = !hudCompact();   /* v2.6 : jauges masquées sur téléphone */
 
   /* ── MODULE 1 : EAU / WATER (dominante si waterCrit) ── */
   var X1 = 132, W1 = 134;
+  if(_hudGaugesOn){
   if(waterCrit){
     pxr(X1-3, 299, W1+6, 36, 'rgba(60,24,18,0.85)');
     pxr(X1-3, 299, W1+6, 2, pulseFast ? '#ffd45a' : '#ff5a4a');
@@ -5231,9 +5331,11 @@ function drawHUD(){
   var wHi  = player.water>0.35 ? '#9fe4ff' : '#ffe090';
   drawSegmentedBar(X1, Y_BAR, W1, waterCrit ? 13 : H_BAR, player.water,
     wCol, wHi, 8, 'rgba(255,255,255,0.14)', waterCrit ? (pulseFast?'#ffd45a':'#ff6a5a') : '#5aa8d6');
+  }
 
   /* ── MODULE 2 : CRASSE / GRIME + icône poubelle pour la vidange ── */
   var X2 = 276, W2 = 134;
+  if(_hudGaugesOn){
   if(dirtCrit){
     pxr(X2-3, 299, W2+6, 36, 'rgba(58,28,12,0.85)');
     pxr(X2-3, 299, W2+6, 2, pulseFast ? '#ffd45a' : '#ff6a4a');
@@ -5249,22 +5351,27 @@ function drawHUD(){
   if(player.dirt>=0.999){
     hudText('VIDANGE !', X2+W2/2, Y_BAR+6, 7, pulseFast ? '#ffffff' : '#ffd45a', 'center');
   }
+  }
 
   /* ── MODULE 3 : SAVON / SOAP + icône éponge savonneuse ── */
   var X3 = 420, W3 = 98;
+  if(_hudGaugesOn){
   var soapRatio = Math.min(1, (player.soapT||0) / (SAVON_DUREE*(player.soapMul||1)));
   drawIconSponge(X3, Y_ICON, 1);
   hudText('SAVON / SOAP', X3+14, Y_LBL, 7, player.soapT>0 ? '#ffb6cf' : '#8da2b0');
   drawSegmentedBar(X3, Y_BAR, W3, H_BAR, soapRatio,
     '#ff82b2', '#ffd2e4', 6, 'rgba(255,255,255,0.10)', player.soapT>0 ? '#ffb6cf' : '#3a4c5e');
+  }
 
   /* ── MODULE 4 : FUSEE / ROCKET + icône éclair ── */
   var X4 = 528, W4 = 98;
+  if(_hudGaugesOn){
   var rockRatio = Math.min(1, (player.rocketT||0) / FUSEE_DUREE);
   drawIconBolt(X4, Y_ICON, 1);
   hudText('FUSEE / ROCKET', X4+13, Y_LBL, 7, player.rocketT>0 ? '#ffd45a' : '#8da2b0');
   drawSegmentedBar(X4, Y_BAR, W4, H_BAR, rockRatio,
     '#ff9a2e', '#fff0a0', 6, 'rgba(255,255,255,0.10)', player.rocketT>0 ? '#ffd45a' : '#3a4c5e');
+  }
 
   /* Bulle de la grand-mère « 1… 2… 3… » (billboard HUD) */
   if(gm && mode==='play'){
@@ -5441,7 +5548,8 @@ var cpuMs=0, cpuN=0, tFrame=0, lastLoggedDraws=0;
    Calcul via visualViewport (barres d'URL) + safe-area (encoche). */
 var stPct=document.getElementById('stPct'), stTime=document.getElementById('stTime'),
     stMe=document.getElementById('stMe'), stBot=document.getElementById('stBot'),
-    stWater=document.getElementById('stWater');
+    stWater=document.getElementById('stWater'),
+    stDirt=document.getElementById('stDirt'), stSoap=document.getElementById('stSoap');
 var padEl=document.getElementById('pad'), knobEl=document.getElementById('knob'),
     stickEl=document.getElementById('stick');   /* v0.16 : plus utilisé (D-PAD) */
 var PAD_ON=false, isTouch=false;
@@ -5480,6 +5588,15 @@ function layout(){
   }
   padEl.classList.toggle('on', PAD_ON);
   window.__padOnFlag = PAD_ON;
+  /* v2.6 : sous ~0,42 d'échelle, chaque texel de trame occupe moins d'un pixel écran :
+     le tramage devient un grain sale et assombrit l'image. On coupe palette + trame. */
+  window.__noQuant = (sc < 0.42);
+  /* v2.6 : sur téléphone, l'arène n'a plus de HUD superposé — on récupère la bande du bas
+     (décalage vertical) et on resserre la caméra de 10 % pour grossir les engins. */
+  if(typeof rebuildCam==='function'){
+    if(sc < 0.42) rebuildCam(0.90, 0.015);
+    else          rebuildCam(1.00, 0.090);
+  }
   window.__layout={ vw:v.w, vh:v.h, portrait:portrait, scale:Math.round(sc*1000)/1000,
                     drawW:Math.round(drawW), drawH:Math.round(drawH), pad:PAD_ON };
 }
@@ -5640,6 +5757,7 @@ window.__spriteBox = function(){
           x1:Math.round(r.left+b.x*kx), y1:Math.round(r.top+b.y*ky)};
 };
 window.__playerScreen = function(){ return hudProject(player.wx+player.kox, 0.95, player.wz+player.koz); };
+window.__setLevel = function(i){ startLevel(i); };   /* QA : visiter les 5 salles sans jouer */
 window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
 window.__hudProjectRaw = function(x,y,z){ return hudProject(x,y,z); };
@@ -5654,7 +5772,8 @@ window.__state = function(){
     bot:    {gx:bot.gx, gy:bot.gy},
     waters: waters.length, rockets: rockets.length,
     score: score, botScore: botScore,
-    polluters: polluters.map(function(p){return p.type;})
+    polluters: polluters.map(function(p){return p.type;}),
+    charIdx: charIdx, vehIdx: vehIdx, selIdx: selIdx   /* v2.6 : exposés pour prouver la navigation en QA */
   };
 };
 window.__cellStates = function(){
