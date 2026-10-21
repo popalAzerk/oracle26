@@ -2622,15 +2622,11 @@ function drawProps(){
       box(x,0.035,z, 0.26,0.02,0.20, T.noise, [2.35,2.30,2.10], {ry:ry});
       box(x+0.10,0.055,z+0.06, 0.09,0.09,0.09, T.metal, [1.30,0.35,0.30], {ry:ry});
     } else if(p.k==='recharge'){
-      if(!SIGN_TEX.recharge) SIGN_TEX.recharge=makeSignTex('RECHARGE / WATER','rgba(8,30,50,0.94)','#45c8ea');
-      drawMesh(QUAD_XY, trs(x, 1.36, z-0.05, 2.00, 0.34, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.recharge, [1,1,1], {unlit:true});
-      box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
-      box(x,0.028,z, 0.99,0.012,0.99, T.noise, [0.25,0.70,1.20], {emit:0.35});
+      /* v5.6 : la station est un OBJET, plus un panneau posé au sol */
+      drawStation(x, z, 'water');
     } else if(p.k==='vidange'){
-      if(!SIGN_TEX.vidange) SIGN_TEX.vidange=makeSignTex('VIDANGE / DRAIN','rgba(48,24,6,0.94)','#f0a030');
-      drawMesh(QUAD_XY, trs(x, 1.36, z-0.05, 2.00, 0.34, 1, Math.atan2(EYE[0],EYE[2])), SIGN_TEX.vidange, [1,1,1], {unlit:true});
-      box(x,1.02,z-0.05, 0.06,0.44,0.06, T.metal, [0.75,0.80,0.86]);
-      box(x,0.028,z, 0.99,0.012,0.99, T.noise, [1.55,0.80,0.20], {emit:0.35});
+      /* v5.6 : même objet, couleur chaude = vidange */
+      drawStation(x, z, 'drain');
       /* ── STATION DE RECHARGE D'EAU (zone au sol, traversable) ── */
       box(x,0.20,z-0.42, 0.34,0.38,0.16, T.metal, [0.55,0.85,1.20]);      /* borne */
       box(x,0.44,z-0.42, 0.26,0.09,0.11, T.noise, [0.30,0.75,1.35], {emit:0.85});
@@ -2755,7 +2751,124 @@ function drawGull(p,t){
   /* v5.0 : mouette dessinée, ailes qui battent (2 images) */
   var y=1.16+Math.sin(t*2.0+p.t*1.7)*0.08;
   var f=(Math.sin(t*9.5+p.wing*3.1)>0)?1:0;
-  critterBillboard(p,'gull', 0.74, 0.52, y, 0, f);
+  critterBillboard(p,'gull', 0.92, 0.66, y, 0, f);
+}
+/* ═════════ v5.6 : LANGAGE VISUEL DES STATIONS ═════════
+   Constat de José : « j'ai du mal à discerner les obstacles des recharges d'eau ».
+   Les stations n'étaient qu'un panneau fin sur un poteau et un carré bleu au sol :
+   visuellement, c'était du mobilier de plus. Trois indices les distinguent maintenant,
+   et ils reposent tous sur la MÊME règle : le froid = service, le chaud = vidange.
+     1. une colonne de service (volume vertical, plus haut que les obstacles)
+     2. un capot lumineux coloré au sommet de la colonne
+     3. une dalle au sol avec anneau épais + pictogramme (goutte / flèche)
+     4. un pictogramme flottant au-dessus, visible de loin, qui respire
+   Les obstacles, eux, restent en bois et en brun : aucune couleur froide. */
+var PAD_TEX={}, ICON_TEX={};
+function texPad(kind){
+  /* v5.7 : la dalle ne doit pas ressembler à une flaque. C'est une ZONE PEINTE au sol :
+     anneau sombre, anneau de couleur, filet clair, centre TRANSPARENT (le carrelage
+     reste visible) et pictogramme net au milieu. */
+  var water = kind==='water';
+  var C  = water? '#3ec2ea' : '#f09018';
+  var CL = water? '#b6f0ff' : '#ffd79a';
+  var CD = water? '#12556b' : '#7a3d05';
+  return texCanvas(64,64,function(g,w,h){
+    function ring(r, col){
+      g.fillStyle=col; g.beginPath(); g.arc(32,32,r,0,Math.PI*2);
+      g.arc(32,32,Math.max(1,r-1.6),0,Math.PI*2,true); g.fill();
+    }
+    g.lineWidth=1;
+    ring(30.5,'#0c1016');       /* liseré sombre extérieur : détache du carrelage */
+    ring(28.5,C);
+    ring(25.0,CL);
+    ring(23.4,CD);
+    /* pictogramme plein, au centre, sur fond transparent */
+    g.fillStyle='#0c1016';
+    if(water){
+      g.beginPath(); g.moveTo(32,14); g.quadraticCurveTo(48,34,32,46);
+      g.quadraticCurveTo(16,34,32,14); g.fill();
+      g.fillStyle=C; g.beginPath(); g.moveTo(32,19); g.quadraticCurveTo(43,34,32,42);
+      g.quadraticCurveTo(21,34,32,19); g.fill();
+    } else {
+      g.beginPath(); g.moveTo(32,50); g.lineTo(46,30); g.lineTo(37,30);
+      g.lineTo(37,14); g.lineTo(27,14); g.lineTo(27,30); g.lineTo(18,30); g.closePath(); g.fill();
+      g.fillStyle=C; g.beginPath(); g.moveTo(32,46); g.lineTo(42,30); g.lineTo(35,30);
+      g.lineTo(35,17); g.lineTo(29,17); g.lineTo(29,30); g.lineTo(22,30); g.closePath(); g.fill();
+    }
+    g.fillStyle=CL; g.fillRect(water?28:29, water?30:22, water?5:6, water?6:3);
+  });
+}
+function texIcon(kind){
+  var water = kind==='water';
+  var C = water? '#45c8ea' : '#f0a030';
+  var OUT='#0c1016';
+  return texCanvas(48,48,function(g,w,h){
+    g.fillStyle=OUT; g.beginPath();
+    if(water){ g.moveTo(24,4); g.quadraticCurveTo(44,26,24,44); g.quadraticCurveTo(4,26,24,4); }
+    else { g.moveTo(24,44); g.lineTo(42,24); g.lineTo(32,24); g.lineTo(32,6); g.lineTo(16,6); g.lineTo(16,24); g.lineTo(6,24); g.closePath(); }
+    g.fill();
+    g.fillStyle=C; g.beginPath();
+    if(water){ g.moveTo(24,10); g.quadraticCurveTo(38,28,24,38); g.quadraticCurveTo(10,28,24,10); }
+    else { g.moveTo(24,40); g.lineTo(37,25); g.lineTo(29,25); g.lineTo(29,12); g.lineTo(19,12); g.lineTo(19,25); g.lineTo(11,25); g.closePath(); }
+    g.fill();
+    g.fillStyle='rgba(255,255,255,0.75)'; g.fillRect(water?18:20, water?18:16, water?5:8, water?7:4);
+  });
+}
+function stationTex(kind, slot){
+  var key=kind+'_'+slot;
+  if(!stationTex.c) stationTex.c={};
+  if(!stationTex.c[key]){
+    stationTex.c[key] = slot==='pad' ? makeTex(texPad(kind), false) : makeTex(texIcon(kind), false);
+  }
+  return stationTex.c[key];
+}
+
+/* ═════════ v5.6 : COLONNE DE SERVICE dessinée pour les deux stations ═════════ */
+window.__stationDiag = function(){
+  try{
+    var r={timeNow: typeof timeNow, stationTex: typeof stationTex, makeTex: typeof makeTex};
+    r.padCanvas=texPad('water').width+'x'+texPad('water').height;
+    var t=stationTex('water','pad'); r.padTex=!!t;
+    var i=stationTex('water','icon'); r.iconTex=!!i;
+    r.t=timeNow();
+    return r;
+  }catch(e){ return {ERREUR:String(e)}; }
+};
+function drawStation(x,z,kind){
+  var water = kind==='water';
+  var body  = water? [1.32,1.40,1.48] : [1.34,1.28,1.18];
+  var capC  = water? [0.20,0.72,1.24] : [1.42,0.78,0.22];
+  var camY  = Math.atan2(EYE[0],EYE[2]);
+  var tNow  = timeNow();
+  /* colonne : plus haut que tous les obstacles de la salle */
+  box(x, 0.56, z-0.34, 0.46, 1.12, 0.46, T.metal, body);
+  box(x, 1.12, z-0.34, 0.52, 0.22, 0.52, T.metal, capC, {emit:0.45});   /* capot lumineux (v5.7 : plus haut, plus saturé) */
+  box(x, 0.20, z-0.02, 0.12, 0.12, 0.62, T.metal, body);                /* bras */
+  box(x, 0.14, z+0.26, 0.16, 0.30, 0.16, T.metal, capC);                /* bec verseur */
+  box(x, 0.02, z-0.34, 0.60, 0.04, 0.60, T.noise, [0.55,0.58,0.62]);    /* socle */
+  /* La dalle et le pictogramme NE SONT PAS dessinés ici : les props sont CUITS en lots
+     statiques une fois par niveau (buildStaticProps), et un pictogramme qui doit faire
+     face à la caméra ne peut pas être cuit. Ils sont donc tracés dans la passe
+     dynamique — voir drawStationMarkers(). */
+}
+/* v5.6 : dalles + pictogrammes des stations, dessinés à chaque image (hors cuisson) */
+function drawStationMarkers(tNow){
+  var camY=Math.atan2(EYE[0],EYE[2]);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  for(var i=0;i<LV.props.length;i++){
+    var p=LV.props[i];
+    if(p.k!=='recharge' && p.k!=='vidange') continue;
+    var water = p.k==='recharge';
+    var kind = water? 'water':'drain';
+    var x=p.gx-7, z=p.gy-6;
+    drawMesh(QUAD_XZ, trs(x, 0.032, z, 1.86, 1, 1.86, 0), stationTex(kind,'pad'), [1,1,1], {unlit:true, alpha:0.96});
+    var bob=Math.sin(tNow*2.1 + (water?0:1.6))*0.06;
+    drawMesh(QUAD_XY, trs(x, 1.74+bob, z-0.34, 0.78, 0.78, 1, camY), stationTex(kind,'icon'), [1,1,1], {unlit:true});
+  }
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
 }
 /* ═════════ v5.5 : LE CHIEN EST UN SPRITE DU MODÈLE PIXEL ART ═════════
    José a choisi la définition 48x42 sur la planche de comparaison : c'est la plus
@@ -2804,18 +2917,18 @@ function drawDog(p,t){
   var f=(Math.sin(p.step*7.0)>0)?1:0;
   var camY=Math.atan2(EYE[0],EYE[2]);
   var tex=dog48Tex()[f?'b':'a'];
-  drawMesh(QUAD_XY, trs(p.x, 0.02+0.62*0.5, p.z, 0.86, 0.62, 1, camY), tex, [1,1,1], {unlit:true});
+  drawMesh(QUAD_XY, trs(p.x, 0.02+0.82*0.5, p.z, 1.12, 0.82, 1, camY), tex, [1,1,1], {unlit:true});   /* v5.6 : +30 % de taille */
 }
 function drawRaccoon(p,t){
   /* v5.0 : raton laveur dessiné, queue annelée */
   var f=(Math.sin(p.step*6.5)>0)?1:0;
-  critterBillboard(p,'raccoon', 0.74, 0.56, 0.02, 0, f);
+  critterBillboard(p,'raccoon', 0.96, 0.72, 0.02, 0, f);
 }
 function drawDirtyHuman(p,t){
   /* v5.0 : passant dessiné au pixel — quatre tenues, contour sombre, démarche 2 images */
   var f=(Math.sin(p.step*5.2)>0)?1:0;
   var v=Math.abs(Math.round(p.x*7+p.z*13))%4;
-  critterBillboard(p,'human', 0.58, 0.92, 0.02, v, f);
+  critterBillboard(p,'human', 0.76, 1.20, 0.02, v, f);
 }
 /* ═════════ v5.0 : POLLUEURS DESSINÉS AU PIXEL (plus des cubes) ═════════
    Constat de José : « les PNJ sont mieux dessinés chez Secret of Mana, les nôtres
@@ -3830,6 +3943,7 @@ function drawPusher(m){
   markPhase('other');     /* sol exterieur + murs + decor hors arene */
   drawContactShadows();   /* v1.2 : taches de contact, apres le sol et avant les objets */
   drawStaticProps();       /* v1.4 : props statiques en lots (au lieu d'un draw par boîte) */
+  drawStationMarkers(tNow);/* v5.6 : dalles + pictogrammes des stations (dynamiques) */
   markPhase('props');
   drawLightHalos();   /* v1.1 : halos des luminaires */
 
