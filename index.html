@@ -3412,6 +3412,11 @@ function drawRider(m){
   box(seat[0], deck+0.006, seat[1], 0.54,0.012,0.48, T.noise, [0.50,0.50,0.56], {ry:ry, alpha:0.40, unlit:true});
 }
 function drawCharSprite(m){
+  /* v5.8 : le sprite du conducteur a un fond transparent ; sans mélange il sortait
+     en rectangle noir de 1,24 x 1,82 unité autour du personnage. */
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
   var who = (m===player) ? 'you' : 'bot';
   var dir = 0;
   /* 0 = face (vers la caméra), 1 = dos, 2 = profil */
@@ -3428,6 +3433,7 @@ function drawCharSprite(m){
   var sc = flip ? -w : w;
   drawMesh(QUAD_XY, trs(m.wx+m.kox-0.34*Math.sin(m.angle), h*0.5, m.wz+m.koz-0.62*Math.cos(m.angle), sc, h, 1, camYaw),
            tex, [1,1,1], {unlit:true, alpha:1.0});
+  gl.disable(gl.BLEND);
 }
 
 /* ── v0.16 : SQUELETTE DE DINOSAURE (musée) — os blanchis, laisse des os ── */
@@ -3957,6 +3963,15 @@ function drawPusher(m){
   }
 
   /* ── bonus au sol ── */
+  /* ── v5.8 : MÉLANGE ACTIVÉ pour tous les sprites à canal alpha ──
+     Constat de José : « tous les PNJ sont des images 2D avec un fond noir visible ».
+     Les sprites (pollueurs, grand-mère, objets) ont un fond transparent, mais la passe
+     de scène était dessinée SANS mélange : l'alpha était ignoré et le fond sortait noir.
+     On active le mélange une fois pour tout ce bloc, puis on le coupe. */
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(true);
+
   if(soap) drawSoap(soap,tNow);
   if(torp) drawTorpille(torp,tNow);
   for(var w0=0;w0<waters.length;w0++) drawWater(waters[w0],tNow);
@@ -3968,6 +3983,8 @@ function drawPusher(m){
 
   /* ── v0.9 : POLLUEURS (mouettes / chiens / ratons / humains sales) ── */
   drawPolluters(tNow);
+
+  gl.disable(gl.BLEND);
 
   /* ── machines ── */
   if(!window.__hideMachine){ drawMachine(player); }
