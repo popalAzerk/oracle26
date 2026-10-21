@@ -262,7 +262,16 @@ function nmat(model){
 
 /* ---------- 2. ETAT GLOBAL / CONSTANTES ---------- */
 var COLS=15, ROWS=13;
-var GW=720, GH=405;   /* v2.0 : 3D rendue en 720×405 puis agrandie ×3 ENTIER en NEAREST (2160×1215) — de vrais gros pixels, sans échelle bâtarde */          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
+/* v6.1 : DEUX STYLES, pour que José tranche sur image.
+   'retro' = 3D rendue en 720x405 puis agrandie x3 NEAREST, quantification 12 niveaux,
+             contour sombre, vignette. C'est le rendu actuel.
+   'flat'  = 3D rendue à la résolution finale, filtrage LINEAR, ni quantification, ni
+             contour, ni vignette : des faces franches qui se lisent par la lumière.
+   Bascule par l'URL : ?flat */
+var QS=location.search.toLowerCase();
+var STYLE = QS.indexOf('linear')>=0 ? 'linear' : (QS.indexOf('flat')>=0 ? 'flat' : 'retro');
+var RETRO = (STYLE==='retro');
+var GW=RETRO?720:2160, GH=RETRO?405:1215;   /* v2.0 : 3D rendue en 720×405 puis agrandie ×3 ENTIER en NEAREST (2160×1215) — de vrais gros pixels, sans échelle bâtarde */          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
 var OW=2160, OH=1215;         // canvas final (960×540 → ×1,5)
 
 var glCanvas=document.getElementById('gl');
@@ -272,6 +281,7 @@ var stage=document.getElementById('stage');
 
 var gl = glCanvas.getContext('webgl',{antialias:false,alpha:false,depth:true,preserveDrawingBuffer:true})
       || glCanvas.getContext('experimental-webgl',{antialias:false,alpha:false,preserveDrawingBuffer:true});
+if(!RETRO){ glCanvas.style.imageRendering='auto'; }   /* v6.1 : style franc = pas d'agrandissement pixelise */
 if(!gl){ document.body.innerHTML='<p style="color:#fff;font:16px monospace;padding:20px">WebGL indisponible.</p>'; return; }
 
 /* ---------- 3. SHADERS ---------- */
@@ -307,13 +317,15 @@ var FS = [
 'uniform sampler2D uBayer;',
 'uniform vec2 uTexel;',
 'uniform vec4 uGrade;',
+'uniform float uShade;',
 'varying vec3 vNor;',
 'varying vec2 vUV;',
 'void main(){',
 '  vec4 t = (uUseTex > 0.5) ? texture2D(uTex, vUV) : vec4(1.0);',
 '  vec3 n = normalize(vNor);',
 '  float d = max(dot(n, uLight), 0.0);',
-'  float shade = 0.86 + 0.22 * d;   /* v3.0 : faces peu contrastees — pas d ombre dure */',
+'  float shade = 0.86 + 0.22 * d;   /* v3.0 : faces peu contrastees */',
+'  shade = mix(1.0, shade, uShade); /* v6.1 : 1 = retro, >1 = faces tranchees */',
 '  shade = mix(shade, 1.0, uUnlit);',
 '  shade = mix(shade, 1.0, uEmit);',
 '  vec3 col = uColor * t.rgb * shade;',
@@ -386,6 +398,7 @@ var U = {
   vig: gl.getUniformLocation(prog,'uVig'),
   outline: gl.getUniformLocation(prog,'uOutline'),
   quant: gl.getUniformLocation(prog,'uQuant'),
+  shade: gl.getUniformLocation(prog,'uShade'),
   bayer: gl.getUniformLocation(prog,'uBayer'),
   texel: gl.getUniformLocation(prog,'uTexel'),
   grade: gl.getUniformLocation(prog,'uGrade')
@@ -926,8 +939,11 @@ function makeTex(canvas,repeat){
   gl.bindTexture(gl.TEXTURE_2D,t);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  /* v6.2 : en style franc, les textures sont lissées (LINEAR) — c'est la matière qui
+     reste douce, seules les arêtes géométriques portent le trait. En rétro, NEAREST. */
+  var filt = (STYLE==='linear') ? gl.LINEAR : gl.NEAREST;
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filt);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filt);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
@@ -1233,7 +1249,8 @@ function drawMesh(m, model, tex, color, opt){
   gl.uniform1f(U.emit, opt.emit||0);
   gl.uniform1f(U.alpha, opt.alpha===undefined?1:opt.alpha);
   gl.uniform1f(U.outline, 0);
-  gl.uniform1f(U.quant, 0);     /* palette + trame : passe finale uniquement */
+  gl.uniform1f(U.quant, 0);
+  gl.uniform1f(U.shade, RETRO ? 1.0 : 1.9);   /* v6.1 */
   gl.uniform3f(U.color, color[0],color[1],color[2]);
   gl.uniform1f(U.vig, opt.vig?1:0);
   if(tex){ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex); }
@@ -1248,8 +1265,8 @@ function box(x,y,z,sx,sy,sz,tex,color,opt){
 var fbTex=gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D,fbTex);
 gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,GW,GH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
 
@@ -2748,10 +2765,8 @@ function drawGrandMere(g,t){
 
 /* ── MOUETTE : corps blanc, ailes grises (2 frames), bec jaune, vol haut ── */
 function drawGull(p,t){
-  /* v5.0 : mouette dessinée, ailes qui battent (2 images) */
-  var y=1.16+Math.sin(t*2.0+p.t*1.7)*0.08;
-  var f=(Math.sin(t*9.5+p.wing*3.1)>0)?1:0;
-  critterBillboard(p,'gull', 0.92, 0.66, y, 0, f);
+  /* v6.0 : mouette en volume, ailes qui battent */
+  gull3D(p,t);
 }
 /* ═════════ v5.6 : LANGAGE VISUEL DES STATIONS ═════════
    Constat de José : « j'ai du mal à discerner les obstacles des recharges d'eau ».
@@ -2912,23 +2927,154 @@ function dog48Tex(){
 }
 window.__dogTex = function(){ var T=dog48Tex(); return T.ca.toDataURL('image/png'); };
 function drawDog(p,t){
-  /* v5.5 : sprite issu du modèle pixel art, choisi par José (48x42).
-     Cadrage : 0,86 x 0,62 unité, soit la taille réelle du chien à l'écran. */
-  var f=(Math.sin(p.step*7.0)>0)?1:0;
-  var camY=Math.atan2(EYE[0],EYE[2]);
-  var tex=dog48Tex()[f?'b':'a'];
-  drawMesh(QUAD_XY, trs(p.x, 0.02+0.82*0.5, p.z, 1.12, 0.82, 1, camY), tex, [1,1,1], {unlit:true});   /* v5.6 : +30 % de taille */
+  /* v6.0 : chien en VOLUME (plus de billboard) */
+  dog3D(p,t);
 }
 function drawRaccoon(p,t){
-  /* v5.0 : raton laveur dessiné, queue annelée */
-  var f=(Math.sin(p.step*6.5)>0)?1:0;
-  critterBillboard(p,'raccoon', 0.96, 0.72, 0.02, 0, f);
+  /* v6.0 : raton laveur en volume, queue annelée */
+  raccoon3D(p,t);
 }
 function drawDirtyHuman(p,t){
-  /* v5.0 : passant dessiné au pixel — quatre tenues, contour sombre, démarche 2 images */
-  var f=(Math.sin(p.step*5.2)>0)?1:0;
+  /* v6.0 : passant en volume — quatre tenues, bras et jambes qui alternent */
   var v=Math.abs(Math.round(p.x*7+p.z*13))%4;
-  critterBillboard(p,'human', 0.76, 1.20, 0.02, v, f);
+  human3D(p,t,v);
+}
+/* ═════════ v6.0 : LES PNJ SONT EN 3D, PLUS EN BILLBOARD 2D ═════════
+   Consigne de José : « chaque PNJ doit être en 3D, pas 2D ». Les sprites-billboards
+   (v5.0) sont remplacés par de vrais volumes : chaque créature est un assemblage de
+   boîtes orientées, éclairées par la lumière de la scène, avec une démarche calculée.
+   Règle de construction (pour qu'un volume ne redevienne pas « un cube ») :
+     · au moins 3 tons par matière : dos sombre, flanc moyen, ventre clair
+     · une silhouette par espèce : museau, oreilles, bec, queue annelée, pattes
+     · les pattes alternent en position ET en hauteur : c'est ce qui fait la marche
+     · un liseré sombre sur les extrémités qui doivent se lire (museau, pattes, bec)
+   Les positions des membres sont transformées dans le repère de la bête (ex, ez = avant
+   et wx, wz = droite), donc les quatre espèces partagent le même code de pose. */
+function critterRig(p, t){
+  var ry = p.dir || 0;
+  var ex = Math.sin(ry), ez = Math.cos(ry);      /* vecteur avant */
+  var wx = Math.cos(ry), wz = -Math.sin(ry);     /* vecteur droite */
+  var ph = (p.step||t||0);
+  return {
+    A: {ry: ry},
+    /* place un morceau à (droite lx, avant lz, hauteur y) */
+    put: function(lx, y, lz, sx, sy, sz, col){
+      box(p.x + wx*lx + ex*lz, y, p.z + wz*lx + ez*lz, sx, sy, sz, T.noise, col, this.A);
+    },
+    swing: Math.sin(ph*7.0),
+    swing2: Math.sin(ph*7.0 + Math.PI),
+    ex: ex, ez: ez
+  };
+}
+var FUR_DOG = { back:[0.62,0.38,0.19], side:[0.82,0.53,0.28], belly:[0.96,0.74,0.48], dark:[0.28,0.18,0.10] };
+var FUR_RAC= { back:[0.52,0.54,0.60], side:[0.74,0.76,0.82], belly:[0.94,0.94,0.98], dark:[0.17,0.17,0.22] };
+var FEATHER= { back:[0.94,0.95,0.99], side:[1.24,1.26,1.30], belly:[1.34,1.35,1.38], dark:[0.20,0.20,0.24] };
+
+/* ── CHIEN : corps, tête, museau, deux oreilles, quatre pattes, queue ── */
+function dog3D(p,t){
+  var r=critterRig(p,t), F=FUR_DOG, sw=r.swing, sw2=r.swing2;
+  r.put(0, 0.44, 0, 0.36, 0.30, 0.60, F.side);            /* corps */
+  r.put(0, 0.56, 0, 0.30, 0.10, 0.56, F.back);            /* dos plus sombre */
+  r.put(0, 0.33, 0, 0.32, 0.09, 0.54, F.belly);           /* ventre clair */
+  r.put(0, 0.58, 0.34, 0.30, 0.28, 0.26, F.side);         /* tête */
+  r.put(0, 0.72, 0.34, 0.28, 0.07, 0.24, F.back);         /* calotte */
+  r.put(0, 0.52, 0.48, 0.17, 0.14, 0.16, F.belly);        /* museau */
+  r.put(0, 0.53, 0.57, 0.10, 0.08, 0.05, F.dark);         /* truffe */
+  r.put(-0.09, 0.62, 0.48, 0.05, 0.05, 0.02, F.dark);     /* œil gauche */
+  r.put( 0.09, 0.62, 0.48, 0.05, 0.05, 0.02, F.dark);     /* œil droit */
+  r.put(-0.13, 0.72, 0.30, 0.07, 0.15, 0.06, F.back);     /* oreille G */
+  r.put( 0.13, 0.72, 0.30, 0.07, 0.15, 0.06, F.back);     /* oreille D */
+  /* pattes : alternance avant/arrière (diagonale) + léger soulèvement */
+  var lift = sw>0 ? 0.05 : 0.0, lift2 = sw2>0 ? 0.05 : 0.0;
+  r.put(-0.12, 0.13+lift,  0.20+sw*0.05, 0.09, 0.26, 0.09, F.back);
+  r.put( 0.12, 0.13+lift2, 0.20+sw2*0.05, 0.09, 0.26, 0.09, F.side);
+  r.put(-0.12, 0.13+lift2, -0.20+sw2*0.05, 0.09, 0.26, 0.09, F.side);
+  r.put( 0.12, 0.13+lift,  -0.20+sw*0.05, 0.09, 0.26, 0.09, F.back);
+  r.put(0, 0.52, -0.34, 0.10, 0.10, 0.16, F.back);        /* queue */
+  r.put(0, 0.58, -0.42, 0.08, 0.08, 0.10, F.dark);
+}
+
+/* ── RATON LAVEUR : masque noir, anneaux de la queue, pattes courtes ── */
+function raccoon3D(p,t){
+  var r=critterRig(p,t), F=FUR_RAC, sw=r.swing, sw2=r.swing2;
+  r.put(0, 0.34, 0, 0.34, 0.26, 0.50, F.side);
+  r.put(0, 0.44, 0, 0.28, 0.08, 0.46, F.back);
+  r.put(0, 0.25, 0, 0.30, 0.07, 0.44, F.belly);
+  r.put(0, 0.46, 0.30, 0.28, 0.24, 0.24, F.belly);        /* tête claire */
+  r.put(0, 0.50, 0.42, 0.26, 0.10, 0.05, F.dark);         /* masque noir */
+  r.put(0, 0.52, 0.44, 0.06, 0.06, 0.04, F.belly);        /* museau clair */
+  r.put(-0.08, 0.50, 0.44, 0.05, 0.05, 0.02, [1.1,1.15,1.2]);
+  r.put( 0.08, 0.50, 0.44, 0.05, 0.05, 0.02, [1.1,1.15,1.2]);
+  r.put(-0.11, 0.58, 0.28, 0.06, 0.10, 0.06, F.back);
+  r.put( 0.11, 0.58, 0.28, 0.06, 0.10, 0.06, F.back);
+  var lift = sw>0 ? 0.04 : 0.0, lift2 = sw2>0 ? 0.04 : 0.0;
+  r.put(-0.11, 0.09+lift,  0.16+sw*0.04, 0.08, 0.18, 0.08, F.dark);
+  r.put( 0.11, 0.09+lift2, 0.16+sw2*0.04, 0.08, 0.18, 0.08, F.side);
+  r.put(-0.11, 0.09+lift2, -0.16+sw2*0.04, 0.08, 0.18, 0.08, F.side);
+  r.put( 0.11, 0.09+lift,  -0.16+sw*0.04, 0.08, 0.18, 0.08, F.dark);
+  /* queue annelée : trois anneaux alternés, qui se relève vers l'arrière */
+  r.put(0, 0.40, -0.30, 0.11, 0.11, 0.12, F.back);
+  r.put(0, 0.46, -0.40, 0.11, 0.11, 0.12, F.dark);
+  r.put(0, 0.53, -0.48, 0.10, 0.10, 0.12, F.back);
+  r.put(0, 0.59, -0.55, 0.09, 0.09, 0.10, F.dark);
+}
+
+/* ── MOUETTE : corps blanc, ailes qui battent, bec et pattes orange ── */
+function gull3D(p,t){
+  var ry = p.dir || 0;
+  var ex = Math.sin(ry), ez = Math.cos(ry), wx = Math.cos(ry), wz = -Math.sin(ry);
+  var A = {ry: ry};
+  var fly = 1.06 + Math.sin(t*2.0 + (p.t||0)*1.7)*0.06;
+  var flap = Math.sin(t*9.5 + (p.wing||0)*3.1);
+  function put(lx,y,lz,sx,sy,sz,col){ box(p.x+wx*lx+ex*lz, y, p.z+wz*lx+ez*lz, sx,sy,sz, T.noise, col, A); }
+  var F=FEATHER;
+  put(0, fly, 0, 0.26, 0.22, 0.44, F.side);                /* corps */
+  put(0, fly+0.11, 0, 0.22, 0.06, 0.40, F.belly);
+  put(0, fly+0.04, 0.26, 0.20, 0.18, 0.18, F.belly);       /* tête */
+  put(0, fly+0.03, 0.38, 0.07, 0.06, 0.10, [1.55,0.92,0.14]);  /* bec */
+  put(-0.09, fly+0.06, 0.31, 0.04, 0.04, 0.02, F.dark);
+  put( 0.09, fly+0.06, 0.31, 0.04, 0.04, 0.02, F.dark);
+  /* ailes : elles montent et descendent, l'extrémité noire se lit de loin */
+  var wy = fly + flap*0.10;
+  put(-0.24, wy, 0.02, 0.30, 0.06, 0.34, F.side);
+  put( 0.24, wy, 0.02, 0.30, 0.06, 0.34, F.side);
+  put(-0.42, wy+flap*0.03, 0.02, 0.12, 0.05, 0.28, F.dark);
+  put( 0.42, wy+flap*0.03, 0.02, 0.12, 0.05, 0.28, F.dark);
+  put(0, fly-0.14, -0.16, 0.14, 0.10, 0.14, F.side);       /* queue */
+  /* pattes repliées en vol */
+  put(-0.06, fly-0.16, -0.04, 0.04, 0.10, 0.04, [1.45,0.78,0.22]);
+  put( 0.06, fly-0.16, -0.04, 0.04, 0.10, 0.04, [1.45,0.78,0.22]);
+}
+
+/* ── PASSANT SALE : quatre tenues, tête, cheveux, bras, jambes ── */
+var HUMAN_SHIRTS = [[0.30,0.62,0.90],[0.92,0.76,0.22],[0.82,0.30,0.28],[0.42,0.72,0.44]];
+function human3D(p,t,variant){
+  var r=critterRig(p,t), sw=r.swing, sw2=r.swing2;
+  var shirt=HUMAN_SHIRTS[(variant||0)%4];
+  var skin=[1.22,0.88,0.66], skinD=[1.05,0.74,0.54], hair=[0.24,0.18,0.14];
+  var pants=[0.24,0.28,0.42], pantsD=[0.17,0.20,0.32];
+  /* jambes */
+  var lift = sw>0 ? 0.05 : 0.0, lift2 = sw2>0 ? 0.05 : 0.0;
+  r.put(-0.10, 0.20+lift,  sw*0.05, 0.13, 0.40, 0.15, pants);
+  r.put( 0.10, 0.20+lift2, sw2*0.05, 0.13, 0.40, 0.15, pantsD);
+  /* chaussures */
+  r.put(-0.10, 0.03+lift,  sw*0.05+0.02, 0.14, 0.07, 0.20, [0.16,0.14,0.13]);
+  r.put( 0.10, 0.03+lift2, sw2*0.05+0.02, 0.14, 0.07, 0.20, [0.16,0.14,0.13]);
+  /* buste */
+  r.put(0, 0.58, 0, 0.36, 0.38, 0.24, shirt);
+  r.put(0, 0.76, 0, 0.34, 0.06, 0.22, [shirt[0]*0.8, shirt[1]*0.8, shirt[2]*0.8]);
+  /* bras */
+  r.put(-0.22, 0.56+sw2*0.03, sw2*0.06, 0.09, 0.34, 0.11, shirt);
+  r.put( 0.22, 0.56+sw*0.03,  sw*0.06,  0.09, 0.34, 0.11, shirt);
+  r.put(-0.22, 0.36+sw2*0.03, sw2*0.06, 0.09, 0.09, 0.10, skinD);
+  r.put( 0.22, 0.36+sw*0.03,  sw*0.06,  0.09, 0.09, 0.10, skinD);
+  /* cou + tête */
+  r.put(0, 0.81, 0, 0.10, 0.08, 0.10, skinD);
+  r.put(0, 0.93, 0, 0.28, 0.26, 0.24, skin);
+  r.put(0, 1.05, 0, 0.29, 0.10, 0.25, hair);
+  r.put(0, 0.97, 0, 0.29, 0.04, 0.26, hair);                 /* frange */
+  r.put(-0.07, 0.94, 0.125, 0.05, 0.05, 0.02, [0.12,0.10,0.09]);
+  r.put( 0.07, 0.94, 0.125, 0.05, 0.05, 0.02, [0.12,0.10,0.09]);
 }
 /* ═════════ v5.0 : POLLUEURS DESSINÉS AU PIXEL (plus des cubes) ═════════
    Constat de José : « les PNJ sont mieux dessinés chez Secret of Mana, les nôtres
@@ -4025,8 +4171,9 @@ var BAYER_TEX=(function(){
 
 function drawBlit(){
   gl.uniform4f(U.grade,1,1,1,1);   /* blit : pas d'étalonnage */
-  gl.uniform1f(U.outline, 1);      /* v1.8 : contour actif sur la passe finale */
-  gl.uniform1f(U.quant, window.__noQuant ? 0 : 1);   /* v1.9 : palette 7 niveaux + trame Bayer */
+  gl.uniform1f(U.outline, RETRO ? 1 : 0);   /* v6.1 : pas de contour en style franc */
+  gl.uniform1f(U.quant, (!RETRO || window.__noQuant) ? 0 : 1);
+  gl.uniform1f(U.shade, RETRO ? 1.0 : 1.9);
   gl.uniform2f(U.texel, 1/GW, 1/GH);
   var id=ident();
   gl.uniformMatrix4fv(U.mvp,false,id);
@@ -4037,7 +4184,8 @@ function drawBlit(){
   gl.uniform1f(U.emit,0);
   gl.uniform1f(U.alpha,1);
   gl.uniform3f(U.color,1,1,1);
-  gl.uniform1f(U.vig,1);
+  gl.uniform1f(U.vig, RETRO ? 1 : 0);   /* v6.1 */
+  gl.uniform1f(U.shade, 1.0);           /* v6.1 : la passe finale ne subit pas le contraste de faces */
   gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, BAYER_TEX);
   gl.uniform1i(U.bayer, 1);
