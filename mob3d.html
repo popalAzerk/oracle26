@@ -859,6 +859,27 @@ function texLeaf(){
     px(g,7,20,'#2d6b34',8,3); px(g,20,6,'#2d6b34',7,3);
   });
 }
+function texWallCube(){
+  /* v4.2 : MUR EN BLOCS EMPILES (consigne Jose : « plus simple, comme une superposition
+     de cubes »). Une texture = UN bloc : joint sombre, face plate, une arete claire en
+     haut et un pied sombre. Aucun liseré interne, aucun bruit : le mur se lit comme un
+     empilement de cubes, pas comme un panneau texturé. Dessine en gris, la teinte de la
+     salle vient de wallCol en multiplicateur. */
+  return texCanvas(32,32,function(g,w,h){
+    px(g,0,0,'#9a9a9a',w,h);                     /* joint : discret, le mur doit rester un fond */
+    var tons=['#f4f4f4','#e9e9e9','#fbfbfb','#e2e2e2'];
+    for(var row=0; row<2; row++){
+      var oy=row*16, off=(row%2)?8:0;            /* appareil en briques : demi-bloc decale */
+      for(var col=-1; col<3; col++){
+        var ox=off+col*16;
+        var c=tons[(row*2+col+4)%4];
+        px(g,ox+1,oy+1,c,14,14);                 /* face du cube */
+        px(g,ox+1,oy+1,'#ffffff',14,2);          /* arete claire en haut */
+        px(g,ox+1,oy+14,'#d6d6d6',14,1);         /* pied : 1 px seulement, sinon double ombre avec le joint */
+      }
+    }
+  });
+}
 function texWallPanel(base,hi,lo,seam){
   return texCanvas(64,64,function(g,w,h){
     px(g,0,0,seam,w,h);
@@ -995,8 +1016,8 @@ var T = {
   leaf:  makeTex(texLeaf(),true),
   board: makeTex(texBoards(),true),
   glass: makeTex(texGlassWall(),true),
-  wallMall:  makeTex(texWallPanel('#efe7d8','#fffbf2','#cec4b0','#b3a892'),true),
-  wallApple: makeTex(texWallPanel('#f8f8f5','#ffffff','#dcdcd7','#d2d2cc'),true)
+  wallMall:  makeTex(texWallCube(),true),   /* v4.2 : blocs empiles */
+  wallApple: makeTex(texWallCube(),true)    /* v4.2 : blocs empiles */
 };
 
 /* v0.9 : les 4 jeux de sols (propre / trainee / sale / nid) par niveau */
@@ -2731,75 +2752,123 @@ function drawGrandMere(g,t){
 
 /* ── MOUETTE : corps blanc, ailes grises (2 frames), bec jaune, vol haut ── */
 function drawGull(p,t){
-  var y=1.28+Math.sin(t*2.0+p.t*1.7)*0.09;
-  var flap=Math.sin(t*10.5+p.wing*3.1);
-  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
-  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
-  var white=[2.30,2.34,2.36], grey=[0.40,0.46,0.55], grey2=[0.28,0.32,0.40];
-  box(p.x,y,p.z, 0.28,0.22,0.56, T.noise, white, {ry:p.dir});                         /* corps */
-  box(p.x+px*0.32, y+0.03+flap*0.09, p.z+pz*0.32, 0.56,0.06,0.30, T.noise, grey, {ry:p.dir});  /* aile G */
-  box(p.x-px*0.32, y+0.03+flap*0.09, p.z-pz*0.32, 0.56,0.06,0.30, T.noise, grey, {ry:p.dir});  /* aile D */
-  box(p.x+fx*0.30, y+0.06, p.z+fz*0.30, 0.20,0.20,0.20, T.noise, white, {ry:p.dir});   /* tete */
-  box(p.x+fx*0.43, y+0.03, p.z+fz*0.43, 0.15,0.06,0.09, null, [2.60,1.85,0.10]);      /* bec jaune */
+  /* v5.0 : mouette dessinée, ailes qui battent (2 images) */
+  var y=1.16+Math.sin(t*2.0+p.t*1.7)*0.08;
+  var f=(Math.sin(t*9.5+p.wing*3.1)>0)?1:0;
+  critterBillboard(p,'gull', 0.74, 0.52, y, 0, f);
 }
-
-/* ── CHIEN : corps brun, tete, queue, 4 pattes ── */
 function drawDog(p,t){
-  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
-  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
-  var walk=Math.sin(p.step*9.0);
-  var b=Math.abs(walk)*0.015;
-  var brown=[1.48,0.92,0.44], light=[1.95,1.55,1.02], dark=[0.52,0.31,0.14];
-  var A=0.16, B=-0.20;
-  box(p.x,0.36+b,p.z, 0.34,0.28,0.62, T.fur, brown, {ry:p.dir});                       /* corps */
-  box(p.x+fx*0.40,0.47+b,p.z+fz*0.40, 0.28,0.26,0.28, T.fur, brown, {ry:p.dir});       /* tete */
-  box(p.x+fx*0.57,0.40+b,p.z+fz*0.57, 0.18,0.15,0.16, T.fur, light, {ry:p.dir});       /* museau clair */
-  box(p.x-fx*0.40,0.52+b,p.z-fz*0.40, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});        /* queue */
-  box(p.x+px*0.13+fx*0.18, 0.12, p.z+pz*0.13+fz*0.18, 0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
-  box(p.x-px*0.13+fx*0.18, 0.12, p.z-pz*0.13+fz*0.18, 0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
-  box(p.x+px*0.13+fx*B,    0.12, p.z+pz*0.13+fz*B,    0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
-  box(p.x-px*0.13+fx*B,    0.12, p.z-pz*0.13+fz*B,    0.10,0.24,0.10, T.fur, dark, {ry:p.dir});
+  /* v5.0 : sprite dessiné (le chien n'est plus un empilement de boîtes) */
+  var f=(Math.sin(p.step*7.0)>0)?1:0;
+  var v=Math.abs(Math.round(p.x*5+p.z*3))%3;
+  critterBillboard(p,'dog', 0.86, 0.62, 0.02, v, f);
 }
-
-/* ── RATON LAVEUR : corps gris, masque noir, queue rayee, bras qui fouillent ── */
 function drawRaccoon(p,t){
-  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
-  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
-  var grey=[0.92,0.95,1.02], dark=[0.20,0.21,0.26], light=[1.85,1.84,1.78];
-  var forage = (p.state==='action') ? Math.abs(Math.sin(t*12.0))*0.13 : 0.0;
-  box(p.x,0.32,p.z, 0.42,0.32,0.54, T.noise, grey, {ry:p.dir});                        /* corps gris */
-  box(p.x+fx*0.27,0.47,p.z+fz*0.27, 0.30,0.26,0.28, T.noise, grey, {ry:p.dir});        /* tete grise */
-  box(p.x+fx*0.36,0.51,p.z+fz*0.36, 0.34,0.19,0.17, T.noise, [0.09,0.09,0.13], {ry:p.dir});  /* masque noir large */
-  box(p.x+px*0.09+fx*0.44,0.53,p.z+pz*0.09+fz*0.44, 0.10,0.08,0.04, T.noise, [2.30,2.30,2.25], {ry:p.dir}); /* oeil blanc G */
-  box(p.x-px*0.09+fx*0.44,0.53,p.z-pz*0.09+fz*0.44, 0.10,0.08,0.04, T.noise, [2.30,2.30,2.25], {ry:p.dir}); /* oeil blanc D */
-  box(p.x+fx*0.48,0.41,p.z+fz*0.48, 0.12,0.09,0.10, T.noise, light, {ry:p.dir});       /* museau clair */
-  box(p.x+px*0.19+fx*0.15,0.26+forage,p.z+pz*0.19+fz*0.15, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});
-  box(p.x-px*0.19+fx*0.15,0.26+forage,p.z-pz*0.19+fz*0.15, 0.10,0.11,0.28, T.fur, dark, {ry:p.dir});
-  box(p.x-fx*0.36,0.40,p.z-fz*0.36, 0.15,0.15,0.42, T.noise, grey, {ry:p.dir});        /* queue relevee */
-  box(p.x-fx*0.50,0.42,p.z-fz*0.50, 0.16,0.16,0.11, T.noise, dark, {ry:p.dir});        /* anneau noir */
-  box(p.x-fx*0.60,0.44,p.z-fz*0.60, 0.15,0.15,0.10, T.noise, grey, {ry:p.dir});        /* bout de queue */
+  /* v5.0 : raton laveur dessiné, queue annelée */
+  var f=(Math.sin(p.step*6.5)>0)?1:0;
+  critterBillboard(p,'raccoon', 0.74, 0.56, 0.02, 0, f);
 }
-
-/* ── HUMAIN SALE : jambes, torse vif, tete, casquette ── */
 function drawDirtyHuman(p,t){
-  var fx=Math.sin(p.dir), fz=Math.cos(p.dir);
-  var px=Math.cos(p.dir), pz=-Math.sin(p.dir);
-  var walk=Math.sin(p.step*5.2);
-  /* v0.9.2 : chaque humain sale porte une tenue DIFFÉRENTE, tirée d'une palette
-     qui EXCLUT l'orange du joueur et le violet de la grand-mère. Objectif : une
-     foule bigarrée reconnaissable, sans confusion d'identité. */
-  var PAL=[[0.55,0.95,0.85],[1.02,0.92,0.34],[0.78,0.34,0.40],[0.42,0.54,0.96]];
-  var shirt=PAL[Math.abs(Math.round(p.x*7+p.z*13))%4];
-  var pants=[0.40,0.52,0.66], skin=[2.00,1.64,1.30], cap=[0.50,0.32,0.18];
-  var y=Math.abs(walk)*0.012;
-  box(p.x+px*0.085+fx*walk*0.07,0.20+y,p.z+pz*0.085+fz*walk*0.07, 0.12,0.34,0.13, T.noise, pants, {ry:p.dir});
-  box(p.x-px*0.085-fx*walk*0.07,0.20+y,p.z-pz*0.085-fz*walk*0.07, 0.12,0.34,0.13, T.noise, pants, {ry:p.dir});
-  box(p.x,0.48+y,p.z, 0.34,0.30,0.24, T.noise, shirt, {ry:p.dir});                    /* torse vif */
-  box(p.x+px*0.22,0.46+y,p.z+pz*0.22, 0.10,0.26,0.10, T.noise, shirt, {ry:p.dir});
-  box(p.x-px*0.22,0.46+y,p.z-pz*0.22, 0.10,0.26,0.10, T.noise, shirt, {ry:p.dir});
-  box(p.x,0.74+y,p.z, 0.24,0.22,0.22, T.noise, skin, {ry:p.dir});                     /* tete */
-  box(p.x,0.86+y,p.z, 0.28,0.09,0.26, T.noise, cap, {ry:p.dir});                      /* cheveux */
-  box(p.x+px*0.30+fx*0.10, 0.40+y, p.z+pz*0.30+fz*0.10, 0.13,0.16,0.13, T.noise, [0.30,0.26,0.22], {ry:p.dir}); /* déchet en main */
+  /* v5.0 : passant dessiné au pixel — quatre tenues, contour sombre, démarche 2 images */
+  var f=(Math.sin(p.step*5.2)>0)?1:0;
+  var v=Math.abs(Math.round(p.x*7+p.z*13))%4;
+  critterBillboard(p,'human', 0.58, 0.92, 0.02, v, f);
+}
+/* ═════════ v5.0 : POLLUEURS DESSINÉS AU PIXEL (plus des cubes) ═════════
+   Constat de José : « les PNJ sont mieux dessinés chez Secret of Mana, les nôtres
+   ressemblent à des cubes ». Les pollueurs étaient des empilements de boîtes 3D ;
+   ils sont désormais dessinés au pixel comme le pousseur depuis la v0.17 :
+   contour sombre, trois tons par matière, deux images de marche. */
+var CRIT={};
+function critterCanvas(type, variant, frame){
+  /* v5.1 : dessin repris apres critique — DEUX images reellement differentes (jambes
+     et ailes alternent), attributs caracteristiques presents (bec jaune de la mouette,
+     masque et queue annelee du raton, deux bras du passant), et plus aucun detail
+     flottant. */
+  var dims={ human:[22,34], dog:[30,22], raccoon:[26,20], gull:[26,18] };
+  var D=dims[type]||[24,24], W=D[0], H=D[1];
+  var cv=document.createElement('canvas'); cv.width=W*2; cv.height=H*2;
+  var g=cv.getContext('2d'); g.imageSmoothingEnabled=false; g.scale(2,2);
+  var OUT='#141210', R=sprRect, G=g;
+  function sil(list){ for(var i=0;i<list.length;i++){ var q=list[i]; R(G,q[0]-1,q[1]-1,q[2]+2,q[3]+2,OUT); } }
+  var A = frame?1:0;                      /* l'image de marche */
+  if(type==='human'){
+    var SH=[['#4fb8a8','#2f7a70','#7fd8c8'],['#e8c94a','#a68f26','#f5e07f'],
+            ['#c2556a','#8a3048','#e07f92'],['#5b7fd8','#38539c','#8fa8ee']][variant%4];
+    var PAN='#414f66', PAN2='#2c374a', SHOE='#20242c', SKIN='#f0c39a', SKIN2='#c99a72', HAIR='#2a2018';
+    /* silhouette : deux bras ecartes, deux jambes, chaussures */
+    /* v5.2 : la demarche se lit par la LONGUEUR des jambes (une jambe avant courte,
+       une jambe arriere longue) et par le balancement des bras — pas par un pixel. */
+    /* v5.3 : une jambe LEVEE (plus courte, remontee) et une jambe TENDUE a chaque
+       image : la demarche se lit meme en tout petit. Les bras balancent a l'oppose. */
+    var L1 = frame? {x:6,y:26,h:5} : {x:8,y:27,h:6};
+    var L2 = frame? {x:13,y:28,h:6} : {x:12,y:28,h:5};
+    sil([[5,7,12,10],[4,17,14,11],[2,17,2,9],[18,17,2,9],
+         [L1.x,L1.y,4,L1.h],[L2.x,L2.y,4,L2.h],
+         [L1.x,L1.y+L1.h,5,1],[L2.x,L2.y+L2.h,5,1]]);
+    R(G,L1.x,L1.y,4,L1.h,PAN2); R(G,L2.x,L2.y,4,L2.h,PAN);
+    R(G,L1.x,L1.y+L1.h,5,1,SHOE); R(G,L2.x,L2.y+L2.h,5,1,SHOE);
+    R(G,4,17,14,11,SH[0]); R(G,4,17,4,11,SH[1]); R(G,15,17,3,11,SH[2]);
+    var AY = frame? 16:19;
+    R(G,2,AY,2,8,SKIN); R(G,18,35-AY,2,8,SKIN);            /* bras en opposition */
+    R(G,2,AY+7,2,2,SKIN2); R(G,18,42-AY,2,2,SKIN2);
+    R(G,5,7,12,10,SKIN); R(G,5,13,12,3,SKIN2);             /* tete */
+    R(G,4,5,14,4,HAIR); R(G,4,8,2,4,HAIR); R(G,16,8,2,4,HAIR);
+    R(G,8,12,2,2,'#15171c'); R(G,13,12,2,2,'#15171c');     /* yeux */
+    R(G,10,16,3,1,'#8a4040');                              /* bouche */
+    R(G,14,21,2,2,'#7a6440');                              /* tache de crasse, fixe */
+  } else if(type==='dog'){
+    var B='#c98b4b', B2='#a0682e', B3='#e8b877', P='#8a5726';
+    sil([[2,6,21,10],[19,3,8,8],[0,5,3,4],
+         [5-A*2,15,3,6],[18+A*2,15,3,6],[10+A*2,15,3,6],[15-A*2,15,3,6]]);
+    R(G,2,6,21,10,B); R(G,4,7,17,2,B3); R(G,2,12,21,4,B2);     /* corps + dos clair */
+    R(G,5-A*2,15,3,6,P); R(G,18+A*2,15,3,6,P);                 /* pattes qui alternent */
+    R(G,10+A*2,15,3,6,P); R(G,15-A*2,15,3,6,P);
+    R(G,5-A*2,20,3,1,'#3a2412'); R(G,18+A*2,20,3,1,'#3a2412');
+    R(G,10+A*2,20,3,1,'#3a2412'); R(G,15-A*2,20,3,1,'#3a2412');
+    R(G,19,3,8,8,B);                                            /* tete */
+    R(G,19,2,3,3,B2);                                           /* oreille */
+    R(G,23,7,4,3,B3); R(G,26,7,2,2,'#2a1a10');                  /* museau + truffe */
+    R(G,23,10,3,1,'#5a3018');                                   /* gueule */
+    R(G,21,6,2,2,'#15171c');                                    /* oeil */
+    R(G,0,5,4,3,B2); R(G,0,4,2,2,'#e0d0b8');                    /* queue + bout clair */
+    R(G,10,9,4,3,'#e8dcc4');                                    /* poitrail clair, sur le corps */
+  } else if(type==='raccoon'){
+    var G1='#8c8f96', G2='#5a5d65', G3='#b9bcc2', MK='#24242a';
+    sil([[4,6,16,9],[18,3,8,7],[0,3,3,14],
+         [6-A*2,15,3,5],[15+A*2,15,3,5]]);
+    R(G,4,6,16,9,G1); R(G,6,8,12,3,G3); R(G,4,12,16,3,G2);      /* corps */
+    R(G,6-A*2,15,3,5,G2); R(G,15+A*2,15,3,5,G2);                /* pattes qui alternent */
+    /* QUEUE ANNELÉE : dessinee APRES le corps et decalee pour que les anneaux se voient */
+    R(G,0,3,3,4,G2); R(G,0,7,3,3,G3); R(G,0,10,3,4,G2); R(G,0,14,3,3,G3);
+    R(G,18,3,8,7,G1);                                           /* tete */
+    R(G,18,1,3,3,G2); R(G,23,1,3,3,G2);                         /* oreilles */
+    R(G,18,6,8,3,MK);                                           /* MASQUE noir */
+    R(G,19,6,2,2,'#f2f2ea'); R(G,24,6,2,2,'#f2f2ea');           /* yeux dans le masque */
+    R(G,24,9,3,2,G3); R(G,26,9,2,2,MK);                         /* museau + truffe */
+  } else {  /* gull */
+    var W1='#f6f8fa', W2='#c3ccd6', W3='#7c8794', BK='#f0b028', LG='#e08a28';
+    var wingUp = frame ? [[5,0,11,3],[3,2,3,3]] : [[5,9,13,4]];  /* aile haute (2 degres) ou basse */
+    sil([[3,6,17,7],[19,3,7,6],[2,8,2,3],[8,13,2,4],[13,13,2,4]].concat(wingUp));
+    R(G,3,6,17,7,W1); R(G,3,6,17,2,'#ffffff'); R(G,3,11,17,2,W2);   /* corps */
+    if(frame){ R(G,5,0,11,3,W3); R(G,3,2,3,3,W3); R(G,5,0,11,1,'#aab5c1'); }   /* aile LEVEE */
+    else     { R(G,5,9,13,4,W3); R(G,5,9,13,1,'#aab5c1'); R(G,5,12,13,1,'#5d6774'); } /* aile BASSE */
+    R(G,2,8,2,3,W2);                                                 /* queue */
+    R(G,19,3,7,6,W1);                                                /* tete */
+    R(G,25,5,3,2,BK); R(G,27,6,1,1,'#c06a10');                       /* BEC jaune */
+    R(G,21,5,2,2,'#15171c');                                         /* oeil */
+    R(G,8,13,2,4,LG); R(G,13,13,2,4,LG);                             /* les DEUX pattes */
+  }
+  return cv;
+}
+function critterTex(type,variant,frame){
+  var k=type+'|'+variant+'|'+frame;
+  if(!CRIT[k]) CRIT[k]=makeTex(critterCanvas(type,variant,frame), false);
+  return CRIT[k];
+}
+function critterBillboard(p, type, w, h, yBase, variant, frame){
+  var camY=Math.atan2(EYE[0],EYE[2]);
+  drawMesh(QUAD_XY, trs(p.x, yBase+h*0.5, p.z, w, h, 1, camY), critterTex(type,variant,frame), [1,1,1], {unlit:true});
 }
 
 function drawPolluters(t){
@@ -3513,7 +3582,7 @@ function drawPusher(m){
 
   // murs du niveau (vrais volumes, texture + palette propres)
   var WH=LV.wallH, WT=T[LV.wall];
-  var tileV = WH>1.4?2:1;
+  var tileV = Math.max(1, Math.round(WH/0.9));   /* v4.2 : chaque cube fait ~0,9 unite */
   box(0,WH/2,-6.95, 16.2,WH,0.7, (LV.id==='apple'?T.glass:WT), LV.wallCol, {uvScale:[13,tileV]});
   box(-8.0,WH/2,0, 0.7,WH,15.0, WT, LV.wallCol, {uvScale:[12,tileV]});
   box( 8.0,WH/2,0, 0.7,WH,15.0, WT, LV.wallCol, {uvScale:[12,tileV]});
@@ -5757,7 +5826,25 @@ window.__spriteBox = function(){
           x1:Math.round(r.left+b.x*kx), y1:Math.round(r.top+b.y*ky)};
 };
 window.__playerScreen = function(){ return hudProject(player.wx+player.kox, 0.95, player.wz+player.koz); };
-window.__setLevel = function(i){ startLevel(i); };   /* QA : visiter les 5 salles sans jouer */
+window.__setLevel = function(i){ startLevel(i); };
+window.__critterSheet = function(){
+  /* QA : planche des sprites de pollueurs, agrandis x6, pour juger le DESSIN seul */
+  var types=['human','dog','raccoon','gull'], cvs=[];
+  for(var ti=0;ti<types.length;ti++){
+    for(var f=0;f<2;f++) cvs.push(critterCanvas(types[ti],0,f));
+  }
+  var S=6, pad=8, W=0, H=0;
+  for(var i=0;i<cvs.length;i++){ W+=cvs[i].width*S+pad; H=Math.max(H,cvs[i].height*S); }
+  var out=document.createElement('canvas'); out.width=W+pad; out.height=H+pad*2;
+  var g=out.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.fillStyle='#2a2f38'; g.fillRect(0,0,out.width,out.height);
+  var x=pad;
+  for(var j=0;j<cvs.length;j++){
+    g.drawImage(cvs[j], x, pad, cvs[j].width*S, cvs[j].height*S);
+    x += cvs[j].width*S + pad;
+  }
+  return out.toDataURL('image/png');
+};   /* QA : visiter les 5 salles sans jouer */
 window.__endRound = function(){ timeLeft=0.01; };
 window.__setRocket = function(sec){ player.rocketT = sec; };
 window.__hudProjectRaw = function(x,y,z){ return hudProject(x,y,z); };
