@@ -3090,7 +3090,87 @@ function texRiderAtlas(suit, skin, cap, team){
   return c;
 }
 
-function riderTexFor(suit, skin, cap, team){
+/* ═════════ v5.4 : L'APPRENTI ROBOT — atlas dédié ═════════
+   José : « bonne base avec les joueurs sauf le robot qu'il faut retravailler ».
+   Le robot réutilisait l'atlas humain : visage de peau, cheveux, casquette — il
+   passait pour un employé pâle. Il a désormais son PROPRE atlas de faces
+   mécaniques : visière cyan, grille de haut-parleur, panneau de contrôle, trappe
+   dorsale, dôme à rivets, bande de danger sur le flanc. */
+var ROBOT_TEX=null;
+function texRobotAtlas(team){
+  var c=document.createElement('canvas'); c.width=64; c.height=96;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  function R(x,y,w,h,f){ g.fillStyle=f; g.fillRect(x,y,w,h); }
+  var OUT='#0a0c11', SHELL='#eef3f8', SHELL2='#cfdae4', SHELL3='#a9bac9',
+      BLUE='#bfe4f8', BLUE2='#8ec4e2', DARK='#3d4b58',
+      CYAN='#55e0ff', CYAN2='#a8f0ff', CYAN3='#1d92b8',
+      AMBER='#f5a623', RED='#e0524a', TE=sprCol(team,1,0);
+  /* ── VISAGE 32×32 : VISIÈRE LARGE ──
+     Mesure en jeu : la tête ne fait que ~10 px de large dans le canvas, donc une
+     visière de 7 px de haut sur 32 disparaît. Elle occupe ici la moitié de la
+     face et le pourtour est sombre, sinon la tête se lit comme un fantôme blanc. */
+  R(0,0,32,32,OUT);
+  R(2,2,28,28,SHELL3);                    /* pourtour mécanique sombre */
+  R(3,3,26,26,SHELL2);
+  R(3,3,26,2,SHELL);                      /* arête éclairée */
+  R(1,13,30,2,OUT);                       /* charnière de visière */
+  R(2,15,28,11,CYAN);                     /* VISIÈRE : moitié de la face */
+  R(2,15,28,2,CYAN2); R(2,24,28,2,CYAN3);
+  R(6,17,7,6,'#08222c'); R(19,17,7,6,'#08222c');   /* pupilles */
+  R(7,18,3,2,CYAN2); R(20,18,3,2,CYAN2);           /* reflets */
+  R(4,27,24,3,OUT); R(5,28,22,1,DARK);             /* grille de bouche */
+  R(1,1,4,4,OUT); R(27,1,4,4,OUT);                 /* boulons de tempe */
+  R(1,27,4,4,OUT); R(27,27,4,4,OUT);
+  /* ── ARRIÈRE DU VISAGE 32×32 ── */
+  R(32,0,32,32,OUT);
+  R(33,1,30,30,SHELL2);
+  R(33,1,30,3,SHELL);
+  R(33,4,30,2,OUT);
+  R(38,8,4,18,DARK); R(44,8,4,18,DARK); R(50,8,4,18,DARK);  /* grille d'aération */
+  R(33,27,30,4,SHELL3);
+  R(56,22,6,6,'#f4f7fa'); R(57,23,4,4,OUT);                 /* plaque constructeur */
+  /* ── TORSE 32×32 : panneau de contrôle ── */
+  R(0,32,32,32,OUT);
+  R(1,33,30,30,SHELL);
+  R(1,33,30,4,BLUE);                       /* col */
+  R(1,40,30,16,OUT);                       /* panneau */
+  R(2,41,28,14,BLUE2);
+  R(4,43,12,8,'#12303d'); R(5,44,10,6,CYAN3); R(6,45,8,2,CYAN);  /* écran */
+  R(19,43,4,4,AMBER); R(24,43,4,4,RED); R(19,49,4,4,OUT); R(24,49,4,4,'#5ec46a'); /* boutons */
+  R(1,58,30,4,SHELL3);
+  R(4,64,10,1,TE); R(18,64,10,1,TE);                        /* liseré d'équipe */
+  R(2,34,3,26,SHELL2); R(27,34,3,26,SHELL2);                /* flancs du torse */
+  /* ── DOS DU TORSE 32×32 ── */
+  R(32,32,32,32,OUT);
+  R(33,33,30,30,SHELL2);
+  R(37,36,20,20,OUT); R(38,37,18,18,SHELL3);               /* trappe */
+  R(40,40,14,2,DARK); R(40,45,14,2,DARK);
+  R(46,53,3,3,'#f4f7fa');                                   /* poignée */
+  R(33,33,30,3,SHELL);
+  /* ── DESSUS DE TÊTE 32×32 : dôme + antenne ── */
+  R(0,64,32,32,OUT);
+  R(1,65,30,30,SHELL3);
+  R(3,67,26,26,SHELL2);
+  R(7,69,18,18,CYAN2); R(9,71,14,14,BLUE);                 /* dôme */
+  R(13,72,6,6,OUT); R(14,73,4,4,CYAN);                     /* base d'antenne */
+  R(4,66,3,3,SHELL3); R(25,66,3,3,SHELL3);                 /* rivets */
+  R(4,89,3,3,SHELL3); R(25,89,3,3,SHELL3);
+  /* ── FLANC 32×32 ── */
+  R(32,64,32,32,OUT);
+  R(33,65,30,30,SHELL2);
+  R(33,65,30,4,SHELL);
+  R(33,86,30,4,AMBER); R(36,87,4,2,OUT); R(44,87,4,2,OUT); R(52,87,4,2,OUT);  /* bande de danger */
+  R(38,70,3,12,SHELL3); R(49,70,3,12,SHELL3);               /* nervures */
+  R(58,70,3,3,SHELL3); R(58,80,3,3,SHELL3);
+  return c;
+}
+function texRobotFor(team){
+  if(!ROBOT_TEX) ROBOT_TEX=makeTex(texRobotAtlas(team), false);
+  return ROBOT_TEX;
+}
+
+function riderTexFor(suit, skin, cap, team, id){
+  if(id==='rob') return texRobotFor(team);      /* v5.4 : atlas mécanique dédié */
   var key=[suit,skin,cap,team].join('|');
   if(!RIDER_ATLAS[key]) RIDER_ATLAS[key]=makeTex(texRiderAtlas(suit,skin,cap,team), false);
   return RIDER_ATLAS[key];
@@ -3117,7 +3197,7 @@ function drawRider(m){
   function at(lx,lz){ return localToWorld(cx,cz,ry,lx,lz); }
   var seat = at(0,-0.50), hip = at(0,-0.44);
   var fx=Math.sin(ry), fz=Math.cos(ry), pxv=Math.cos(ry), pzv=-Math.sin(ry);
-  var RTEX = riderTexFor(C.suit, C.skin, C.cap, team);   /* v1.7 : atlas pixel art par palette */
+  var RTEX = riderTexFor(C.suit, C.skin, C.cap, team, C.id);   /* v1.7 : atlas pixel art par palette */
   function part(mesh, x2,y2,z2, sx,sy,sz, ryy){ drawMesh(mesh, trs(x2,y2,z2,sx,sy,sz, ryy===undefined?ry:ryy), RTEX, [1,1,1], {}); }
 
   /* siège + dossier */
