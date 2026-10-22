@@ -1829,6 +1829,39 @@ function resetGame(mode0){
     });
     if(KEEP.length!==LV.props.length) LV.props = KEEP;
   }
+  /* ═════════ v7.2 : LES STATIONS EXISTENT DANS TOUTES LES SALLES ═════════
+     Constat de José : « les points de vidange et de remplissage d'eau sont introuvables
+     sauf au premier niveau ». C'était exact : le jeu ne déclarait qu'UNE station de chaque
+     dans tout le fichier, toutes deux dans les galeries marchandes. Les autres salles
+     n'en avaient aucune, alors que le HUD annonçait « EAU : HG · VIDANGE : HD ».
+     On en pose donc une paire par salle, dans les coins avant, sur des cases libres. */
+  (function(){
+    if(!LV.props) LV.props = [];
+    var hasR=false, hasV=false;
+    for(var i=0;i<LV.props.length;i++){
+      if(LV.props[i].k==='recharge') hasR=true;
+      if(LV.props[i].k==='vidange')  hasV=true;
+    }
+    function taken(gx,gy){
+      for(var j=0;j<LV.props.length;j++){
+        var p=LV.props[j];
+        if(p.solid!==false && p.gx===gx && p.gy===gy) return true;
+      }
+      return false;
+    }
+    var candR=[[1,1],[1,2],[2,1],[1,3],[3,1]];
+    var candV=[[13,1],[13,2],[12,1],[13,3],[11,1]];
+    if(!hasR){
+      for(var a=0;a<candR.length;a++){
+        if(!taken(candR[a][0],candR[a][1])){ LV.props.push({k:'recharge', gx:candR[a][0], gy:candR[a][1], solid:false}); break; }
+      }
+    }
+    if(!hasV){
+      for(var b=0;b<candV.length;b++){
+        if(!taken(candV[b][0],candV[b][1])){ LV.props.push({k:'vidange', gx:candV[b][0], gy:candV[b][1], solid:false}); break; }
+      }
+    }
+  })();
 
   cells.fill(0); foamT.fill(0); floorDirty=false; fpReset(); detW.fill(0); detHits.fill(0); cleanHits.fill(0); blocked.fill(0);
   STATIC_PROPS=null; buildStaticProps();   /* v1.4 : cuisson des props du niveau (1 lot = 1 draw) */
@@ -3031,8 +3064,9 @@ function drawStationMarkers(tNow){
     drawMesh(QUAD_XZ, trs(x, 0.032, z, 1.86, 1, 1.86, 0), stationTex(kind,'pad'), [1,1,1], {unlit:true, alpha:0.96});
     var bob=Math.sin(tNow*2.1 + (water?0:1.6))*0.06;
     drawMesh(QUAD_XY, trs(x, 1.74+bob, z-0.34, 0.78, 0.78, 1, camY), stationTex(kind,'icon'), [1,1,1], {unlit:true});
-    /* v6.5 : au point d'eau, deux flèches pivotantes indiquent qui vient remplir */
-    if(water) drawWaterArrows(x, z, tNow);
+    /* v7.2 : les flèches au sol sont RETIRÉES. Constat de José : « il y a une flèche au
+       sol qui ne sert à rien car l'icône goutte d'eau au-dessus est déjà repérable ».
+       Le pictogramme flottant suffit — et il ne dépend pas de la position des machines. */
   }
   gl.depthMask(true);
   gl.disable(gl.BLEND);
@@ -3719,180 +3753,200 @@ function putBox(R, lx,yy,lz, sx,sy,sz, col, o){
 /* ── LE VÉTÉRAN : costume, chemise blanche, cravate orange de travers, lunettes ── */
 function drawRiderSuit(m){
   var R=riderAnchors(m);
+  /* v7.1 : le conducteur est ASSIS DERRIÈRE le bac à eau, à l'arrière du pont.
+     Sans ce recul, le torse et la tête tombaient dans la cuve : le personnage
+     semblait posé au milieu de la machine au lieu d'être dessus. */
+  var ZB=-0.42;
+  function put(lx,yy,lz,sx,sy,sz,col,o){ putBox(R,lx,yy,lz+ZB,sx,sy,sz,col,o); }
   var team=(m===player)?[0.32,0.70,1.05]:[0.40,0.92,0.55];
   var JACK=[0.22,0.27,0.33], JACKD=[0.16,0.20,0.25], SHIRT=[1.10,1.10,1.05];
   var TIE=[1.25,0.42,0.14], SKIN=[1.06,0.78,0.58], HAIR=[0.66,0.42,0.22];
   var SHOE=[0.30,0.21,0.14], PANTS=[0.36,0.42,0.50], FRAME=[0.12,0.12,0.16], LENS=[0.86,0.89,0.93];
   /* jambes + chaussures */
-  putBox(R, 0.11,0.10,0.06, 0.15,0.22,0.28, PANTS);
-  putBox(R,-0.11,0.10,0.06, 0.15,0.22,0.28, PANTS);
-  putBox(R, 0.11,0.02,0.14, 0.16,0.09,0.24, SHOE);
-  putBox(R,-0.11,0.02,0.14, 0.16,0.09,0.24, SHOE);
+  put(R, 0.11,0.10,0.06, 0.15,0.22,0.28, PANTS);
+  put(R,-0.11,0.10,0.06, 0.15,0.22,0.28, PANTS);
+  put(R, 0.11,0.02,0.14, 0.16,0.09,0.24, SHOE);
+  put(R,-0.11,0.02,0.14, 0.16,0.09,0.24, SHOE);
   /* veste */
-  putBox(R,0,0.42,0, 0.34,0.52,0.26, JACK);
-  putBox(R,0,0.42,-0.13, 0.32,0.50,0.03, JACKD);          /* dos de la veste */
+  put(R,0,0.42,0, 0.34,0.52,0.26, JACK);
+  put(R,0,0.42,-0.13, 0.32,0.50,0.03, JACKD);          /* dos de la veste */
   /* chemise : bande claire devant, cravate par-dessus, de travers */
-  putBox(R,0,0.46,0.135, 0.16,0.44,0.02, SHIRT);
-  putBox(R,0.02,0.50,0.152, 0.10,0.30,0.03, TIE);           /* cravate : plus large, plus rouge */
-  putBox(R,0.03,0.655,0.152, 0.12,0.09,0.04, TIE);          /* nœud lâche, décalé à droite */
+  put(R,0,0.46,0.135, 0.16,0.44,0.02, SHIRT);
+  put(R,0.02,0.50,0.152, 0.10,0.30,0.03, TIE);           /* cravate : plus large, plus rouge */
+  put(R,0.03,0.655,0.152, 0.12,0.09,0.04, TIE);          /* nœud lâche, décalé à droite */
   /* ceinture + boucle */
-  putBox(R,0,0.20,0.02, 0.34,0.05,0.27, [0.13,0.13,0.15]);
-  putBox(R,0,0.20,0.16, 0.07,0.05,0.03, [0.62,0.65,0.68]);
+  put(R,0,0.20,0.02, 0.34,0.05,0.27, [0.13,0.13,0.15]);
+  put(R,0,0.20,0.16, 0.07,0.05,0.03, [0.62,0.65,0.68]);
   /* bras */
-  putBox(R, 0.21,0.44,0.02, 0.10,0.36,0.12, JACK);
-  putBox(R,-0.21,0.44,0.02, 0.10,0.36,0.12, JACK);
-  putBox(R, 0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);        /* poignets blancs */
-  putBox(R,-0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);
+  put(R, 0.21,0.44,0.02, 0.10,0.36,0.12, JACK);
+  put(R,-0.21,0.44,0.02, 0.10,0.36,0.12, JACK);
+  put(R, 0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);        /* poignets blancs */
+  put(R,-0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);
   /* tête, cheveux ébouriffés, lunettes */
-  putBox(R,0,0.80,0, 0.26,0.24,0.24, SKIN);
-  putBox(R,0,0.94,0, 0.28,0.09,0.26, HAIR);
-  putBox(R, 0.06,0.985,0.02, 0.10,0.07,0.10, HAIR);        /* mèche dressée */
-  putBox(R,-0.07,0.975,0.01, 0.09,0.06,0.09, HAIR);
-  putBox(R,0,0.83,-0.13, 0.26,0.16,0.03, HAIR);            /* nuque couverte */
+  put(R,0,0.80,0, 0.26,0.24,0.24, SKIN);
+  put(R,0,0.94,0, 0.28,0.09,0.26, HAIR);
+  put(R, 0.06,0.985,0.02, 0.10,0.07,0.10, HAIR);        /* mèche dressée */
+  put(R,-0.07,0.975,0.01, 0.09,0.06,0.09, HAIR);
+  put(R,0,0.83,-0.13, 0.26,0.16,0.03, HAIR);            /* nuque couverte */
   /* lunettes : notre caméra regarde surtout le DESSUS des têtes. Des verres posés à plat sur
      le visage ne se voyaient pas. La monture est donc une bande sombre qui DÉBORDE de chaque
      côté du crâne, avec les branches visibles de dessus, et des verres clairs plus larges. */
-  putBox(R,0,0.845,0.128, 0.34,0.055,0.03, FRAME);         /* bande de monture traversante */
-  putBox(R, 0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
-  putBox(R,-0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
-  putBox(R, 0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);       /* branche gauche, vue de dessus */
-  putBox(R,-0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);
+  put(R,0,0.845,0.128, 0.34,0.055,0.03, FRAME);         /* bande de monture traversante */
+  put(R, 0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
+  put(R,-0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
+  put(R, 0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);       /* branche gauche, vue de dessus */
+  put(R,-0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);
   /* bouche crispée + bandeau d'équipe sur le bras */
-  putBox(R,0,0.775,0.125, 0.11,0.03,0.02, [0.36,0.16,0.14]);
-  putBox(R,0.21,0.31,0.06, 0.11,0.04,0.13, team);
+  put(R,0,0.775,0.125, 0.11,0.03,0.02, [0.36,0.16,0.14]);
+  put(R,0.21,0.31,0.06, 0.11,0.04,0.13, team);
 }
 
 /* ── LE STAGIAIRE : combinaison bleue, casquette à écusson orange, gants ── */
 function drawRiderCoverall(m){
   var R=riderAnchors(m);
+  /* v7.1 : le conducteur est ASSIS DERRIÈRE le bac à eau, à l'arrière du pont.
+     Sans ce recul, le torse et la tête tombaient dans la cuve : le personnage
+     semblait posé au milieu de la machine au lieu d'être dessus. */
+  var ZB=-0.42;
+  function put(lx,yy,lz,sx,sy,sz,col,o){ putBox(R,lx,yy,lz+ZB,sx,sy,sz,col,o); }
   var team=(m===player)?[0.32,0.70,1.05]:[0.40,0.92,0.55];
   var SUIT=[0.34,0.56,0.86], SUITD=[0.25,0.42,0.68], CAP=[0.26,0.46,0.72];
   var PATCH=[1.05,0.60,0.20], GLOVE=[0.28,0.28,0.33], SKIN=[1.10,0.82,0.62];
   var HAIR=[0.58,0.36,0.20], SHOE=[0.19,0.23,0.29], SOLE=[0.62,0.66,0.70];
-  putBox(R, 0.11,0.10,0.06, 0.16,0.22,0.28, SUITD);
-  putBox(R,-0.11,0.10,0.06, 0.16,0.22,0.28, SUITD);
-  putBox(R, 0.11,0.02,0.14, 0.17,0.08,0.25, SHOE);
-  putBox(R,-0.11,0.02,0.14, 0.17,0.08,0.25, SHOE);
-  putBox(R, 0.11,0.005,0.14, 0.18,0.03,0.26, SOLE);
-  putBox(R,-0.11,0.005,0.14, 0.18,0.03,0.26, SOLE);
+  put(R, 0.11,0.10,0.06, 0.16,0.22,0.28, SUITD);
+  put(R,-0.11,0.10,0.06, 0.16,0.22,0.28, SUITD);
+  put(R, 0.11,0.02,0.14, 0.17,0.08,0.25, SHOE);
+  put(R,-0.11,0.02,0.14, 0.17,0.08,0.25, SHOE);
+  put(R, 0.11,0.005,0.14, 0.18,0.03,0.26, SOLE);
+  put(R,-0.11,0.005,0.14, 0.18,0.03,0.26, SOLE);
   /* combinaison : torse large, patte de fermeture, poche poitrine, ceinture */
-  putBox(R,0,0.44,0, 0.38,0.50,0.28, SUIT);
-  putBox(R,0,0.44,0.145, 0.04,0.46,0.02, SUITD);           /* patte centrale */
-  putBox(R,0.10,0.52,0.145, 0.11,0.10,0.02, SUITD);        /* poche poitrine */
-  putBox(R,0,0.22,0.02, 0.38,0.06,0.29, [0.19,0.30,0.46]);
-  putBox(R,0,0.22,0.155, 0.08,0.05,0.03, [0.72,0.78,0.82]);/* boucle */
-  putBox(R,0,0.66,0.145, 0.12,0.10,0.02, SKIN);            /* col ouvert : peau */
+  put(R,0,0.44,0, 0.38,0.50,0.28, SUIT);
+  put(R,0,0.44,0.145, 0.04,0.46,0.02, SUITD);           /* patte centrale */
+  put(R,0.10,0.52,0.145, 0.11,0.10,0.02, SUITD);        /* poche poitrine */
+  put(R,0,0.22,0.02, 0.38,0.06,0.29, [0.19,0.30,0.46]);
+  put(R,0,0.22,0.155, 0.08,0.05,0.03, [0.72,0.78,0.82]);/* boucle */
+  put(R,0,0.66,0.145, 0.12,0.10,0.02, SKIN);            /* col ouvert : peau */
   /* bras épais + gants */
-  putBox(R, 0.23,0.44,0.02, 0.12,0.34,0.13, SUIT);
-  putBox(R,-0.23,0.44,0.02, 0.12,0.34,0.13, SUIT);
-  putBox(R, 0.23,0.26,0.05, 0.12,0.12,0.13, GLOVE);
-  putBox(R,-0.23,0.26,0.05, 0.12,0.12,0.13, GLOVE);
-  putBox(R, 0.23,0.31,0.05, 0.13,0.05,0.14, team);
+  put(R, 0.23,0.44,0.02, 0.12,0.34,0.13, SUIT);
+  put(R,-0.23,0.44,0.02, 0.12,0.34,0.13, SUIT);
+  put(R, 0.23,0.26,0.05, 0.12,0.12,0.13, GLOVE);
+  put(R,-0.23,0.26,0.05, 0.12,0.12,0.13, GLOVE);
+  put(R, 0.23,0.31,0.05, 0.13,0.05,0.14, team);
   /* tête + cheveux sous la casquette */
-  putBox(R,0,0.80,0, 0.27,0.24,0.25, SKIN);
-  putBox(R, 0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);         /* rouflaquettes */
-  putBox(R,-0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);
-  putBox(R,0,0.80,0.115, 0.20,0.05,0.03, HAIR);            /* frange */
+  put(R,0,0.80,0, 0.27,0.24,0.25, SKIN);
+  put(R, 0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);         /* rouflaquettes */
+  put(R,-0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);
+  put(R,0,0.80,0.115, 0.20,0.05,0.03, HAIR);            /* frange */
   /* casquette : calotte bleu foncé, visière, écusson orange */
-  putBox(R,0,0.955,0, 0.30,0.11,0.28, CAP);
-  putBox(R,0,0.895,0, 0.31,0.035,0.29, team);              /* bandeau d'équipe */
-  putBox(R,0,0.905,0.16, 0.28,0.03,0.16, CAP);             /* visière */
-  putBox(R,0,0.965,0.135, 0.14,0.055,0.03, PATCH);         /* écusson orange (avant) */
-  putBox(R,0,1.012,0.06, 0.18,0.02,0.10, PATCH);            /* écusson sur le dessus, vu de la caméra */
+  put(R,0,0.955,0, 0.30,0.11,0.28, CAP);
+  put(R,0,0.895,0, 0.31,0.035,0.29, team);              /* bandeau d'équipe */
+  put(R,0,0.905,0.16, 0.28,0.03,0.16, CAP);             /* visière */
+  put(R,0,0.965,0.135, 0.14,0.055,0.03, PATCH);         /* écusson orange (avant) */
+  put(R,0,1.012,0.06, 0.18,0.02,0.10, PATCH);            /* écusson sur le dessus, vu de la caméra */
   /* visage : yeux + sourire en coin */
-  putBox(R, 0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
-  putBox(R,-0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
-  putBox(R,0.02,0.755,0.128, 0.10,0.025,0.02, [0.42,0.16,0.14]);
+  put(R, 0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
+  put(R,-0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
+  put(R,0.02,0.755,0.128, 0.10,0.025,0.02, [0.42,0.16,0.14]);
 }
 
 /* ── L'ALIEN AU VOLANT : le cyclope de la planche, assis sur la machine ── */
 function drawRiderAlien(m){
   var R=riderAnchors(m);
+  /* v7.1 : le conducteur est ASSIS DERRIÈRE le bac à eau, à l'arrière du pont.
+     Sans ce recul, le torse et la tête tombaient dans la cuve : le personnage
+     semblait posé au milieu de la machine au lieu d'être dessus. */
+  var ZB=-0.42;
+  function put(lx,yy,lz,sx,sy,sz,col,o){ putBox(R,lx,yy,lz+ZB,sx,sy,sz,col,o); }
   var A1=ALIEN, team=(m===player)?[0.32,0.70,1.05]:[0.40,0.92,0.55];
-  putBox(R, 0.13,0.06,0.16, 0.14,0.16,0.26, A1.skinD);
-  putBox(R,-0.13,0.06,0.16, 0.14,0.16,0.26, A1.skin);
-  putBox(R, 0.13,0.01,0.28, 0.15,0.05,0.12, A1.skinD);
-  putBox(R,-0.13,0.01,0.28, 0.15,0.05,0.12, A1.skin);
-  putBox(R,0,0.32,0.02, 0.42,0.32,0.36, A1.skin);
-  putBox(R,0,0.30,0.16, 0.28,0.24,0.12, A1.belly);
-  putBox(R,0,0.26,0.225, 0.05,0.06,0.02, A1.spot);
-  putBox(R,-0.26,0.40,0.10, 0.09,0.18,0.10, A1.skinD);
-  putBox(R, 0.26,0.40,0.10, 0.09,0.18,0.10, A1.skin);
-  putBox(R,-0.22,0.30,0.30, 0.10,0.07,0.11, A1.skinD);
-  putBox(R, 0.22,0.30,0.30, 0.10,0.07,0.11, A1.skin);
-  putBox(R,0,0.68,0, 0.46,0.36,0.40, A1.skin);
-  putBox(R,0,0.68,0.20, 0.30,0.26,0.04, A1.belly);
-  putBox(R,0,0.78,0.205, 0.26,0.20,0.04, [0.20,0.08,0.26]);
-  putBox(R,0,0.78,0.212, 0.23,0.17,0.03, A1.eyeW);
-  putBox(R,0,0.78,0.222, 0.13,0.12,0.03, A1.iris);
-  putBox(R,0.02,0.795,0.232, 0.06,0.06,0.03, A1.pupil);
-  putBox(R,0,0.855,0.13, 0.20,0.03,0.14, A1.eyeW);
-  putBox(R,0,0.58,0.215, 0.20,0.07,0.02, A1.mouth);
-  putBox(R,0.05,0.53,0.225, 0.04,0.09,0.02, A1.drool);
-  putBox(R,-0.26,0.72,0, 0.12,0.10,0.08, A1.skinD, {ry:R.ry+0.55});
-  putBox(R, 0.26,0.72,0, 0.12,0.10,0.08, A1.skin,  {ry:R.ry-0.55});
-  putBox(R,0.02,0.92,-0.02, 0.045,0.26,0.045, A1.skinD);
-  putBox(R,0.03,1.09,-0.03, 0.15,0.15,0.15, A1.skin);
-  putBox(R,0.13,0.84,-0.10, 0.10,0.05,0.09, A1.spot);
-  putBox(R,-0.10,0.80,-0.18, 0.12,0.06,0.06, A1.spot);
-  putBox(R,0,0.30,-0.18, 0.18,0.05,0.03, team);
+  put(R, 0.13,0.06,0.16, 0.14,0.16,0.26, A1.skinD);
+  put(R,-0.13,0.06,0.16, 0.14,0.16,0.26, A1.skin);
+  put(R, 0.13,0.01,0.28, 0.15,0.05,0.12, A1.skinD);
+  put(R,-0.13,0.01,0.28, 0.15,0.05,0.12, A1.skin);
+  put(R,0,0.32,0.02, 0.42,0.32,0.36, A1.skin);
+  put(R,0,0.30,0.16, 0.28,0.24,0.12, A1.belly);
+  put(R,0,0.26,0.225, 0.05,0.06,0.02, A1.spot);
+  put(R,-0.26,0.40,0.10, 0.09,0.18,0.10, A1.skinD);
+  put(R, 0.26,0.40,0.10, 0.09,0.18,0.10, A1.skin);
+  put(R,-0.22,0.30,0.30, 0.10,0.07,0.11, A1.skinD);
+  put(R, 0.22,0.30,0.30, 0.10,0.07,0.11, A1.skin);
+  put(R,0,0.68,0, 0.46,0.36,0.40, A1.skin);
+  put(R,0,0.68,0.20, 0.30,0.26,0.04, A1.belly);
+  put(R,0,0.78,0.205, 0.26,0.20,0.04, [0.20,0.08,0.26]);
+  put(R,0,0.78,0.212, 0.23,0.17,0.03, A1.eyeW);
+  put(R,0,0.78,0.222, 0.13,0.12,0.03, A1.iris);
+  put(R,0.02,0.795,0.232, 0.06,0.06,0.03, A1.pupil);
+  put(R,0,0.855,0.13, 0.20,0.03,0.14, A1.eyeW);
+  put(R,0,0.58,0.215, 0.20,0.07,0.02, A1.mouth);
+  put(R,0.05,0.53,0.225, 0.04,0.09,0.02, A1.drool);
+  put(R,-0.26,0.72,0, 0.12,0.10,0.08, A1.skinD, {ry:R.ry+0.55});
+  put(R, 0.26,0.72,0, 0.12,0.10,0.08, A1.skin,  {ry:R.ry-0.55});
+  put(R,0.02,0.92,-0.02, 0.045,0.26,0.045, A1.skinD);
+  put(R,0.03,1.09,-0.03, 0.15,0.15,0.15, A1.skin);
+  put(R,0.13,0.84,-0.10, 0.10,0.05,0.09, A1.spot);
+  put(R,-0.10,0.80,-0.18, 0.12,0.06,0.06, A1.spot);
+  put(R,0,0.30,-0.18, 0.18,0.05,0.03, team);
 }
 /* ── L'APPRENTI ROBOT : tête d'écran, visage cyan, pinces, circuits ── */
 function drawRiderRobot(m){
   var R=riderAnchors(m);
+  /* v7.1 : le conducteur est ASSIS DERRIÈRE le bac à eau, à l'arrière du pont.
+     Sans ce recul, le torse et la tête tombaient dans la cuve : le personnage
+     semblait posé au milieu de la machine au lieu d'être dessus. */
+  var ZB=-0.42;
+  function put(lx,yy,lz,sx,sy,sz,col,o){ putBox(R,lx,yy,lz+ZB,sx,sy,sz,col,o); }
   var team=(m===player)?[0.32,0.70,1.05]:[0.40,0.92,0.55];
   var METAL=[0.50,0.54,0.60], METALD=[0.36,0.40,0.45], SCREEN=[0.06,0.08,0.14];
   var CYAN=[0.35,1.00,1.25], BODY=[0.28,0.44,0.72], BODYD=[0.20,0.33,0.56];
   var PCB=[0.42,0.95,0.62], RED=[0.85,0.20,0.18], GREEN=[0.25,0.80,0.38], CAB=[0.16,0.16,0.18];
   /* jambes courtes + pieds plats */
-  putBox(R, 0.11,0.10,0.04, 0.13,0.16,0.16, METALD);
-  putBox(R,-0.11,0.10,0.04, 0.13,0.16,0.16, METALD);
-  putBox(R, 0.11,0.02,0.09, 0.15,0.06,0.24, METAL);
-  putBox(R,-0.11,0.02,0.09, 0.15,0.06,0.24, METAL);
+  put(R, 0.11,0.10,0.04, 0.13,0.16,0.16, METALD);
+  put(R,-0.11,0.10,0.04, 0.13,0.16,0.16, METALD);
+  put(R, 0.11,0.02,0.09, 0.15,0.06,0.24, METAL);
+  put(R,-0.11,0.02,0.09, 0.15,0.06,0.24, METAL);
   /* bassin + câbles pendants */
-  putBox(R,0,0.20,0, 0.32,0.09,0.22, METAL);
-  putBox(R, 0.09,0.14,0.06, 0.03,0.12,0.03, RED);
-  putBox(R,-0.09,0.14,0.06, 0.03,0.12,0.03, GREEN);
-  putBox(R,0,0.13,0.02, 0.03,0.10,0.03, CAB);
+  put(R,0,0.20,0, 0.32,0.09,0.22, METAL);
+  put(R, 0.09,0.14,0.06, 0.03,0.12,0.03, RED);
+  put(R,-0.09,0.14,0.06, 0.03,0.12,0.03, GREEN);
+  put(R,0,0.13,0.02, 0.03,0.10,0.03, CAB);
   /* torse bleu, plaques, circuits, boutons */
-  putBox(R,0,0.44,0, 0.36,0.44,0.26, BODY);
-  putBox(R,0,0.60,0.135, 0.26,0.08,0.02, PCB);             /* piste de circuit */
-  putBox(R,0.09,0.50,0.135, 0.05,0.14,0.02, PCB);
-  putBox(R,-0.10,0.42,0.135, 0.12,0.07,0.02, [0.62,0.64,0.68]);  /* grille */
-  putBox(R,-0.10,0.46,0.14, 0.10,0.02,0.02, METALD);
-  putBox(R,0.10,0.36,0.14, 0.06,0.05,0.02, RED);           /* composant rouge */
-  putBox(R,0.14,0.52,0.14, 0.03,0.03,0.02, GREEN);         /* LED */
-  putBox(R,0,0.30,0.14, 0.18,0.04,0.02, team);             /* bandeau d'équipe */
+  put(R,0,0.44,0, 0.36,0.44,0.26, BODY);
+  put(R,0,0.60,0.135, 0.26,0.08,0.02, PCB);             /* piste de circuit */
+  put(R,0.09,0.50,0.135, 0.05,0.14,0.02, PCB);
+  put(R,-0.10,0.42,0.135, 0.12,0.07,0.02, [0.62,0.64,0.68]);  /* grille */
+  put(R,-0.10,0.46,0.14, 0.10,0.02,0.02, METALD);
+  put(R,0.10,0.36,0.14, 0.06,0.05,0.02, RED);           /* composant rouge */
+  put(R,0.14,0.52,0.14, 0.03,0.03,0.02, GREEN);         /* LED */
+  put(R,0,0.30,0.14, 0.18,0.04,0.02, team);             /* bandeau d'équipe */
   /* bras : rotule, tube, pince */
   [1,-1].forEach(function(sg){
-    putBox(R, sg*0.23,0.58,0.02, 0.11,0.11,0.11, METAL);
-    putBox(R, sg*0.23,0.44,0.02, 0.08,0.24,0.08, METALD);
-    putBox(R, sg*0.23,0.29,0.02, 0.10,0.09,0.10, METAL);
-    putBox(R, sg*0.23,0.22,0.05, 0.06,0.10,0.05, METAL);   /* pince */
-    putBox(R, sg*0.23,0.22,-0.01, 0.06,0.10,0.05, METAL);
+    put(R, sg*0.23,0.58,0.02, 0.11,0.11,0.11, METAL);
+    put(R, sg*0.23,0.44,0.02, 0.08,0.24,0.08, METALD);
+    put(R, sg*0.23,0.29,0.02, 0.10,0.09,0.10, METAL);
+    put(R, sg*0.23,0.22,0.05, 0.06,0.10,0.05, METAL);   /* pince */
+    put(R, sg*0.23,0.22,-0.01, 0.06,0.10,0.05, METAL);
   });
   /* cou ressort */
-  putBox(R,0,0.70,0, 0.09,0.10,0.09, METALD);
+  put(R,0,0.70,0, 0.09,0.10,0.09, METALD);
   /* tête-écran. Notre caméra plonge à ~42° : elle voit d'abord le DESSUS. L'écran est donc
      posé à plat sur le crâne — c'est ce qui fait lire « tête de télévision » — en plus de
      l'écran frontal. Le visage cyan est dessiné sur les deux. */
-  putBox(R,0,0.88,0, 0.34,0.26,0.24, METAL);
-  putBox(R,0,1.012,0, 0.30,0.02,0.22, SCREEN);              /* écran du dessus */
-  putBox(R, 0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
-  putBox(R,-0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
-  putBox(R,0,1.020,-0.04, 0.14,0.02,0.03, CYAN, {ry:R.ry, emit:0.95});
-  putBox(R,0,0.885,0.125, 0.28,0.19,0.02, SCREEN);          /* écran frontal */
-  putBox(R, 0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
-  putBox(R,-0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
-  putBox(R,0,0.885,0.135, 0.13,0.03,0.02, CYAN, {ry:R.ry, emit:0.95});
+  put(R,0,0.88,0, 0.34,0.26,0.24, METAL);
+  put(R,0,1.012,0, 0.30,0.02,0.22, SCREEN);              /* écran du dessus */
+  put(R, 0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
+  put(R,-0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
+  put(R,0,1.020,-0.04, 0.14,0.02,0.03, CYAN, {ry:R.ry, emit:0.95});
+  put(R,0,0.885,0.125, 0.28,0.19,0.02, SCREEN);          /* écran frontal */
+  put(R, 0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
+  put(R,-0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
+  put(R,0,0.885,0.135, 0.13,0.03,0.02, CYAN, {ry:R.ry, emit:0.95});
   /* antennes, ouïes, menton */
-  putBox(R, 0.10,1.05,0, 0.03,0.10,0.03, METAL);
-  putBox(R,-0.10,1.05,0, 0.03,0.10,0.03, METAL);
-  putBox(R, 0.10,1.11,0, 0.05,0.05,0.05, METALD);
-  putBox(R,-0.10,1.11,0, 0.05,0.05,0.05, METALD);
-  putBox(R,0,0.79,0.125, 0.12,0.04,0.02, METALD);          /* menton grillagé */
-  putBox(R,0.165,0.88,0, 0.03,0.12,0.16, METALD);          /* oreilles */
-  putBox(R,-0.165,0.88,0, 0.03,0.12,0.16, METALD);
+  put(R, 0.10,1.05,0, 0.03,0.10,0.03, METAL);
+  put(R,-0.10,1.05,0, 0.03,0.10,0.03, METAL);
+  put(R, 0.10,1.11,0, 0.05,0.05,0.05, METALD);
+  put(R,-0.10,1.11,0, 0.05,0.05,0.05, METALD);
+  put(R,0,0.79,0.125, 0.12,0.04,0.02, METALD);          /* menton grillagé */
+  put(R,0.165,0.88,0, 0.03,0.12,0.16, METALD);          /* oreilles */
+  put(R,-0.165,0.88,0, 0.03,0.12,0.16, METALD);
 }
 
 function drawRider(m){
@@ -6759,6 +6813,14 @@ window.__cam = function(){ return {EYE:EYE, TARGET:TARGET, rot:CAM_ROT, dist:CAM
 window.__setFoam = function(gx,gy,sec){ var i=idxAt(gx,gy); foamT[i]=sec; floorDirty=true; return {cell:cells[i], foam:foamT[i]}; };
 window.__foamAt = function(gx,gy){ var i=idxAt(gx,gy); return {cell:cells[i], foam:foamT[i]}; };
 window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
+window.__stations = function(){
+  var out=[];
+  for(var i=0;i<LV.props.length;i++){
+    var p=LV.props[i];
+    if(p.k==='recharge' || p.k==='vidange') out.push(p.k+'@'+p.gx+','+p.gy);
+  }
+  return {level:LV.name, stations:out};
+};
 window.__spawnAlien = function(gx,gy,dir){
   polluters.push({ type:'alien', x:gx-7, z:gy-6, dir:(dir===undefined?Math.PI:dir),
     t:0, step:0, wing:0, state:'idle', cd:999, timer:0, did:false, tx:0, tz:0,
