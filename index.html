@@ -269,15 +269,47 @@ var COLS=15, ROWS=13;
              contour, ni vignette : des faces franches qui se lisent par la lumière.
    Bascule par l'URL : ?flat */
 var QS=location.search.toLowerCase();
-var STYLE = QS.indexOf('linear')>=0 ? 'linear' : (QS.indexOf('flat')>=0 ? 'flat' : 'retro');
+/* v6.3 : le style par défaut est FRANC LISSÉ (choix de José). ?flat = textures nettes,
+   ?retro = ancien rendu 16-bit (720x405 x3), conservé pour comparaison. */
+var STYLE = QS.indexOf('retro')>=0 ? 'retro' : (QS.indexOf('flat')>=0 ? 'flat' : 'linear');
 var RETRO = (STYLE==='retro');
-var GW=RETRO?720:2160, GH=RETRO?405:1215;   /* v2.0 : 3D rendue en 720×405 puis agrandie ×3 ENTIER en NEAREST (2160×1215) — de vrais gros pixels, sans échelle bâtarde */          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
+/* v6.3 : RÉSOLUTION ADAPTÉE À L'ÉCRAN.
+   Constat de José : « sur l'écran de l'iMac le jeu était illisible ». Le framebuffer
+   était figé à 2160x1215 quel que soit l'appareil : trop grand pour un téléphone (calcul
+   jeté), trop petit pour un iMac haute densité (dessin étiré, donc flou et crénelé).
+   On calcule donc la taille de rendu à partir de ce que l'écran affiche vraiment :
+   largeur logique du stage x densité de l'écran, bornée pour rester raisonnable. */
+var RENDER = (function(){
+  if(RETRO) return {w:720, h:405};
+  var vw = Math.max(320, window.innerWidth || 1280);
+  var vh = Math.max(240, window.innerHeight || 720);
+  var portrait = vh > vw*1.02;
+  var availH = portrait ? Math.round(vh*0.62) : vh;   /* même formule que layout() */
+  var scStage = Math.max(0.18, Math.min(vw/2160, availH/1215));
+  var dpr = Math.min(window.devicePixelRatio || 1, 3);
+  var w = Math.round(2160 * scStage * dpr);
+  w = Math.max(720, Math.min(4096, w));               /* v6.4 : jusqu'à 4096 pour les écrans haute densité */
+  return { w: w, h: Math.round(w * 1215 / 2160) };
+})();
+var GW=RENDER.w, GH=RENDER.h;   /* v2.0 : 3D rendue en 720×405 puis agrandie ×3 ENTIER en NEAREST (2160×1215) — de vrais gros pixels, sans échelle bâtarde */          /* v0.15 : résolution interne relevée (×1,5 EXACT vers 1440×810) — plus de pixels par objet, donc plus de détail lisible */
 var OW=2160, OH=1215;         // canvas final (960×540 → ×1,5)
 
 var glCanvas=document.getElementById('gl');
 var hudCanvas=document.getElementById('hud');
 var hud=hudCanvas.getContext('2d');
 var stage=document.getElementById('stage');
+/* le canvas de dessin prend la résolution calculée ; sa taille CSS reste 2160x1215
+   (100 % du stage), donc le placement et l'échelle ne bougent pas */
+glCanvas.width  = RENDER.w;
+glCanvas.height = RENDER.h;
+/* v6.3 : le HUD suit lui aussi la finesse de l'écran. Il était dessiné en 1440x810 et
+   étiré sur un stage de 2160 : sur un iMac haute densité, les textes et les jauges
+   étaient donc à la moitié de la finesse de l'écran. Il est maintenant rendu à la
+   résolution du canvas 3D (bornée), dans le même espace logique de 640x360. */
+var HUD_W = Math.max(1440, Math.min(3072, RENDER.w));
+var HUD_H = Math.round(HUD_W*810/1440);
+var HUD_K = HUD_W/640;
+hudCanvas.width=HUD_W; hudCanvas.height=HUD_H;
 
 var gl = glCanvas.getContext('webgl',{antialias:false,alpha:false,depth:true,preserveDrawingBuffer:true})
       || glCanvas.getContext('experimental-webgl',{antialias:false,alpha:false,preserveDrawingBuffer:true});
@@ -408,12 +440,22 @@ gl.uniform3f(U.light, 0.42, 0.84, 0.34);
 gl.uniform1i(U.tex, 0);
 
 /* ---------- 4. TEXTURES PROCEDURALES ---------- */
+/* v6.3 : FINESSE DES TEXTURES.
+   Les textures de sol/mur/étagère étaient dessinées en 32x32 et étirées sur ~50 px
+   d'écran : chaque texel valait deux pixels, d'où le crénelage. Le code de dessin reste
+   écrit en coordonnées 32x32, mais la toile est deux fois plus grande et le contexte est
+   mis à l'échelle : tous les tracés tombent sur des pixels entiers, et les cercles, les
+   lettres et les motifs gagnent le double de finesse sans réécrire une seule texture. */
+var TEX_SCALE = RETRO ? 1 : 2;
 function texCanvas(w,h,fn){
+  var k = TEX_SCALE;
   var c=document.createElement('canvas');
-  c.width=w; c.height=h;
+  c.width=w*k; c.height=h*k;
   var g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
+  if(k!==1) g.scale(k,k);
   fn(g,w,h);
+  if(k!==1) g.setTransform(1,0,0,1,0,0);
   return c;
 }
 function px(g,x,y,c,w,h){ g.fillStyle=c; g.fillRect(x,y,w===undefined?1:w,h===undefined?1:h); }
@@ -934,16 +976,38 @@ function texGlassWall(){
 }
 
 var texSeq=0;   /* v1.4 : compteur d'identifiants de texture, déclaré AVANT la création de T */
+/* v6.3 : MIPMAPS + FILTRAGE ANISOTROPE.
+   Sans mipmap, les carreaux lointains scintillaient dès que la caméra bougeait : chaque
+   texel était échantillonné un par un, et le motif du carrelage battait avec la grille
+   de l'écran. Le mipmap donne à la carte graphique des versions réduites de la texture,
+   et l'anisotrope garde le sol net jusqu'au fond de la salle. */
+var ANISO = (function(){
+  var ext = gl.getExtension('EXT_texture_filter_anisotropic')
+         || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+         || gl.getExtension('MOZ_EXT_texture_filter_anisotropic');
+  if(!ext) return 0;
+  var maxAniso = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
+  return {ext: ext, max: Math.min(8, maxAniso)};
+})();
+function isPOT(n){ return (n & (n-1)) === 0; }
 function makeTex(canvas,repeat){
   var t=gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D,t);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
-  /* v6.2 : en style franc, les textures sont lissées (LINEAR) — c'est la matière qui
-     reste douce, seules les arêtes géométriques portent le trait. En rétro, NEAREST. */
-  var filt = (STYLE==='linear') ? gl.LINEAR : gl.NEAREST;
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filt);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filt);
+  var pot = isPOT(canvas.width) && isPOT(canvas.height);
+  var smoothed = !RETRO;                 /* franc et franc lissé : filtrage doux */
+  var crispTex = (STYLE==='flat');       /* franc net : on garde des texels francs */
+  var filt = crispTex ? gl.NEAREST : gl.LINEAR;
+  if(smoothed && pot){
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER, crispTex?gl.NEAREST_MIPMAP_LINEAR:gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER, filt);
+    if(ANISO){ gl.texParameterf(gl.TEXTURE_2D, ANISO.ext.TEXTURE_MAX_ANISOTROPY_EXT, ANISO.max); }
+  } else {
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filt);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filt);
+  }
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,repeat?gl.REPEAT:gl.CLAMP_TO_EDGE);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
@@ -1262,24 +1326,51 @@ function box(x,y,z,sx,sy,sz,tex,color,opt){
 }
 
 /* ---------- 6. FBO BASSE RESOLUTION ---------- */
-var fbTex=gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D,fbTex);
-gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,GW,GH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-
-var fbDepth=gl.createRenderbuffer();
-gl.bindRenderbuffer(gl.RENDERBUFFER,fbDepth);
-gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,GW,GH);
-
-var fbo=gl.createFramebuffer();
-gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
-gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,fbTex,0);
-gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,fbDepth);
-var fbOK = (gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE);
-gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+/* v6.3 : la cible de rendu est recréable — elle suit la taille de l'écran quand la
+   fenêtre change de taille ou quand l'appareil tourne. */
+var fbTex=null, fbDepth=null, fbo=null, fbOK=false;
+function buildTarget(){
+  if(fbTex){ gl.deleteTexture(fbTex); fbTex=null; }
+  if(fbDepth){ gl.deleteRenderbuffer(fbDepth); fbDepth=null; }
+  if(fbo){ gl.deleteFramebuffer(fbo); fbo=null; }
+  fbTex=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,fbTex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,GW,GH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,RETRO?gl.NEAREST:gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  fbDepth=gl.createRenderbuffer();
+  gl.bindRenderbuffer(gl.RENDERBUFFER,fbDepth);
+  gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,GW,GH);
+  fbo=gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,fbTex,0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,fbDepth);
+  fbOK = (gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+buildTarget();
+/* recalcule la taille de rendu pour la fenêtre courante et recrée la cible si besoin */
+function syncRenderSize(){
+  if(RETRO) return;
+  var vw = Math.max(320, window.innerWidth||1280), vh = Math.max(240, window.innerHeight||720);
+  var portrait = vh > vw*1.02;
+  var availH = portrait ? Math.round(vh*0.62) : vh;
+  if(PAD_ON && !portrait) availH = Math.round(vh*0.80);
+  var scStage = Math.max(0.18, Math.min(vw/2160, availH/1215));
+  var dpr = Math.min(window.devicePixelRatio||1, 3);
+  var w = Math.max(720, Math.min(4096, Math.round(2160*scStage*dpr)));
+  var h = Math.round(w*1215/2160);
+  if(w===GW && h===GH) return;
+  GW=w; GH=h; RENDER.w=w; RENDER.h=h;
+  glCanvas.width=w; glCanvas.height=h;
+  buildTarget();
+  HUD_W = Math.max(1440, Math.min(3072, w));
+  HUD_H = Math.round(HUD_W*810/1440);
+  HUD_K = HUD_W/640;
+  hudCanvas.width=HUD_W; hudCanvas.height=HUD_H;
+}
 
 /* ---------- 7. CAMERA ---------- */
 // plongee ~55 deg, arene entiere visible
@@ -5548,7 +5639,7 @@ function drawAttract(){
 }
 
 function drawHUD(){
-  hud.setTransform(2.25,0,0,2.25,0,0);   /* v1.7 : HUD rendu en 1440×810 (coût Canvas 2D ÷3), étiré sur le stage 2160 */
+  hud.setTransform(HUD_K,0,0,HUD_K,0,0);   /* v6.3 : HUD à la finesse de l'écran, espace logique 640x360 */
   var CRT_PAT=null;
   /* v2.6 : sur un téléphone l'arène ne fait que ~220 px de haut — la mini-carte (114×123)
    et la console de jauges (508×40) mangeaient le quart bas du terrain. En mode compact
@@ -6048,6 +6139,7 @@ function layout(){
   stage.style.transformOrigin='top left';
   stage.style.left='0px'; stage.style.top='0px';
   stage.style.transform='translate('+px+'px,'+py+'px) scale('+sc+')';
+  syncRenderSize();   /* v6.3 : le rendu suit la taille réelle de l'écran */
   if(portrait && PAD_ON){
     padEl.style.top=Math.round(drawH)+'px';
     padEl.style.bottom='0px';
@@ -6313,7 +6405,7 @@ function frame(now){
   var _t1=performance.now();
   // --- passe upscale NEAREST -> canvas ---
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  gl.viewport(0,0,OW,OH);
+  gl.viewport(0,0,RENDER.w,RENDER.h);
   gl.disable(gl.DEPTH_TEST);
   gl.clearColor(0,0,0,1);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -6340,9 +6432,37 @@ function frame(now){
     fpsReported++;
     fpsFrames=0; fpsT=now;
   }
+  /* v6.4 : RÉSOLUTION ADAPTATIVE. Un écran haute densité demande beaucoup de pixels ;
+     sur une machine modeste, mieux vaut baisser la résolution que ramer. Si la moyenne
+     des images dépasse ~30 ms pendant deux secondes, on réduit d'un cran (deux fois max),
+     et on ne touche plus à rien ensuite. */
+  adaptTick(now);
   requestAnimationFrame(frame);
 }
 
+/* ── v6.4 : adaptation de la résolution de rendu à la puissance de l'appareil ── */
+var ADAPT = { sum:0, n:0, t0:0, steps:0, warm:0 };
+function adaptTick(now){
+  if(RETRO || window.__noAdapt) return;          /* QA : __noAdapt fige la résolution */
+  if(!ADAPT.warm) ADAPT.warm = now;
+  /* on ignore les premières secondes : chargement, compilation des shaders et première
+     image sont toujours lents, ils ne disent rien de la puissance de l'appareil */
+  if(now - ADAPT.warm < 4500){ ADAPT.last = now; return; }
+  if(!ADAPT.t0) ADAPT.t0 = now;
+  ADAPT.sum += (now - ADAPT.last || 16); ADAPT.last = now; ADAPT.n++;
+  if(now - ADAPT.t0 < 2500 || ADAPT.n < 40) return;
+  var avg = ADAPT.sum / Math.max(1,ADAPT.n);
+  ADAPT.sum = 0; ADAPT.n = 0; ADAPT.t0 = now;
+  if(avg > 30 && ADAPT.steps < 2 && GW > 800){
+    ADAPT.steps++;
+    var w = Math.max(720, Math.round(GW*0.78)), h = Math.round(w*1215/2160);
+    GW=w; GH=h; RENDER.w=w; RENDER.h=h;
+    glCanvas.width=w; glCanvas.height=h;
+    buildTarget();
+    if(window.console) console.log('resolution reduite a '+w+'x'+h+' ('+Math.round(avg)+' ms par image)');
+  }
+}
+window.__render = function(){ return { w:GW, h:GH, hud:document.getElementById('hud').width, dpr:window.devicePixelRatio||1, steps:ADAPT.steps }; };
 /* ---------- 17. DEMARRAGE : ATTRACT MODE ---------- */
 loadHighScore();
 resetGame('attract');
