@@ -1386,10 +1386,10 @@ function rotAroundY(p, a, k){
   var c=Math.cos(a), sn=Math.sin(a);
   return [ (p[0]*c + p[2]*sn)*k, p[1]*k, (-p[0]*sn + p[2]*c)*k ];
 }
-var EYE_0=[0,11.20,12.40], TARGET_0=[0,0.25,1.30];   /* v1.6 : plongée ~42° (au lieu de 54°) — les volumes verticaux redeviennent lisibles */
+var EYE_0=[0,9.10,12.55], TARGET_0=[0,0.25,1.30];   /* v8.1 : plongée 37,5° (au lieu de 44,6°) — les volumes verticaux gagnent 18 % de hauteur à l'écran */   /* v1.6 : plongée ~42° (au lieu de 54°) — les volumes verticaux redeviennent lisibles */
 var EYE = rotAroundY(EYE_0, CAM_ROT, CAM_DIST);
 var TARGET = rotAroundY(TARGET_0, CAM_ROT, CAM_DIST);
-var FOV=45*Math.PI/180;
+var FOV=34*Math.PI/180;   /* v8.1 : 45° donnait une perspective de 25 % d'écart entre le bord proche et le bord lointain — le décor paraissait disproportionné. Un objectif plus long aplatit la scène façon diorama, et le cadrage automatique compense le recul. */
 var CAM_ZOOM=1.0, PROJ_YOFF=0.090;   /* v2.6 : réglables — le portrait n'a plus de barres HUD sur l'arène */
 var PROJ = persp(FOV, GW/GH, 2.0, 120);
 PROJ[9] = PROJ_YOFF;
@@ -1402,6 +1402,38 @@ function rebuildCam(zoom, yoff){
   PROJ = persp(FOV, GW/GH, 2.0, 120);
   PROJ[9] = PROJ_YOFF;
   PV = mulM(PROJ, lookAt(EYE,TARGET,[0,1,0]));
+}
+/* ═════════ v8.1 : CADRAGE QUI REMPLIT L'ÉCRAN ═════════
+   Constat mesuré : l'arène n'occupait que 63 % de la largeur et 54 % de la hauteur du
+   cadre ; tout le reste était de la marge, et un personnage de 1,70 m ne projetait que
+   52 px. On calcule donc le recul par dichotomie sur le zoom (le zoom multiplie la
+   distance caméra) pour que les quatre coins de l'arène tiennent dans 96 % du cadre. */
+function arenaCorners(){
+  var hw = COLS*0.5, hd = ROWS*0.5;
+  return [[-hw,0,-hd],[hw,0,-hd],[-hw,0,hd],[hw,0,hd]];
+}
+function frameFits(zoom, margin, yoff){
+  rebuildCam(zoom, yoff);
+  var w = RENDER.w, h = RENDER.h, ok = true;
+  var cs = arenaCorners();
+  for(var i=0;i<cs.length;i++){
+    var p = projPoint(cs[i][0], cs[i][1], cs[i][2]);
+    if(p[0] < w*(1-margin)*0.5 || p[0] > w*(1+margin)*0.5) ok = false;
+    if(p[1] < h*(1-margin)*0.5 || p[1] > h*(1+margin)*0.5) ok = false;
+  }
+  return ok;
+}
+var CAM_FIT = 0.96;
+var CAM_ZOOM_FIT = 1.0;      /* recul retenu par le cadrage automatique (renseigné au layout) */
+function fitCamera(yoff){
+  if(yoff === undefined) yoff = PROJ_YOFF;
+  var lo = 0.35, hi = 1.60;
+  for(var it=0; it<20; it++){
+    var mid = (lo+hi)*0.5;
+    if(frameFits(mid, CAM_FIT, yoff)) hi = mid; else lo = mid;
+  }
+  rebuildCam(hi, yoff);
+  return hi;
 }
 /* v0.15 : mode QA « ?closeup » — caméra rapprochée pour inspecter les sprites */
 if(/sprtest/.test(location.search)){ window.__sprTest=true; }
@@ -3377,11 +3409,14 @@ function human3D(p,t,variant){
   r.put( 0.22, 0.36+sw*0.03,  sw*0.06,  0.09, 0.09, 0.10, skinD);
   /* cou + tête */
   r.put(0, 0.81, 0, 0.10, 0.08, 0.10, skinD);
-  r.put(0, 0.93, 0, 0.28, 0.26, 0.24, skin);
-  r.put(0, 1.05, 0, 0.29, 0.10, 0.25, hair);
-  r.put(0, 0.97, 0, 0.29, 0.04, 0.26, hair);                 /* frange */
-  r.put(-0.07, 0.94, 0.125, 0.05, 0.05, 0.02, [0.12,0.10,0.09]);
-  r.put( 0.07, 0.94, 0.125, 0.05, 0.05, 0.02, [0.12,0.10,0.09]);
+  /* v8.2 : visage texturé à la place du cube de peau nu */
+  var _ry = p.dir||0, _ex = Math.sin(_ry), _ez = Math.cos(_ry),
+      _wx = Math.cos(_ry), _wz = -Math.sin(_ry);
+  putHead({ ry:_ry, y:0, at:function(lx,lz){
+              return [ p.x + _wx*lx*HS + _ex*lz*HS, p.z + _wz*lx*HS + _ez*lz*HS ];
+           } }, 0, 0.97*HS, 0, 0.40*HS, 0.36*HS, 0.34*HS, 'npc');
+  r.put(0, 1.18, 0, 0.42, 0.10, 0.36, hair);
+  r.put(0, 1.10, 0, 0.42, 0.04, 0.37, hair);                 /* frange */
 }
 /* ═════════ v5.0 : POLLUEURS DESSINÉS AU PIXEL (plus des cubes) ═════════
    Constat de José : « les PNJ sont mieux dessinés chez Secret of Mana, les nôtres
@@ -3906,18 +3941,17 @@ function drawRiderSuit(m){
   put(R, 0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);        /* poignets blancs */
   put(R,-0.21,0.27,0.04, 0.09,0.08,0.10, SHIRT);
   /* tête, cheveux ébouriffés, lunettes */
-  put(R,0,0.80,0, 0.26,0.24,0.24, SKIN);
-  put(R,0,0.94,0, 0.28,0.09,0.26, HAIR);
-  put(R, 0.06,0.985,0.02, 0.10,0.07,0.10, HAIR);        /* mèche dressée */
-  put(R,-0.07,0.975,0.01, 0.09,0.06,0.09, HAIR);
+  putHead(R,0,0.84,0, 0.42,0.40,0.38, 'manager', ZB);   /* v8.2 : visage texturé */
+  put(R,0,1.05,0, 0.44,0.09,0.40, HAIR);
+  put(R, 0.08,1.10,0.03, 0.13,0.08,0.12, HAIR);        /* mèche dressée */
+  put(R,-0.09,1.09,0.02, 0.12,0.07,0.11, HAIR);
   put(R,0,0.83,-0.13, 0.26,0.16,0.03, HAIR);            /* nuque couverte */
   /* lunettes : notre caméra regarde surtout le DESSUS des têtes. Des verres posés à plat sur
      le visage ne se voyaient pas. La monture est donc une bande sombre qui DÉBORDE de chaque
      côté du crâne, avec les branches visibles de dessus, et des verres clairs plus larges. */
-  put(R,0,0.845,0.128, 0.34,0.055,0.03, FRAME);         /* bande de monture traversante */
-  put(R, 0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
-  put(R,-0.07,0.845,0.140, 0.09,0.075,0.02, LENS);
-  put(R, 0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);       /* branche gauche, vue de dessus */
+  /* les lunettes sont désormais DESSINÉES dans la texture du visage ; il ne reste que
+     les branches, qui donnent l'épaisseur vue de dessus */
+  put(R, 0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);
   put(R,-0.145,0.86,-0.02, 0.02,0.02,0.18, FRAME);
   /* bouche crispée + bandeau d'équipe sur le bras */
   put(R,0,0.775,0.125, 0.11,0.03,0.02, [0.36,0.16,0.14]);
@@ -3956,20 +3990,18 @@ function drawRiderCoverall(m){
   put(R,-0.23,0.26,0.05, 0.12,0.12,0.13, GLOVE);
   put(R, 0.23,0.31,0.05, 0.13,0.05,0.14, team);
   /* tête + cheveux sous la casquette */
-  put(R,0,0.80,0, 0.27,0.24,0.25, SKIN);
+  putHead(R,0,0.84,0, 0.42,0.38,0.40, 'employe', ZB);   /* v8.2 : visage texturé */
   put(R, 0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);         /* rouflaquettes */
   put(R,-0.13,0.80,0.02, 0.04,0.16,0.18, HAIR);
   put(R,0,0.80,0.115, 0.20,0.05,0.03, HAIR);            /* frange */
   /* casquette : calotte bleu foncé, visière, écusson orange */
-  put(R,0,0.955,0, 0.30,0.11,0.28, CAP);
-  put(R,0,0.895,0, 0.31,0.035,0.29, team);              /* bandeau d'équipe */
-  put(R,0,0.905,0.16, 0.28,0.03,0.16, CAP);             /* visière */
-  put(R,0,0.965,0.135, 0.14,0.055,0.03, PATCH);         /* écusson orange (avant) */
-  put(R,0,1.012,0.06, 0.18,0.02,0.10, PATCH);            /* écusson sur le dessus, vu de la caméra */
+  put(R,0,1.06,0, 0.46,0.11,0.42, CAP);
+  put(R,0,1.00,0, 0.47,0.035,0.43, team);               /* bandeau d'équipe */
+  put(R,0,1.02,0.24, 0.44,0.035,0.20, CAP);             /* visière */
+  put(R,0,1.075,0.20, 0.18,0.06,0.04, PATCH);           /* écusson orange (avant) */
+  put(R,0,1.13,0.06, 0.22,0.025,0.14, PATCH);           /* écusson sur le dessus */
   /* visage : yeux + sourire en coin */
-  put(R, 0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
-  put(R,-0.062,0.815,0.128, 0.06,0.055,0.02, [0.10,0.08,0.08]);
-  put(R,0.02,0.755,0.128, 0.10,0.025,0.02, [0.42,0.16,0.14]);
+  /* yeux et sourire tenus par la texture */
 }
 
 /* ── L'ALIEN AU VOLANT : le cyclope de la planche, assis sur la machine ── */
@@ -3992,19 +4024,12 @@ function drawRiderAlien(m){
   put(R, 0.26,0.40,0.10, 0.09,0.18,0.10, A1.skin);
   put(R,-0.22,0.30,0.30, 0.10,0.07,0.11, A1.skinD);
   put(R, 0.22,0.30,0.30, 0.10,0.07,0.11, A1.skin);
-  put(R,0,0.68,0, 0.46,0.36,0.40, A1.skin);
+  putHead(R,0,0.72,0, 0.60,0.50,0.52, 'alien', ZB);   /* v8.2 : œil unique texturé */
   put(R,0,0.68,0.20, 0.30,0.26,0.04, A1.belly);
-  put(R,0,0.78,0.205, 0.26,0.20,0.04, [0.20,0.08,0.26]);
-  put(R,0,0.78,0.212, 0.23,0.17,0.03, A1.eyeW);
-  put(R,0,0.78,0.222, 0.13,0.12,0.03, A1.iris);
-  put(R,0.02,0.795,0.232, 0.06,0.06,0.03, A1.pupil);
-  put(R,0,0.855,0.13, 0.20,0.03,0.14, A1.eyeW);
-  put(R,0,0.58,0.215, 0.20,0.07,0.02, A1.mouth);
-  put(R,0.05,0.53,0.225, 0.04,0.09,0.02, A1.drool);
   put(R,-0.26,0.72,0, 0.12,0.10,0.08, A1.skinD, {ry:R.ry+0.55});
   put(R, 0.26,0.72,0, 0.12,0.10,0.08, A1.skin,  {ry:R.ry-0.55});
-  put(R,0.02,0.92,-0.02, 0.045,0.26,0.045, A1.skinD);
-  put(R,0.03,1.09,-0.03, 0.15,0.15,0.15, A1.skin);
+  put(R,0.02,1.02,-0.02, 0.05,0.26,0.05, A1.skinD);
+  put(R,0.03,1.19,-0.03, 0.16,0.16,0.16, A1.skin);
   put(R,0.13,0.84,-0.10, 0.10,0.05,0.09, A1.spot);
   put(R,-0.10,0.80,-0.18, 0.12,0.06,0.06, A1.spot);
   put(R,0,0.30,-0.18, 0.18,0.05,0.03, team);
@@ -4053,20 +4078,14 @@ function drawRiderRobot(m){
   /* tête-écran. Notre caméra plonge à ~42° : elle voit d'abord le DESSUS. L'écran est donc
      posé à plat sur le crâne — c'est ce qui fait lire « tête de télévision » — en plus de
      l'écran frontal. Le visage cyan est dessiné sur les deux. */
-  put(R,0,0.88,0, 0.34,0.26,0.24, METAL);
-  put(R,0,1.012,0, 0.30,0.02,0.22, SCREEN);              /* écran du dessus */
-  put(R, 0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
-  put(R,-0.07,1.020,0.05, 0.07,0.02,0.04, CYAN, {ry:R.ry, emit:0.95});
-  put(R,0,1.020,-0.04, 0.14,0.02,0.03, CYAN, {ry:R.ry, emit:0.95});
-  put(R,0,0.885,0.125, 0.28,0.19,0.02, SCREEN);          /* écran frontal */
-  put(R, 0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
-  put(R,-0.075,0.945,0.135, 0.06,0.025,0.02, CYAN, {ry:R.ry, emit:0.95});
-  put(R,0,0.885,0.135, 0.13,0.03,0.02, CYAN, {ry:R.ry, emit:0.95});
+  /* v8.2 : le crâne porte une texture d'écran — le visage cyan souriant est dessiné sur
+     la face avant ET sur le dessus, ce que voit la caméra plongeante. */
+  putHead(R,0,0.92,0, 0.46,0.40,0.36, 'robot', ZB);
   /* antennes, ouïes, menton */
-  put(R, 0.10,1.05,0, 0.03,0.10,0.03, METAL);
-  put(R,-0.10,1.05,0, 0.03,0.10,0.03, METAL);
-  put(R, 0.10,1.11,0, 0.05,0.05,0.05, METALD);
-  put(R,-0.10,1.11,0, 0.05,0.05,0.05, METALD);
+  put(R, 0.13,1.17,0, 0.03,0.12,0.03, METAL);
+  put(R,-0.13,1.17,0, 0.03,0.12,0.03, METAL);
+  put(R, 0.13,1.24,0, 0.05,0.05,0.05, METALD);
+  put(R,-0.13,1.24,0, 0.05,0.05,0.05, METALD);
   put(R,0,0.79,0.125, 0.12,0.04,0.02, METALD);          /* menton grillagé */
   put(R,0.165,0.88,0, 0.03,0.12,0.16, METALD);          /* oreilles */
   put(R,-0.165,0.88,0, 0.03,0.12,0.16, METALD);
@@ -5123,6 +5142,124 @@ var botTimer=0;
 var demoAITimer=0;
 
 /* ── v0.8 : les bonus / pieces / etats, par frame ── */
+/* ═════════ v8.2 : VISAGES — un personnage se reconnaît à son visage, pas à sa couleur ═════════
+   Constat de José : « les personnages non reconnaissables ». À 76 px de haut, un volume de
+   trente boîtes reste une silhouette abstraite : ce qui manque n'est pas la géométrie, c'est
+   le VISAGE. On applique donc une texture par tête, avec un maillage dédié dont les UV
+   couvrent une région d'atlas par face (règle : la densité de texels par face, pas la
+   résolution de rendu).
+   Atlas 64×64 : quadrant haut-gauche = visage (face +Z), quadrant haut-droit = dessus du
+   crâne (face +Y, ce que la caméra plongeante voit le plus), le reste = aplat de peau.
+   Repère des UV : dans ce moteur v=0 est la PREMIÈRE ligne du canevas (le haut), d'où le
+   sens des coordonnées ci-dessous. */
+var HEADBOX = (function(){
+  var v=[], idx=[];
+  function face(n, pts, uvs){
+    var base=v.length/STRIDE;
+    for(var i=0;i<4;i++) v.push(pts[i][0],pts[i][1],pts[i][2], n[0],n[1],n[2], uvs[i][0],uvs[i][1]);
+    idx.push(base,base+1,base+2, base,base+2,base+3);
+  }
+  var FLAT=[[0.98,0.98],[0.98,0.98],[0.98,0.98],[0.98,0.98]];   /* pixel d'aplat */
+  /* +Z : le visage (u 0→0,5 ; v 0→0,5) */
+  face([0,0,1],[[-0.5,-0.5,0.5],[0.5,-0.5,0.5],[0.5,0.5,0.5],[-0.5,0.5,0.5]],
+       [[0,0.5],[0.5,0.5],[0.5,0],[0,0]]);
+  /* +Y : le dessus du crâne (u 0,5→1 ; v 0→0,5) */
+  face([0,1,0],[[-0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,-0.5],[-0.5,0.5,-0.5]],
+       [[0.5,0.5],[1,0.5],[1,0],[0.5,0]]);
+  face([1,0,0],[[0.5,-0.5,0.5],[0.5,-0.5,-0.5],[0.5,0.5,-0.5],[0.5,0.5,0.5]],FLAT);
+  face([-1,0,0],[[-0.5,-0.5,-0.5],[-0.5,-0.5,0.5],[-0.5,0.5,0.5],[-0.5,0.5,-0.5]],FLAT);
+  face([0,-1,0],[[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[0.5,-0.5,0.5],[-0.5,-0.5,0.5]],FLAT);
+  face([0,0,-1],[[0.5,-0.5,-0.5],[-0.5,-0.5,-0.5],[-0.5,0.5,-0.5],[0.5,0.5,-0.5]],FLAT);
+  return { buf:makeBuf(new Float32Array(v)), idx:makeIdx(new Uint16Array(idx)),
+           count:idx.length, __v:new Float32Array(v), __i:new Uint16Array(idx) };
+})();
+
+var FACE_TEX = {};
+function faceTex(id){
+  if(FACE_TEX[id]) return FACE_TEX[id];
+  var cv = texCanvas(64,64,function(g){
+    function px(x,y,c,w,h){ g.fillStyle=c; g.fillRect(x,y,w===undefined?1:w,h===undefined?1:h); }
+    var SKIN='#e0a878', SKIND='#b7825a', HAIR='#3a2416', WHITE='#f6f2e8', DARK='#241a14';
+    var bg = SKIN;
+    if(id==='robot') bg='#2b3b52';
+    if(id==='alien') bg='#8e5ac8';
+    px(0,0,bg,64,64);                       /* aplat de peau / coque */
+    /* ---- quadrant VISAGE : (0,0)-(32,32) ---- */
+    if(id==='robot'){
+      px(3,4,'#12202f',26,24);                                  /* cadre d'écran */
+      px(5,6,'#3ff0d8',22,20);                                  /* écran cyan */
+      px(10,12,'#0d3b3a',4,4); px(19,12,'#0d3b3a',4,4);          /* deux yeux carrés */
+      px(11,20,'#0d3b3a',10,3);                                 /* bouche */
+      px(28,2,'#8fa4bc',4,4);                                   /* boulon */
+      px(0,28,'#12202f',32,4);                                  /* menton machine */
+    } else if(id==='alien'){
+      px(6,6,'#4a2170',20,18);                                  /* cerne de l'œil */
+      px(8,8,WHITE,16,14);
+      px(12,12,'#3fd0c0',8,7);                                  /* iris */
+      px(14,14,'#101820',4,4);                                  /* pupille */
+      px(9,9,'#ffffff',3,2);                                    /* reflet */
+      px(10,26,'#4a2170',12,3);                                 /* bouche */
+      px(15,29,'#7ad0ff',2,3);                                  /* bave */
+      px(2,20,'#6b3aa0',3,3); px(27,24,'#6b3aa0',3,3);          /* taches */
+    } else if(id==='manager'){
+      px(0,0,HAIR,32,9);                                        /* cheveux */
+      px(2,3,'#6e6156',28,5);                                   /* tempes grisonnantes */
+      px(6,11,WHITE,8,7); px(18,11,WHITE,8,7);                  /* verres */
+      px(6,11,'#2a2a2e',8,1); px(18,11,'#2a2a2e',8,1);
+      px(6,17,'#2a2a2e',8,1); px(18,17,'#2a2a2e',8,1);
+      px(14,13,'#2a2a2e',4,1);                                  /* pont */
+      px(7,13,DARK,2,3); px(19,13,DARK,2,3);                    /* yeux derrière les verres */
+      px(11,25,'#8a5b40',10,2);                                 /* bouche pincée */
+      px(0,21,'#b7825a',3,5); px(29,21,'#b7825a',3,5);          /* favoris */
+    } else {
+      /* employé + PNJ : casquette ou cheveux, yeux, sourire */
+      if(id==='employe'){
+        px(0,0,'#2f6bb0',32,8);                                 /* casquette bleue */
+        px(0,7,'#24548c',32,3);                                 /* visière */
+        px(13,2,'#f0a028',6,4);                                 /* écusson orange */
+      } else {
+        px(0,0,HAIR,32,8);
+        px(0,7,'#4a2f1c',32,2);
+      }
+      px(8,12,WHITE,5,4); px(19,12,WHITE,5,4);                  /* blanc des yeux */
+      px(10,13,DARK,3,3); px(21,13,DARK,3,3);                   /* pupilles */
+      px(7,10,'#3a2416',7,2); px(18,10,'#3a2416',7,2);          /* sourcils */
+      px(12,22,'#a8543c',9,3);                                  /* sourire */
+      px(15,25,'#c86a52',3,2);
+    }
+    /* ---- quadrant DESSUS : (32,0)-(64,32) ---- */
+    if(id==='robot'){ px(32,0,'#2b3b52',32,32); px(38,6,'#3ff0d8',20,6); px(46,12,'#12202f',4,10); }
+    else if(id==='alien'){ px(32,0,'#8e5ac8',32,32); px(44,10,'#4a2170',8,8); px(46,12,'#3fd0c0',4,4);
+                           px(36,20,'#6b3aa0',4,4); px(56,6,'#6b3aa0',3,3); }
+    else if(id==='manager'){ px(32,0,'#6e6156',32,32); px(32,0,'#8a8074',32,4); }
+    else if(id==='employe'){ px(32,0,'#2f6bb0',32,32); px(42,8,'#f0a028',12,10); }
+    else { px(32,0,'#3a2416',32,32); px(36,4,'#4a2f1c',24,6); }
+    /* liseré sombre : la silhouette se lit par son contour */
+    g.strokeStyle='#1a1410'; g.lineWidth=1;
+    g.strokeRect(0.5,0.5,31,31); g.strokeRect(32.5,0.5,31,31);
+  });
+  FACE_TEX[id] = makeTex(cv, false);
+  return FACE_TEX[id];
+}
+/* dessine une tête texturée à la place d'une boîte de couleur unie */
+var HEAD_DRAWS = 0, HEAD_IDS = {};
+function putHead(R, lx, yy, lz, sx, sy, sz, id, zb){
+  HEAD_DRAWS++; HEAD_IDS[id] = (HEAD_IDS[id]||0) + 1;
+  var p = R.at(lx, lz + (zb||0));
+  /* QA : window.__headDebug repeint toutes les têtes en magenta pour les repérer par
+     seuillage de pixels — la seule façon honnête de localiser une entité à l'écran. */
+  var tex = faceTex(id);
+  if(window.__headDebug){
+    if(!FACE_TEX.__magenta){
+      FACE_TEX.__magenta = makeTex(texCanvas(8,8,function(g){
+        g.fillStyle='#ff00ff'; g.fillRect(0,0,8,8);
+      }), false);
+    }
+    tex = FACE_TEX.__magenta;
+  }
+  drawMesh(HEADBOX, trs(p[0], R.y+yy, p[1], sx, sy, sz, R.ry), tex, [1,1,1], {});
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    v8.0 — PARTICULES EN POOL TYPÉ (règle « rien ne s'alloue dans la frame »)
    Avant : un tableau d'objets, un `push` par particule émise et un `splice` par
@@ -6962,7 +7099,11 @@ function layout(){
   window.__noQuant = (sc < 0.42);
   /* v2.6 : sur téléphone, l'arène n'a plus de HUD superposé — on récupère la bande du bas
      (décalage vertical) et on resserre la caméra de 10 % pour grossir les engins. */
-  if(typeof rebuildCam==='function'){
+  /* v8.1 : le recul n'est plus choisi à la main, il est CALCULÉ pour que l'arène
+     remplisse 96 % du cadre ; sur téléphone on récupère la bande du bas. */
+  if(typeof fitCamera==='function'){
+    CAM_ZOOM_FIT = fitCamera(sc < 0.42 ? 0.015 : 0.090);
+  } else if(typeof rebuildCam==='function'){
     if(sc < 0.42) rebuildCam(0.90, 0.015);
     else          rebuildCam(1.00, 0.090);
   }
@@ -7152,6 +7293,64 @@ window.__cam = function(){ return {EYE:EYE, TARGET:TARGET, rot:CAM_ROT, dist:CAM
 window.__setFoam = function(gx,gy,sec){ var i=idxAt(gx,gy); foamT[i]=sec; floorDirty=true; return {cell:cells[i], foam:foamT[i]}; };
 window.__foamAt = function(gx,gy){ var i=idxAt(gx,gy); return {cell:cells[i], foam:foamT[i]}; };
 window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
+
+/* ═════════ v8.1 : MESURE DE PROJECTION (avant tout réglage de cadrage) ═════════
+   Règle : la hauteur à l'écran d'un volume vaut
+       hauteur_monde × cos(plongée) × pixels_par_unité_au_sol
+   et le rapport entre le bord proche et le bord lointain mesure la DÉFORMATION de
+   perspective — c'est elle qui fait lire un décor comme « disproportionné ».
+   On interroge donc la matrice de projection du jeu lui-même, pas une estimation. */
+function projPoint(x,y,z){
+  var m=PV;
+  var cx = m[0]*x + m[4]*y + m[8]*z + m[12];
+  var cy = m[1]*x + m[5]*y + m[9]*z + m[13];
+  var cw = m[3]*x + m[7]*y + m[11]*z + m[15];
+  if(Math.abs(cw) < 1e-6) cw = 1e-6;
+  return [ (cx/cw*0.5+0.5)*RENDER.w, (1-(cy/cw*0.5+0.5))*RENDER.h ];
+}
+window.__faceDiag = function(){
+  return { charIdx:charIdx, cid:CHARS[charIdx].id, vehIdx:vehIdx, vid:VEHICLES[vehIdx].id,
+           textures:Object.keys(FACE_TEX), teteDessinee:HEAD_DRAWS, ids:HEAD_IDS,
+           texEstTexture:(FACE_TEX['employe'] instanceof WebGLTexture) };
+};
+window.__machineScreen = function(){
+  /* position à l'écran de la machine du joueur et de la tête du conducteur — pour
+     recadrer une capture sur la MESURE, jamais à l'estime */
+  var deck = 0.44 + machineProf((player===undefined?null:VEHICLES[vehIdx].id)).tankH + 0.04;
+  var p = projPoint(player.wx, 0.5, player.wz);
+  var h = projPoint(player.wx, deck + 0.95, player.wz);
+  return { machine:[Math.round(p[0]), Math.round(p[1])], tete:[Math.round(h[0]), Math.round(h[1])],
+           deck:+deck.toFixed(2), canvas:[RENDER.w, RENDER.h] };
+};
+window.__proj = function(){
+  function h(p){ return projPoint(p[0],p[1],p[2])[1]; }
+  /* hauteur projetée d'un segment vertical de 1 m, au sol */
+  function unitPx(x,z){
+    var a = projPoint(x,0,z), b = projPoint(x,1,z);
+    return Math.abs(b[1]-a[1]);
+  }
+  var nearZ = -5.4, farZ = 5.4, edge = 6.4;
+  var nearPx = unitPx(0, nearZ), farPx = unitPx(0, farZ);
+  var corners = [[-edge,0,-5.6],[edge,0,-5.6],[-edge,0,5.6],[edge,0,5.6]].map(function(c){
+    var p = projPoint(c[0],c[1],c[2]);
+    return [Math.round(p[0]), Math.round(p[1])];
+  });
+  return {
+    canvas: [RENDER.w, RENDER.h],
+    fov: Math.round(FOV*180/Math.PI*10)/10,
+    plongee: Math.round(Math.atan2(EYE[1]-TARGET[1], EYE[2]-TARGET[2])*180/Math.PI*10)/10,
+    pxParMetre_proche: +nearPx.toFixed(1),
+    pxParMetre_loin: +farPx.toFixed(1),
+    deformation_proche_sur_loin: +(nearPx/farPx).toFixed(2),
+    personnage_170cm_px: +(1.70*Math.cos(Math.atan2(EYE[1]-TARGET[1], EYE[2]-TARGET[2]))*unitPx(0,0)).toFixed(0),
+    rayon_154cm_px:     +(1.54*Math.cos(Math.atan2(EYE[1]-TARGET[1], EYE[2]-TARGET[2]))*unitPx(0,0)).toFixed(0),
+    machine_105cm_px:   +(1.05*Math.cos(Math.atan2(EYE[1]-TARGET[1], EYE[2]-TARGET[2]))*unitPx(0,0)).toFixed(0),
+    coins_ecran: corners,
+    coins_dans_le_cadre: corners.every(function(c){
+      return c[0]>0 && c[0]<RENDER.w && c[1]>0 && c[1]<RENDER.h;
+    })
+  };
+};
 window.__engine = function(){
   var sys = {};
   for(var i=0;i<SCHEDULE.systems.length;i++){
