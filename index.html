@@ -1687,19 +1687,19 @@ var POLL_DESC ={
    Chaque personnage a un look ET un petit avantage réel (appliqué dans le jeu).
    Chaque véhicule change la couleur de la machine, sa vitesse et son inertie. */
 var CHARS=[
-  { id:'stg',  name:'LE STAGIAIRE',   tag:'TOUT JUSTE SORTI DE FORMATION',
+  { id:'stg',  name:"L'EMPLOYE",     tag:'TOUT JUSTE SORTI DE FORMATION',
     desc:'Jeune, vif, un peu naif. Il court plus vite que les autres.',
     suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
     perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
-  { id:'chef', name:"LA CHEF D'EQUIPE", tag:'20 ANS DE CARRELAGE',
+  { id:'chef', name:'LE MANAGER',     tag:'20 ANS DE CARRELAGE',
     desc:'Gestes sûrs. Son savon tient 35 % plus longtemps.',
     suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
     perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
-  { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
-    desc:'Sa torpille laveuse couvre une zone plus large.',
+  { id:'vet',  name:"L'ALIEN",        tag:'VIENT DE PLUS LOIN QUE LE COULOIR',
+    desc:'Son bras telescopique lave une zone plus large.',
     suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
     perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
-  { id:'rob',  name:"L'APPRENTI ROBOT", tag:'NE PREND JAMAIS DE PAUSE',
+  { id:'rob',  name:'LE ROBOT',       tag:'NE PREND JAMAIS DE PAUSE',
     desc:"Ne dérape presque pas, même sur sol savonneux.",
     suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
     perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
@@ -3805,6 +3805,38 @@ function drawRiderCoverall(m){
   putBox(R,0.02,0.755,0.128, 0.10,0.025,0.02, [0.42,0.16,0.14]);
 }
 
+/* ── L'ALIEN AU VOLANT : le cyclope de la planche, assis sur la machine ── */
+function drawRiderAlien(m){
+  var R=riderAnchors(m);
+  var A1=ALIEN, team=(m===player)?[0.32,0.70,1.05]:[0.40,0.92,0.55];
+  putBox(R, 0.13,0.06,0.16, 0.14,0.16,0.26, A1.skinD);
+  putBox(R,-0.13,0.06,0.16, 0.14,0.16,0.26, A1.skin);
+  putBox(R, 0.13,0.01,0.28, 0.15,0.05,0.12, A1.skinD);
+  putBox(R,-0.13,0.01,0.28, 0.15,0.05,0.12, A1.skin);
+  putBox(R,0,0.32,0.02, 0.42,0.32,0.36, A1.skin);
+  putBox(R,0,0.30,0.16, 0.28,0.24,0.12, A1.belly);
+  putBox(R,0,0.26,0.225, 0.05,0.06,0.02, A1.spot);
+  putBox(R,-0.26,0.40,0.10, 0.09,0.18,0.10, A1.skinD);
+  putBox(R, 0.26,0.40,0.10, 0.09,0.18,0.10, A1.skin);
+  putBox(R,-0.22,0.30,0.30, 0.10,0.07,0.11, A1.skinD);
+  putBox(R, 0.22,0.30,0.30, 0.10,0.07,0.11, A1.skin);
+  putBox(R,0,0.68,0, 0.46,0.36,0.40, A1.skin);
+  putBox(R,0,0.68,0.20, 0.30,0.26,0.04, A1.belly);
+  putBox(R,0,0.78,0.205, 0.26,0.20,0.04, [0.20,0.08,0.26]);
+  putBox(R,0,0.78,0.212, 0.23,0.17,0.03, A1.eyeW);
+  putBox(R,0,0.78,0.222, 0.13,0.12,0.03, A1.iris);
+  putBox(R,0.02,0.795,0.232, 0.06,0.06,0.03, A1.pupil);
+  putBox(R,0,0.855,0.13, 0.20,0.03,0.14, A1.eyeW);
+  putBox(R,0,0.58,0.215, 0.20,0.07,0.02, A1.mouth);
+  putBox(R,0.05,0.53,0.225, 0.04,0.09,0.02, A1.drool);
+  putBox(R,-0.26,0.72,0, 0.12,0.10,0.08, A1.skinD, {ry:R.ry+0.55});
+  putBox(R, 0.26,0.72,0, 0.12,0.10,0.08, A1.skin,  {ry:R.ry-0.55});
+  putBox(R,0.02,0.92,-0.02, 0.045,0.26,0.045, A1.skinD);
+  putBox(R,0.03,1.09,-0.03, 0.15,0.15,0.15, A1.skin);
+  putBox(R,0.13,0.84,-0.10, 0.10,0.05,0.09, A1.spot);
+  putBox(R,-0.10,0.80,-0.18, 0.12,0.06,0.06, A1.spot);
+  putBox(R,0,0.30,-0.18, 0.18,0.05,0.03, team);
+}
 /* ── L'APPRENTI ROBOT : tête d'écran, visage cyan, pinces, circuits ── */
 function drawRiderRobot(m){
   var R=riderAnchors(m);
@@ -3885,9 +3917,10 @@ function drawRider(m){
   /* v6.8 : chaque personnage jouable est bâti sur sa planche de José */
   if(m===player){
     var CID = CHARS[charIdx] ? CHARS[charIdx].id : 'stg';
-    if(CID==='vet'){ drawRiderSuit(m); return; }
-    if(CID==='stg'){ drawRiderCoverall(m); return; }
-    if(CID==='rob'){ drawRiderRobot(m); return; }
+    if(CID==='chef'){ drawRiderSuit(m); return; }     /* LE MANAGER : costume, lunettes, cravate */
+    if(CID==='stg'){ drawRiderCoverall(m); return; }   /* L'EMPLOYE : combinaison et casquette */
+    if(CID==='rob'){ drawRiderRobot(m); return; }      /* LE ROBOT : tête d'écran */
+    if(CID==='vet'){ drawRiderAlien(m); return; }      /* L'ALIEN : le cyclope au volant */
   }
   function part(mesh, x2,y2,z2, sx,sy,sz, ryy){ drawMesh(mesh, trs(x2,y2,z2,sx,sy,sz, ryy===undefined?ry:ryy), RTEX, [1,1,1], {}); }
 
@@ -4222,6 +4255,25 @@ function drawMachine(m){
   var bodyL = [Math.min(2.3,body[0]*1.12), Math.min(2.3,body[1]*1.12), Math.min(2.3,body[2]*1.12)];
   var inox=[0.62,0.66,0.72], inoxL=[1.30,1.34,1.40], tyre=[0.13,0.13,0.15];
   var accent = (m.id===0 && m.machAccent) ? m.machAccent : (m.id===0?[1.0,0.55,0.16]:[0.94,0.28,0.28]);
+  /* ═════════ v7.0 : LES MACHINES SUIVENT LES PLANCHES DE JOSÉ ═════════
+     Quatre planches de retournement ont été fournies (face / côté / arrière) :
+       1. SC250 claire, gris et orange, grande poignée de conduite  → LE PERCHOIR
+       2. bleu-gris compact, raclette rouge, bac à l'arrière         → LA MINI
+       3. gris anthracite et rouge, DEUX têtes de brosses            → LA BROSSEUSE XL
+       4. bleue autoportée, siège, volant, arceau, gyrophare orange   → LA PORTEUSE
+     Chaque machine prend donc sa palette de planche et ses pièces propres. */
+  var PLANCHE = {
+    auto : {body:[0.20,0.40,0.72], accent:[1.10,0.62,0.16], deck:[0.60,0.64,0.70]},
+    mono : {body:[0.68,0.70,0.73], accent:[1.05,0.55,0.12], deck:[0.50,0.53,0.58]},
+    indus: {body:[0.21,0.23,0.27], accent:[0.90,0.14,0.13], deck:[0.33,0.35,0.40]},
+    mini : {body:[0.30,0.46,0.68], accent:[0.92,0.16,0.15], deck:[0.48,0.52,0.58]}
+  }[VID];
+  if(PLANCHE && m===player){
+    body=[PLANCHE.body[0],PLANCHE.body[1],PLANCHE.body[2]];
+    accent=[PLANCHE.accent[0],PLANCHE.accent[1],PLANCHE.accent[2]];
+    bodyD=[body[0]*0.66, body[1]*0.66, body[2]*0.66];
+    bodyL=[Math.min(2.3,body[0]*1.28), Math.min(2.3,body[1]*1.28), Math.min(2.3,body[2]*1.28)];
+  }
   var p;
   /* ── roues (4) + essieux ── */
   var wsp = PROF.wheels>=4 ? [[-1,-1],[1,-1],[-1,1],[1,1]] : [[0,-1],[0,1]];
@@ -4277,6 +4329,50 @@ function drawMachine(m){
   p=localToWorld(x,z,ry,0,-0.44);
   box(p[0],0.30,p[1], 0.34,0.09,0.02, T.noise, [2.10,2.08,2.00], {ry:ry}); /* plaque */
   box(p[0],0.30,p[1]-0.01, 0.22,0.04,0.01, T.noise, accent, {ry:ry});      /* logo */
+
+  /* ═════════ v7.0 : PIÈCES PROPRES À CHAQUE PLANCHE ═════════ */
+  if(VID==='auto'){
+    /* autoportée : siège, volant, gyrophare orange, grosses roues arrière */
+    p=localToWorld(x,z,ry,0,-0.20);
+    box(p[0],0.50,p[1], 0.40,0.06,0.34, T.noise, [0.16,0.17,0.21], A);        /* assise */
+    box(p[0],0.62,p[1]-0.16, 0.38,0.26,0.05, T.noise, [0.18,0.19,0.23], A);   /* dossier */
+    p=localToWorld(x,z,ry,0,0.28);
+    box(p[0],0.62,p[1], 0.20,0.16,0.05, T.noise, [0.13,0.14,0.17], {ry:ry});  /* volant */
+    box(p[0],0.56,p[1]-0.06, 0.05,0.14,0.05, T.metal, inox, {ry:ry});         /* colonne */
+    p=localToWorld(x,z,ry,0,-0.34);
+    box(p[0],1.06,p[1], 0.10,0.08,0.10, T.noise, [1.6,0.75,0.16], {ry:ry, emit:0.85}); /* gyrophare */
+    p=localToWorld(x,z,ry,0,-0.34);
+    box(p[0],1.14,p[1], 0.06,0.05,0.06, T.noise, [2.0,1.35,0.45], {ry:ry, emit:1.0});
+    box(x,0.09,z-PROF.L/2+0.02, PROF.W*0.96,0.10,0.10, T.noise, [0.92,0.30,0.34], A);  /* jupe rouge arrière */
+    /* grosses roues arrière */
+    [[-1],[1]].forEach(function(sg){
+      p=localToWorld(x,z,ry, sg[0]*PROF.W*0.48, -PROF.L*0.34);
+      box(p[0],0.15,p[1], 0.20,0.30,0.30, T.noise, tyre, A);
+      box(p[0],0.15,p[1], 0.21,0.12,0.12, T.noise, [0.34,0.34,0.38], A);
+    });
+  } else if(VID==='mono'){
+    /* SC250 : grande poignée de conduite, corps clair, accents orange */
+    p=localToWorld(x,z,ry,-0.26,-0.30); box(p[0],0.86,p[1], 0.05,0.80,0.05, T.metal, inoxL, A);
+    p=localToWorld(x,z,ry, 0.26,-0.30); box(p[0],0.86,p[1], 0.05,0.80,0.05, T.metal, inoxL, A);
+    p=localToWorld(x,z,ry,0,-0.30);     box(p[0],1.26,p[1], 0.60,0.05,0.05, T.metal, inox, A);
+    p=localToWorld(x,z,ry,-0.26,-0.30); box(p[0],1.30,p[1], 0.14,0.06,0.08, T.noise, [0.15,0.15,0.18], A);
+    p=localToWorld(x,z,ry, 0.26,-0.30); box(p[0],1.30,p[1], 0.14,0.06,0.08, T.noise, [0.15,0.15,0.18], A);
+    box(x,0.30,z-PROF.L/2+0.03, PROF.W*0.90,0.16,0.05, T.noise, accent, A);   /* bandeau orange arrière */
+  } else if(VID==='indus'){
+    /* XL : deux têtes de brosse, raclette large, corps anthracite et rouge */
+    drawMesh(CYL10, trs(x-0.22,0.07,z+0.30, 0.62,0.08,0.62, 0), T.noise, PLANCHE?PLANCHE.deck:[0.4,0.42,0.46], {});
+    drawMesh(CYL10, trs(x+0.22,0.07,z+0.30, 0.62,0.08,0.62, 0), T.noise, PLANCHE?PLANCHE.deck:[0.4,0.42,0.46], {});
+    drawMesh(CYL10, trs(x-0.22,0.03,z+0.30, 0.50,0.04,0.50, 0), T.noise, [0.85,0.20,0.20], {});
+    drawMesh(CYL10, trs(x+0.22,0.03,z+0.30, 0.50,0.04,0.50, 0), T.noise, [0.85,0.20,0.20], {});
+    box(x,0.05,z-PROF.L/2-0.02, PROF.W*1.02,0.09,0.14, T.noise, [0.90,0.16,0.15], A);  /* raclette large */
+  } else {
+    /* mini : poignée cintrée, raclette rouge, bac arrière */
+    p=localToWorld(x,z,ry,0,-0.28);
+    box(p[0],0.74,p[1], 0.52,0.05,0.05, T.metal, inox, {ry:ry});
+    p=localToWorld(x,z,ry,-0.24,-0.28); box(p[0],0.56,p[1], 0.045,0.36,0.045, T.metal, inoxL, A);
+    p=localToWorld(x,z,ry, 0.24,-0.28); box(p[0],0.56,p[1], 0.045,0.36,0.045, T.metal, inoxL, A);
+    box(x,0.05,z-PROF.L/2-0.01, PROF.W*0.92,0.07,0.10, T.noise, [0.92,0.20,0.18], A);
+  }
 }
 function drawPusher(m){
   /* ═════════ v0.15.1 : PERSONNAGE DÉTAILLÉ ET AGRANDI (×1.35) ═════════
@@ -5309,38 +5405,7 @@ function drawVehSprite(V,x,y,w){
 /* ═════════ v0.14 : PERSONNAGES & VEHICULES DE NETTOYAGE ═════════
    Chaque personnage a un look ET un petit avantage réel (appliqué dans le jeu).
    Chaque véhicule change la couleur de la machine, sa vitesse et son inertie. */
-var CHARS=[
-  { id:'stg',  name:'LE STAGIAIRE',   tag:'TOUT JUSTE SORTI DE FORMATION',
-    desc:'Jeune, vif, un peu naif. Il court plus vite que les autres.',
-    suit:[1.05,0.55,0.18], pants:[0.30,0.36,0.52], skin:[0.98,0.78,0.60], cap:[0.95,0.96,0.98],
-    perk:'+8% VITESSE', spd:1.08, soapMul:1, torpBonus:0, inertiaMul:1 },
-  { id:'chef', name:"LA CHEF D'EQUIPE", tag:'20 ANS DE CARRELAGE',
-    desc:'Gestes sûrs. Son savon tient 35 % plus longtemps.',
-    suit:[0.74,0.34,0.88], pants:[0.28,0.30,0.42], skin:[0.93,0.72,0.55], cap:[0.98,0.86,0.36],
-    perk:'SAVON +35% DE DUREE', spd:1.0, soapMul:1.35, torpBonus:0, inertiaMul:1 },
-  { id:'vet',  name:'LE VETERAN',     tag:'DOS SOLIDE, SANG-FROID',
-    desc:'Sa torpille laveuse couvre une zone plus large.',
-    suit:[0.26,0.64,0.36], pants:[0.26,0.30,0.40], skin:[0.88,0.66,0.48], cap:[0.90,0.22,0.20],
-    perk:'TORPILLE 6x6 AU LIEU DE 5x5', spd:1.0, soapMul:1, torpBonus:1, inertiaMul:1 },
-  { id:'rob',  name:"L'APPRENTI ROBOT", tag:'NE PREND JAMAIS DE PAUSE',
-    desc:"Ne dérape presque pas, même sur sol savonneux.",
-    suit:[0.88,0.92,0.96], pants:[0.55,0.60,0.66], skin:[0.80,0.84,0.88], cap:[0.60,0.86,1.0],
-    perk:'INERTIE REDUITE', spd:1.0, soapMul:1, torpBonus:0, inertiaMul:0.45 }
-];
-var VEHICLES=[
-  { id:'auto', perk:'VITESSE 100 · ADHERENCE 100', name:'LA PORTEUSE', tag:'LA SEULE OU ON S ASSOIT',
-    desc:'L autoportee : on s assoit, on tourne le volant, on ecrase tout.',
-    chassis:[0.74,0.82,0.92], basin:[0.60,0.86,1.0], accent:[0.60,0.86,1.0], spd:1.0,  inertia:1.0 },
-  { id:'mono', perk:'VITESSE 116 · ADHERENCE 60', name:'LE PERCHOIR', tag:'ON CONDUIT DEBOUT',
-    desc:'Debout sur la plateforme : la plus rapide, mais elle glisse.',
-    chassis:[1.0,0.96,0.88], basin:[1.0,0.72,0.30], accent:[1.0,0.72,0.30], spd:1.16, inertia:1.7 },
-  { id:'indus', perk:'VITESSE 88 · ADHERENCE 140', name:'LA BROSSEUSE XL', tag:'LARGE ET TENACE',
-    desc:'Large brosse : lente, mais elle ne derape jamais. Ideale en patinoire.',
-    chassis:[0.86,0.90,0.94], basin:[0.52,0.62,0.72], accent:[0.52,0.62,0.72], spd:0.90, inertia:0.35 },
-  { id:'mini', perk:'VITESSE 108 · ADHERENCE 110', name:'LA POUSSETTE', tag:'PETIT GABARIT',
-    desc:'Poussee a la main : vive, maniable, increvable.',
-    chassis:[1.04,1.04,1.06], basin:[0.72,1.0,0.62], accent:[0.72,1.0,0.62], spd:1.08, inertia:0.75 }
-];
+
 var charIdx=0, vehIdx=0;
 var BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 
