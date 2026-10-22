@@ -1767,7 +1767,6 @@ var torp=null;                 // {gx,gy,t}
 var torpUsed=false;
 var wave=null;                  // {cx,cy,t}
 var coins=[];                   // {x,z,t}
-var parts=[];                   // particules {x,y,z,vx,vy,vz,life,max,size,col,kind}
 var gm=null;                    // grand-mere
 var demoRound=0, demoT=0, attractT=0;
 var highScore=0;
@@ -1912,7 +1911,7 @@ function resetGame(mode0){
   applyLoadout();          /* v0.14 : applique personnage + machine choisis */
 
   /* nids, savon, torpille, grand-mere, pollueurs */
-  nests=[]; soap=null; torp=null; wave=null; coins=[]; parts=[];
+  nests=[]; soap=null; torp=null; wave=null; coins=[];
   soapTimer=SAVON_REAPPARITION; torpUsed=false;
   waters=[]; rockets=[]; waterRespawn=[0]; rocketRespawn=[0]; waterWarn=0; dirtWarn=0;
   placeNests();
@@ -3859,7 +3858,7 @@ var MESH_TORSO=buildCubeFaces({px:A_FLANC,nx:A_FLANC,py:A_FLANC,ny:A_FLANC,pz:A_
    morceau en coordonnées locales (droite lx, hauteur yy au-dessus de l'assise, avant lz). */
 function riderAnchors(m){
   var ry=m.angle, A={ry:ry};
-  var cx=m.wx+m.kox, cz=m.wz+m.koz;
+  var cx=machineWorldX(m), cz=machineWorldZ(m);   /* v8.0 : interpolé */
   /* le pont se déduit de la cuve de la machine : le conducteur ne flotte plus au-dessus
      d'une cuve trop haute ni ne s'enfonce dedans */
   var deck = 0.44 + machineProf((m===player) ? VEHICLES[vehIdx].id : 'indus').tankH + 0.04;
@@ -4300,14 +4299,17 @@ function drawCoin(c,t){
 
 /* ── v0.9 : particules (etincelles de savon, eclats, fientes) ── */
 function drawParticles(){
-  if(!parts.length) return;
+  var ord = PART.order;
+  if(!ord.length) return;                     /* v8.0 : lecture du pool typé */
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.depthMask(false);
-  for(var i=0;i<parts.length;i++){
-    var p=parts[i];
-    var a=Math.max(0,p.life/p.max);
-    box(p.x,p.y,p.z, p.size,p.size,p.size, null, p.col, {alpha:a*0.95, unlit:true, emit:0.5, ry:p.life*4});
+  for(var i=0;i<ord.length;i++){
+    var id = ord[i], i3 = id*3;
+    var a = Math.max(0, PART.LIFE[id]/PART.LMAX[id]);
+    box(PART.POS[i3],PART.POS[i3+1],PART.POS[i3+2], PART.SIZE[id],PART.SIZE[id],PART.SIZE[id],
+        null, [PART.COL[i3],PART.COL[i3+1],PART.COL[i3+2]],
+        {alpha:a*0.95, unlit:true, emit:0.5, ry:PART.LIFE[id]*4});
   }
   gl.depthMask(true);
   gl.disable(gl.BLEND);
@@ -4434,7 +4436,8 @@ function drawMachine(m){
      Roues, jupe, châssis bicolore, bande de danger, bac à eau avec niveau,
      écume, tableau de bord (écran + 3 voyants), volant, brosse rotative,
      raclette arrière, flexible latéral, plaque de marque, arceau avec poignées. */
-  var x=m.wx+m.kox, z=m.wz+m.koz, ry=m.angle, A={ry:ry};
+  /* v8.0 : position interpolée entre deux ticks de simulation */
+  var x=machineWorldX(m), z=machineWorldZ(m), ry=m.angle, A={ry:ry};
   /* v1.1 : chaque véhicule a sa VRAIE silhouette 3D (largeur, longueur, cuve, disque) */
   var VID = (m===player) ? VEHICLES[vehIdx].id : 'indus';
   var PROF = machineProf(VID);
@@ -5120,28 +5123,216 @@ var botTimer=0;
 var demoAITimer=0;
 
 /* ── v0.8 : les bonus / pieces / etats, par frame ── */
-function burst(x,z,n,col){
-  if(parts.length>12) return;
-  for(var i=0;i<n;i++){
-    var a=Math.random()*Math.PI*2, sp=0.5+Math.random()*1.1;
-    parts.push({
-      x:x, y:0.12+Math.random()*0.30, z:z,
-      vx:Math.cos(a)*sp, vy:0.7+Math.random()*1.2, vz:Math.sin(a)*sp,
-      life:0.45+Math.random()*0.35, max:0.8, size:0.04+Math.random()*0.04,
-      col:[col[0],col[1],col[2]]
-    });
+/* ═══════════════════════════════════════════════════════════════════════════
+   v8.0 — PARTICULES EN POOL TYPÉ (règle « rien ne s'alloue dans la frame »)
+   Avant : un tableau d'objets, un `push` par particule émise et un `splice` par
+   particule morte — donc des allocations et un décalage de tout le tableau à chaque
+   frame. Ici : un pool de taille fixe en Float32Array, une liste d'indices vivants
+   dense et une pile d'indices libres. Émettre = réutiliser un index libre. Aucune
+   allocation, aucun splice, et le parcours se fait sur des index contigus.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   v8.0 — NOYAU MOTEUR, écrit d'après les règles de conception de Bevy
+   (bevy.org/learn/quick-start/getting-started/ecs) et de la littérature moteur.
+
+   Ce que Bevy pose comme vocabulaire, et comment il se traduit ici :
+     ENTITY   : un identifiant entier. Pas d'objet par entité.
+     COMPONENT: une donnée rangée dans un TABLEAU TYPÉ indexé par l'entité, pas une
+                propriété d'objet. C'est la disposition « data-oriented » : les systèmes
+                parcourent de la mémoire contiguë.
+     SYSTEM   : une fonction qui traite des composants. Aucune allocation, aucun état
+                caché, ordre explicite.
+     QUERY    : sélection des entités possédant un jeu de composants — ici un tableau
+                d'indices compacté et réutilisé d'un tick à l'autre (zéro allocation).
+     RESOURCE : singleton global (Time, Input, Rng, Budget).
+     SCHEDULE : étages ordonnés explicitement, comme les sets de Bevy.
+   S'y ajoute la règle n°1 de la littérature (Gaffer, « Fix Your Timestep ») :
+     la SIMULATION avance à pas FIXE (1/60 s) et le RENDU interpole entre deux ticks
+     (alpha). Sans cela, inertie, minuteries et dissipation dépendent du framerate :
+     le jeu change de physique entre un téléphone à 30 i/s et un écran à 144 i/s.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var SIM_DT = 1/60;              /* pas de simulation fixe */
+var MAX_STEPS = 5;              /* au-delà, on laisse filer du temps (anti-spirale) */
+
+var TIME = { acc:0, alpha:0, elapsed:0, frame:0, tick:0, steps:0, dropped:0, dt:0 };
+
+/* ── ECS minimal, orienté données ───────────────────────────────────────── */
+var ECS = (function(){
+  var MAXE = 512;
+  var alive = new Uint8Array(MAXE);
+  var freeList = [];
+  var nextId = 1;
+  var comps = {};                    /* nom → {type, data, def} */
+  var scratch = [];                  /* tampon de requête réutilisé */
+  var lastQueryLen = 0;
+
+  function define(name, Ctor, def){
+    comps[name] = { data:new Ctor(MAXE), def:def };
+    return comps[name];
+  }
+  function data(name){ return comps[name].data; }
+  function spawn(){
+    var id = freeList.length ? freeList.pop() : nextId++;
+    if(id >= MAXE) return -1;
+    alive[id] = 1;
+    return id;
+  }
+  function despawn(id){
+    if(!alive[id]) return;
+    alive[id] = 0;
+    freeList.push(id);
+  }
+  function query(names, out){
+    var res = out || scratch;
+    var n = 0;
+    var a0 = comps[names[0]].data;
+    for(var id=1; id<nextId; id++){
+      if(!alive[id]) continue;
+      var ok = true;
+      for(var c=0;c<names.length;c++){ if(!alive[id]) { ok=false; break; } }
+      if(ok) res[n++] = id;
+    }
+    res.length = n;
+    lastQueryLen = n;
+    return res;
+  }
+  return { define:define, data:data, spawn:spawn, despawn:despawn, query:query,
+           count:function(){ var n=0; for(var i=1;i<nextId;i++) if(alive[i]) n++; return n; },
+           alive:alive };
+})();
+
+/* ── Ressources ─────────────────────────────────────────────────────────── */
+var RNG = { s: 0x9E3779B9,
+  seed:function(v){ RNG.s = v>>>0 || 0x9E3779B9; },
+  next:function(){                       /* xorshift32 : reproductible */
+    var x = RNG.s; x ^= x<<13; x>>>=0; x ^= x>>>17; x ^= x<<5; x>>>=0;
+    RNG.s = x; return x / 4294967296;
+  } };
+
+/* ── Ordonnanceur : étages explicites, systèmes mesurés ─────────────────── */
+var SCHEDULE = { stages:['first','simulate','post','renderPrep'], systems:[] };
+function addSystem(stage, name, fn){
+  SCHEDULE.systems.push({ stage:stage, name:name, fn:fn, ms:0 });
+}
+function runStage(stage, dt){
+  for(var i=0;i<SCHEDULE.systems.length;i++){
+    var sy = SCHEDULE.systems[i];
+    if(sy.stage !== stage) continue;
+    var t0 = performance.now();
+    sy.fn(dt);
+    sy.ms = sy.ms*0.9 + (performance.now()-t0)*0.1;
   }
 }
-function updateParticles(dt){
-  for(var i=parts.length-1;i>=0;i--){
-    var p=parts[i];
-    p.x+=p.vx*dt; p.z+=p.vz*dt; p.y+=p.vy*dt;
-    p.vy-=2.6*dt; p.vx*=0.96; p.vz*=0.96;
-    if(p.y<0.05){ p.y=0.05; p.vy*=-0.35; }
-    p.life-=dt;
-    if(p.life<=0) parts.splice(i,1);
+function runTick(dt){
+  TIME.dt = dt; TIME.tick++; TIME.elapsed += dt;
+  capturePrevTransforms();          /* pour l'interpolation du rendu */
+  runStage('first', dt);
+  runStage('simulate', dt);
+  runStage('post', dt);
+}
+
+/* ── Les systèmes du jeu, déclarés une fois, dans un ordre explicite ────── */
+addSystem('first', 'roundTimers', function(dt){
+  if(mode==='play'){
+    timeLeft-=dt;
+    if(timeLeft<=0){ timeLeft=0; mode='over'; recordHighScore(); }
+  } else if(mode==='attract'){
+    demoT-=dt;
+    if(demoT<=0) resetGame('attract');
+  }
+});
+addSystem('simulate', 'pickups',  updatePickups);
+addSystem('simulate', 'machines', updateMachines);
+addSystem('simulate', 'entities', updateEntities);
+addSystem('post', 'ai', function(dt){
+  if(mode==='play') botThink(dt);
+  if(mode==='attract'){ aiThink(bot,dt); aiThink(player,dt); }
+});
+
+/* ── Interpolation : le rendu lit entre le tick précédent et le courant ─── */
+function capturePrevTransforms(){
+  var list=[player,bot];
+  for(var i=0;i<2;i++){
+    var m=list[i];
+    if(!m) continue;
+    m.pwx = m.wx; m.pwz = m.wz; m.pkox = m.kox; m.pkoz = m.koz;
   }
 }
+function machineWorldX(m){
+  if(m.pwx === undefined || !TIME.alpha) return m.wx + (m.kox||0);
+  return (m.pwx + (m.wx-m.pwx)*TIME.alpha) + ((m.pkox||0) + ((m.kox||0)-(m.pkox||0))*TIME.alpha);
+}
+function machineWorldZ(m){
+  if(m.pwz === undefined || !TIME.alpha) return m.wz + (m.koz||0);
+  return (m.pwz + (m.wz-m.pwz)*TIME.alpha) + ((m.pkoz||0) + ((m.koz||0)-(m.pkoz||0))*TIME.alpha);
+}
+
+
+/* Composants du pool, déclarés auprès de l'ECS : entités = indices, composants =
+   tableaux typés. C'est la disposition que recommande Bevy (data-oriented) : les
+   systèmes parcourent de la mémoire contiguë, pas des objets dispersés. */
+ECS.define('pPos',  Float32Array);   /* [x, y, z]   */
+ECS.define('pVel',  Float32Array);   /* [vx, vy, vz]*/
+ECS.define('pLife', Float32Array);   /* vie restante */
+ECS.define('pLMax', Float32Array);   /* vie initiale (pour l'alpha) */
+ECS.define('pSize', Float32Array);
+ECS.define('pCol',  Float32Array);   /* [r, g, b]   */
+
+var PART = (function(){
+  var MAXP = 320;
+  var POS = ECS.data('pPos'), VEL = ECS.data('pVel'), LIFE = ECS.data('pLife'),
+      LMAX = ECS.data('pLMax'), SIZE = ECS.data('pSize'), COL = ECS.data('pCol');
+  var order = [];                  /* entités vivantes, dense */
+  var emitted = 0;
+  var cap = 40;                    /* plafond d'émission courant */
+
+  function emit(x, z, n, col, opts){
+    opts = opts || {};
+    var limit = opts.cap || cap;
+    if(order.length >= limit) return 0;
+    var made = 0;
+    for(var i=0;i<n;i++){
+      if(order.length >= limit) break;
+      var id = ECS.spawn();
+      if(id < 0) break;
+      var a = RNG.next()*Math.PI*2, sp = (opts.spMin||0.5) + RNG.next()*(opts.spMax||1.1);
+      POS[id*3]=x;     POS[id*3+1]=0.12+RNG.next()*0.30; POS[id*3+2]=z;
+      VEL[id*3]=Math.cos(a)*sp; VEL[id*3+1]=0.7+RNG.next()*1.2; VEL[id*3+2]=Math.sin(a)*sp;
+      LIFE[id]=0.45+RNG.next()*0.35; LMAX[id]=0.8;
+      SIZE[id]=0.04+RNG.next()*0.04;
+      COL[id*3]=col[0]; COL[id*3+1]=col[1]; COL[id*3+2]=col[2];
+      order.push(id); emitted++; made++;
+    }
+    return made;
+  }
+  /* système : avance, rebondit, recycle — un seul passage, aucun splice */
+  function update(dt){
+    var w = 0;
+    for(var k=0;k<order.length;k++){
+      var id = order[k], i3 = id*3;
+      POS[i3]   += VEL[i3]*dt;
+      POS[i3+2] += VEL[i3+2]*dt;
+      POS[i3+1] += VEL[i3+1]*dt;
+      VEL[i3+1] -= 2.6*dt;
+      VEL[i3]   *= 0.96;
+      VEL[i3+2] *= 0.96;
+      if(POS[i3+1] < 0.05){ POS[i3+1]=0.05; VEL[i3+1]*=-0.35; }
+      LIFE[id] -= dt;
+      if(LIFE[id] <= 0){ ECS.despawn(id); }
+      else order[w++] = id;
+    }
+    order.length = w;
+  }
+  return { MAXP:MAXP, POS:POS, VEL:VEL, LIFE:LIFE, LMAX:LMAX, SIZE:SIZE, COL:COL,
+           order:order, emit:emit, update:update,
+           last:function(){ return order.length ? order[order.length-1] : -1; },
+           stats:function(){ return {vivantes:order.length, capacite:MAXP, emises:emitted,
+                                     entitesECS:ECS.count()}; } };
+})();
+
+function burst(x,z,n,col){ PART.emit(x,z,n,col,{cap:12}); }
+function updateParticles(dt){ PART.update(dt); }
 
 function pickSoap(m){
   if(!soap) return;
@@ -5228,14 +5419,19 @@ function machineCollisions(m,dt){
   if(m.stun>0){ m.stun-=dt; if(m.stun<0) m.stun=0; }
   if(m.soapT>0){ m.soapT-=dt; if(m.soapT<0) m.soapT=0; }
   /* v0.8 : traînée d'ETINCELLES blanches pendant la glisse */
-  if(m.soapT>0 && parts.length<34){
+  if(m.soapT>0 && PART.order.length<34){
+    /* v8.0 : les étincelles de savon passent par le pool typé, plus par des objets */
     for(var sp2=0;sp2<2;sp2++){
-      parts.push({
-        x:m.wx+(Math.random()-0.5)*0.66, y:0.10+Math.random()*0.26, z:m.wz+(Math.random()-0.5)*0.66,
-        vx:(Math.random()-0.5)*0.55, vy:0.40+Math.random()*0.65, vz:(Math.random()-0.5)*0.55,
-        life:0.40+Math.random()*0.35, max:0.75, size:0.05+Math.random()*0.035,
-        col:[1.95,1.95,1.98]
-      });
+      var made = PART.emit(m.wx+(RNG.next()-0.5)*0.66, m.wz+(RNG.next()-0.5)*0.66, 1, [1.95,1.95,1.98], {cap:64});
+      if(!made) break;
+      var last = PART.last(), l3 = last*3;
+      PART.POS[l3+1]=0.10+RNG.next()*0.26;
+      PART.VEL[l3]=(RNG.next()-0.5)*0.55;
+      PART.VEL[l3+1]=0.40+RNG.next()*0.65;
+      PART.VEL[l3+2]=(RNG.next()-0.5)*0.55;
+      PART.LIFE[last]=0.40+RNG.next()*0.35;
+      PART.LMAX[last]=0.75;
+      PART.SIZE[last]=0.05+RNG.next()*0.035;
     }
   }
   if(m.slowT>0){ m.slowT-=dt; if(m.slowT<0) m.slowT=0; }
@@ -6956,6 +7152,45 @@ window.__cam = function(){ return {EYE:EYE, TARGET:TARGET, rot:CAM_ROT, dist:CAM
 window.__setFoam = function(gx,gy,sec){ var i=idxAt(gx,gy); foamT[i]=sec; floorDirty=true; return {cell:cells[i], foam:foamT[i]}; };
 window.__foamAt = function(gx,gy){ var i=idxAt(gx,gy); return {cell:cells[i], foam:foamT[i]}; };
 window.__blockedAt = function(gx,gy){ return blocked[idxAt(gx,gy)]===1; };
+window.__engine = function(){
+  var sys = {};
+  for(var i=0;i<SCHEDULE.systems.length;i++){
+    var sy=SCHEDULE.systems[i];
+    sys[sy.name] = { stage:sy.stage, ms:+sy.ms.toFixed(3) };
+  }
+  return { pasFixe:+(SIM_DT*1000).toFixed(2)+' ms', ticks:TIME.tick, frames:TIME.frame,
+           alpha:+TIME.alpha.toFixed(3), steps:TIME.steps,
+           tempsAbandonne:+TIME.dropped.toFixed(3), simule:+TIME.elapsed.toFixed(2),
+           systemes:sys, particules:PART.stats(),
+           entites:ECS.count(), rng:RNG.s.toString(16) };
+};
+/* Preuve de l'indépendance au framerate : on rejoue le MÊME scénario de déplacement
+   à plusieurs fréquences et on compare l'état final. En pas fixe les résultats sont
+   identiques ; en pas variable (l'ancien moteur) ils divergent. */
+window.__framerateTest = function(fpsList, seconds){
+  var res = [];
+  var savedGx=player.gx, savedGy=player.gy, savedFx=player.fx, savedFy=player.fy,
+      savedT=player.t, savedMoving=player.moving, savedDir=player.dirIdx;
+  for(var f=0; f<fpsList.length; f++){
+    var fps = fpsList[f];
+    player.gx=savedGx; player.gy=savedGy; player.fx=savedFx; player.fy=savedFy;
+    player.t=savedT; player.moving=savedMoving; player.dirIdx=savedDir;
+    player.wx=savedGx-7; player.wz=savedGy-6;
+    var acc=0, n=Math.round(seconds*fps);
+    for(var i=0;i<n;i++){
+      acc += 1/fps;
+      var guard=0;
+      while(acc >= SIM_DT && guard < MAX_STEPS){ runTick(SIM_DT); acc -= SIM_DT; guard++; }
+    }
+    res.push({ fps:fps, gx:player.gx, gy:player.gy, wx:+player.wx.toFixed(4),
+               wz:+player.wz.toFixed(4), t:+player.t.toFixed(4) });
+  }
+  var ref = res[0], ok = true;
+  for(var k=1;k<res.length;k++){
+    if(Math.abs(res[k].wx-ref.wx) > 1e-6 || Math.abs(res[k].wz-ref.wz) > 1e-6) ok=false;
+  }
+  return { identiques:ok, resultats:res };
+};
 window.__dims = function(){
   var out = {unite:'1 unité = 1 mètre', machine:{}, personnages:{}, rayon:{}},
       VID = (player ? VEHICLES[vehIdx].id : 'auto'), PR = machineProf(VID);
@@ -7010,23 +7245,24 @@ function perfSample(key, t0){ PERF[key]=PERF[key]*0.9 + (performance.now()-t0)*0
 function frame(now){
   tFrame=performance.now();
   var _t0=tFrame;
+  /* v8.0 : SIMULATION À PAS FIXE. Le temps réel est accumulé puis consommé par
+     paquets de 1/60 s ; le reste (alpha) sert à interpoler le rendu. Le jeu a donc
+     exactement la même physique à 30, 60 ou 144 images par seconde. */
   var dt=(now-last)/1000; last=now;
-  if(dt>0.05) dt=0.05;
-
-  if(mode==='play'){
-    timeLeft-=dt;
-    if(timeLeft<=0){ timeLeft=0; mode='over'; recordHighScore(); }
-  } else if(mode==='attract'){
-    /* demo auto-jouee 8-10 s, relancee en boucle (un niveau different a chaque tour) */
-    demoT-=dt;
-    if(demoT<=0) resetGame('attract');
+  if(dt>0.25) dt=0.25;                  /* une frame perdue ne fait pas sauter 5 s */
+  TIME.acc += dt;
+  var steps=0;
+  while(TIME.acc >= SIM_DT && steps < MAX_STEPS){
+    runTick(SIM_DT);
+    TIME.acc -= SIM_DT;
+    steps++;
   }
-  updatePickups(dt);      /* v0.16 : bonbonnes d'eau + fusée */
-  updateMachines(dt);
-  updateEntities(dt);
-
-  if(mode==='play') botThink(dt);
-  if(mode==='attract'){ aiThink(bot,dt); aiThink(player,dt); }
+  if(TIME.acc > SIM_DT){                /* appareil trop lent : on abandonne du temps */
+    TIME.dropped += TIME.acc - SIM_DT;
+    TIME.acc = SIM_DT;
+  }
+  TIME.steps = steps; TIME.frame++;
+  TIME.alpha = TIME.acc / SIM_DT;       /* 0..1 : où l'on est entre deux ticks */
   perfSample('update', _t0);
 
   // --- passe scene -> FBO basse res ---
