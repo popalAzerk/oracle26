@@ -35,6 +35,7 @@ body.touch:not(.portrait) #padL { order: -1; flex: 0 0 188px; max-width: 188px; 
 body.touch:not(.portrait) #padR { order: 1; flex: 0 0 188px; max-width: 188px; }
 /* portrait : barre de 230 px sous le jeu, D-pad à gauche, A/B à droite */
 body.touch.portrait { flex-direction: column; }
+body.touch.portrait #stage { align-items: flex-end; padding-bottom: 6px; }
 body.touch.portrait #bottombar { display: flex; flex: 0 0 230px; max-height: 230px; }
 body.touch.portrait .pad { flex: 1 1 50%; }
 
@@ -77,7 +78,7 @@ button.on, button:active { background: #FFD23E; color: #3C2C56; border-color: #F
       <button data-k="a" aria-label="Torpille">A</button>
       <button data-k="b" aria-label="Valider">B</button>
     </div>
-    <div class="lbl">A : TORPILLE · B : VALIDER</div>
+    <div class="lbl">A&nbsp;:&nbsp;TORPILLE<br>B&nbsp;:&nbsp;VALIDER</div>
     <div class="mini">
       <button data-k="pause" aria-label="Pause">⏸</button>
       <button data-k="mute"  aria-label="Son">♪</button>
@@ -100,8 +101,14 @@ const ASSETS = {"images":{"textures":"data:image/png;base64,iVBORw0KGgoAAAANSUhE
 // =====================================================================================================
 const W = 680, H = 472;            // résolution logique
 const CELL = 32, COLS = 15, ROWS = 13;
+const ROW = 20;                    // hauteur écran d'une rangée = CD2 / 2 (sol, acteurs ET volumes sur la même grille)
 const GX = 100, GY = 84;           // coin haut-gauche de la grille (rangée 0) à l'écran logique
 const HUD_H = 20;                  // barre du haut
+const BOT_H = 30;                  // bandeau bas : jauges (remplace les panneaux latéraux)
+// Vue de partie : on ne montre que l'arène + 2 bandeaux ; le canvas prend ces dimensions, donc
+// l'arène est agrandie à l'écran (les menus gardent W × H).
+const VIEW = { x: GX - 12, y: 0, w: COLS * CELL + 24, h: GY + ROWS * ROW + 6 + BOT_H };
+const IN_ARENA = { countdown: 1, play: 1, pause: 1, results: 1 };
 const MOVE_TIME = 0.135;           // s par case à vitesse 1
 const BUFFER_WINDOW = 0.15;        // appui mémorisé pendant un déplacement
 const ROUND_TIME = 75;
@@ -1128,7 +1135,7 @@ function hitGranny(w, m) {
 }
 
 // ---------- effets (particules, textes flottants)
-function cellCenter(x, y) { return [GX + x * CELL + CELL / 2, GY + y * (CELL / 2) + CELL / 4]; }
+function cellCenter(x, y) { return [GX + x * CELL + CELL / 2, GY + y * ROW + ROW / 2]; }
 function bubbles(w, x, y, n) {
   const [cx, cy] = cellCenter(x, y);
   for (let i = 0; i < n; i++) w.particles.push({ x: cx + rnd(-12, 12), y: cy + rnd(-8, 10), vx: rnd(-6, 6), vy: rnd(-22, -8), life: rnd(0.4, 0.8), t: 0, kind: 'bubble', r: pick([1, 2, 2, 3]) });
@@ -1246,11 +1253,12 @@ function aiThink(w, m, dt) {
 // monde (1 px = 1 px), réduit ×½ d'un bloc (≥ 2 px opaques → pixel opaque, mode du bloc).
 // Acteurs : billboards ancrés au pied de leur case, posés dans le tri painter sur la même clé.
 // =====================================================================================================
-const floorCanvas = document.createElement('canvas'); floorCanvas.width = COLS * CELL; floorCanvas.height = ROWS * (CELL / 2);
+const floorCanvas = document.createElement('canvas'); floorCanvas.width = COLS * CELL; floorCanvas.height = ROWS * ROW;
 const fctx = floorCanvas.getContext('2d'); fctx.imageSmoothingEnabled = false;
-const shadowCanvas = document.createElement('canvas'); shadowCanvas.width = COLS * CELL; shadowCanvas.height = ROWS * (CELL / 2);
+const shadowCanvas = document.createElement('canvas'); shadowCanvas.width = COLS * CELL; shadowCanvas.height = ROWS * ROW;
 
 const CW2 = 64, CD2 = 40, XC2 = 480, DPW = 1000, EP2 = 24;   // monde : cases 64×40, murs épais de 24
+if (CD2 / 2 !== ROW) throw new Error('grille incohérente : ROW doit valoir CD2 / 2');
 const kOf = (x) => (x - XC2) / DPW;
 const XOf = (x, z) => x + kOf(x) * z;
 const invX2 = (Xs, z) => (Xs + XC2 * z / DPW) / (1 + z / DPW);
@@ -1537,13 +1545,13 @@ function buildShadowsH() {
     if (!vol) return;
     const [l, dpt] = vol.empreinte_cases, h = vol.hauteur_px;
     g.beginPath();
-    g.rect(cx * CELL + 1 + h * 0.05, cy * (CELL / 2) + 1 + h * 0.03, l * CELL - 2, dpt * (CELL / 2) - 2);
+    g.rect(cx * CELL + 1 + h * 0.05, cy * ROW + 1 + h * 0.03, l * CELL - 2, dpt * ROW - 2);
     g.fill();
   };
   for (const p of MAP.props) foot(volOf(p.el), p.x, p.y);
   for (const kk of ['R', 'V']) { const [x, y] = MAP.stations[kk]; foot(stationVol(kk), x, y); }
-  g.fillRect(CELL, CELL, (COLS - 2) * CELL, 4);     // sous le mur nord
-  g.fillRect(CELL, CELL, 4, (ROWS - 2) * CELL);     // le long du mur ouest
+  g.fillRect(CELL, ROW, (COLS - 2) * CELL, 4);      // sous le mur nord
+  g.fillRect(CELL, ROW, 4, (ROWS - 2) * ROW);       // le long du mur ouest
 }
 // variantes de sol par salle (tuiles de l'atlas logique)
 const SOL_VAR = (x, y) => {
@@ -1565,14 +1573,14 @@ const SAL_IDX = { gobelet: 0, emballage: 1, fiente: 2, tas: 3, dechets_poubelle:
 function drawSal(g, x, y, w) {
   const i = SAL_IDX[w.sal[y][x]];
   if (i == null) return;
-  g.drawImage(IMG.atlas, i * 32, 0, 32, 20, x * CELL + 8, y * (CELL / 2) + 5, 16, 10);
+  g.drawImage(IMG.atlas, i * 32, 0, 32, 20, x * CELL + 8, y * ROW + 5, 16, 10);
 }
 function redrawFloor(w) {
   const g = fctx;
   g.clearRect(0, 0, floorCanvas.width, floorCanvas.height);
   const tileOf = (name, x, y) => {
     const m = atlasTile(name);
-    if (m) g.drawImage(IMG.atlas, m.x, m.y, m.w, m.h, x * CELL, y * (CELL / 2), m.w, m.h);
+    if (m) g.drawImage(IMG.atlas, m.x, m.y, m.w, m.h, x * CELL, y * ROW, m.w, m.h);
   };
   const { R, V } = MAP.stations;
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
@@ -1613,7 +1621,7 @@ function getMachineSprite(m) {
 }
 function machFoot(m) {
   const [ex, ey] = entPos(m);
-  let fx = Math.round(GX + ex * CELL + CELL / 2), fy = Math.round(GY + ey * (CELL / 2) + 14);
+  let fx = Math.round(GX + ex * CELL + CELL / 2), fy = Math.round(GY + ey * ROW + 14);
   if (m.bump > 0) {
     const [dx, dy] = DV[m.dir];
     fx += Math.round(dx * 2 * Math.sin(m.bump * 40));
@@ -1672,7 +1680,7 @@ function polluterFrame(p, w) {
 }
 function pollFoot(p) {
   const [ex, ey] = entPos(p);
-  return [Math.round(GX + ex * CELL + CELL / 2), Math.round(GY + ey * (CELL / 2) + 14)];
+  return [Math.round(GX + ex * CELL + CELL / 2), Math.round(GY + ey * ROW + 14)];
 }
 function pollSpec(p, spr) {
   const [fx, fy] = pollFoot(p);
@@ -1709,7 +1717,7 @@ function grannyFrame(g, w) {
 function drawGranny(w) {
   const g = w.granny;
   const [ex, ey] = entPos(g);
-  const fx = Math.round(GX + ex * CELL + CELL / 2), fy = Math.round(GY + ey * (CELL / 2) + 14);
+  const fx = Math.round(GX + ex * CELL + CELL / 2), fy = Math.round(GY + ey * ROW + 14);
   const meta = metaOf('pnj_granny');
   const r = grannyFrame(g, w);
   ctx.globalAlpha = 0.35; ctx.fillStyle = COL.nuit; ctx.fillRect(fx - 7, fy - 1, 16, 3); ctx.globalAlpha = 1;
@@ -1726,7 +1734,7 @@ function drawGranny(w) {
 function drawBonus(w, b) {
   const meta = META.sp['sp_' + BONUS_DEF[b.type].el];
   const om = META.sp.ombre_bonus;
-  const sxB = GX + b.x * CELL, syB = GY + (b.y + 1) * (CELL / 2);
+  const sxB = GX + b.x * CELL, syB = GY + (b.y + 1) * ROW;
   ctx.globalAlpha = 0.35;
   ctx.drawImage(IMG.atlas, om.at.x, om.at.y, om.at.w, om.at.h, sxB - om.ax, syB - om.ay, om.at.w, om.at.h);
   ctx.globalAlpha = 1;
@@ -1777,7 +1785,7 @@ function renderArena(w) {
   if (w.floorDirty) redrawFloor(w);
   const sh = w.shake > 0 ? [Math.round(rnd(-2, 2)), Math.round(rnd(-2, 2))] : [0, 0];
   ctx.save();
-  ctx.beginPath(); ctx.rect(GX - 20, HUD_H, COLS * CELL + 40, H - HUD_H); ctx.clip();
+  ctx.beginPath(); ctx.rect(VIEW.x, HUD_H, VIEW.w, VIEW.h - HUD_H - BOT_H); ctx.clip();
   ctx.translate(sh[0], sh[1]);
   // bandeau de la salle : posé au-dessus du mur nord, son bord bas passe derrière le chaperon
   const band = META.sp['band_' + LV.num];
@@ -1790,9 +1798,9 @@ function renderArena(w) {
   for (const v of w.waves) {
     const k = v.t / 0.6, h0 = Math.floor((v.n - 1) / 2);
     ctx.globalAlpha = 1 - k; ctx.fillStyle = v.owner === PLAYER ? COL.cyan : COL.vertC;
-    const x0 = GX + (v.x - h0) * CELL, y0 = GY + (v.y - h0) * (CELL / 2), s = v.n * CELL, gr = Math.round(k * 10);
-    ctx.fillRect(x0 - gr, y0 - gr, s + gr * 2, 3); ctx.fillRect(x0 - gr, y0 + s + gr - 3, s + gr * 2, 3);
-    ctx.fillRect(x0 - gr, y0 - gr, 3, s + gr * 2); ctx.fillRect(x0 + s + gr - 3, y0 - gr, 3, s + gr * 2);
+    const x0 = GX + (v.x - h0) * CELL, y0 = GY + (v.y - h0) * ROW, s = v.n * CELL, sv = v.n * ROW, gr = Math.round(k * 10);
+    ctx.fillRect(x0 - gr, y0 - gr, s + gr * 2, 3); ctx.fillRect(x0 - gr, y0 + sv + gr - 3, s + gr * 2, 3);
+    ctx.fillRect(x0 - gr, y0 - gr, 3, sv + gr * 2); ctx.fillRect(x0 + s + gr - 3, y0 - gr, 3, sv + gr * 2);
     ctx.globalAlpha = 1;
   }
   // ---- tri painter : statique (murs, stations, meubles) + bonus/pictos/acteurs, par clé
@@ -1857,7 +1865,7 @@ function renderArena(w) {
     const tgt = w.player.water <= 0 ? MAP.stations.R : MAP.stations.V;
     const [px2, py2] = entPos(w.player);
     const ang = Math.atan2(tgt[1] - py2, tgt[0] - px2);
-    const cx = GX + px2 * CELL + CELL / 2 + Math.cos(ang) * 22, cy = GY + py2 * (CELL / 2) + 10 + Math.sin(ang) * 10 - 30;
+    const cx = GX + px2 * CELL + CELL / 2 + Math.cos(ang) * 22, cy = GY + py2 * ROW + 10 + Math.sin(ang) * 10 - 30;
     if (Math.floor(w.elapsed * 4) % 2) arrow(cx, cy, ang, w.player.water <= 0 ? COL.cyan : COL.orange);
   }
   ctx.restore();
@@ -1878,7 +1886,7 @@ function pushActorItems(w, items) {
     const meta = metaOf('pnj_granny');
     const [ex, ey] = entPos(g);
     const spec = { img: IMG.pnj_granny, sx: r.sx, sy: r.sy, fw: meta.fw, fh: meta.fh,
-      ax: meta.fw / 2, ay: meta.sol, fx: Math.round(GX + ex * CELL + CELL / 2), fy: Math.round(GY + ey * (CELL / 2) + 14) };
+      ax: meta.fw / 2, ay: meta.sol, fx: Math.round(GX + ex * CELL + CELL / 2), fy: Math.round(GY + ey * ROW + 14) };
     push(spec, 'granny', () => drawGranny(w), baseOf(g), xcOf(g));
   }
   for (const p of w.polluters.concat(w.ambient)) {
@@ -1918,79 +1926,38 @@ function pastille(x, y, col) {
 }
 function renderHUD(w) {
   const sc = scores(w);
-  // barre du haut
-  ctx.fillStyle = COL.prune; ctx.fillRect(0, 0, W, HUD_H);
-  ctx.fillStyle = COL.lilasF; ctx.fillRect(0, HUD_H - 2, W, 2);
-  text('PROPRETÉ / CLEAN : ' + sc.clean + ' %', 8, 7, COL.blanc);
-  // chrono mm:ss dans une plaque à coins chanfreinés
+  const X0 = VIEW.x, X1 = VIEW.x + VIEW.w, XM = (X0 + X1) / 2;
+  // ---- barre du haut : propreté, chrono, scores
+  ctx.fillStyle = COL.prune; ctx.fillRect(X0, 0, VIEW.w, HUD_H);
+  ctx.fillStyle = COL.lilasF; ctx.fillRect(X0, HUD_H - 2, VIEW.w, 2);
+  text('PROPRE ' + sc.clean + ' %', X0 + 6, 7, COL.blanc);
   const tl = Math.max(0, Math.ceil(w.timeLeft));
   const mm = String(Math.floor(tl / 60)).padStart(2, '0'), ss = String(tl % 60).padStart(2, '0');
   const red = tl <= 10 && Math.floor(app.time * 4) % 2 === 0;
-  const pw = 74, px = W / 2 - pw / 2;
+  const pw = 74, px = XM - pw / 2;
   ctx.fillStyle = red ? COL.rougeF : COL.nuit;
   ctx.fillRect(px + 3, 0, pw - 6, HUD_H); ctx.fillRect(px, 3, pw, HUD_H - 6);
   ctx.fillStyle = red ? COL.rouge : COL.lilas; ctx.fillRect(px + 3, HUD_H - 2, pw - 6, 2);
-  text(mm + ':' + ss, W / 2, 3, red ? COL.blanc : COL.jaune, 2, 'center');
-  // scores : pastille bleue (toi), pastille verte (Laya)
-  const sl = 'LAYA : ' + sc.laya, st = 'TOI : ' + sc.player;
-  let x = W - 8 - textW(sl);
+  text(mm + ':' + ss, XM, 3, red ? COL.blanc : COL.jaune, 2, 'center');
+  const sl = 'LAYA ' + sc.laya, st = 'TOI ' + sc.player;
+  let x = X1 - 6 - textW(sl);
   text(sl, x, 7, COL.vertC); pastille(x - 11, 6, COL.vert);
   x = x - 22 - textW(st);
   text(st, x, 7, COL.bleuC); pastille(x - 11, 6, COL.bleu);
-  // panneau gauche : machine, jauges
-  panel(0, HUD_H, GX - 6, H - HUD_H, COL.marine, COL.lilasF);
-  const ch = CHARS[w.cfg.charIdx], mc = MACHINES[ch.machIdx], p = w.player;
-  ctx.fillStyle = COL.prune; ctx.fillRect(4, HUD_H + 4, 30, 40);
-  ctx.drawImage(IMG['cast_' + ch.id + '_idle'], 0, 0, 32, 56, 3, HUD_H - 4, 32, 56); // portrait : vue S de l'idle
-  ctx.fillStyle = COL.marine; ctx.fillRect(4, HUD_H + 44, 30, 4);
-  text(w.demo ? 'BOT' : ch.name, 38, HUD_H + 8, COL.bleuC);
-  wrap(mc.name, 9).forEach((l, i) => text(l, 38, HUD_H + 19 + i * 9, COL.perle));
-  let gy = HUD_H + 56;
-  gauge(6, gy, 82, 'EAU / WATER', p.water / 100, COL.cyan, COL.bleuF, p.water < 15); gy += 26;
-  gauge(6, gy, 82, 'CRASSE / GRIME', p.grime / 100, COL.orange, COL.rougeF, p.grime > 85); gy += 26;
-  gauge(6, gy, 82, 'SAVON / SOAP', p.soap / p.soapDur, COL.rose, COL.framb, false); gy += 26;
-  gauge(6, gy, 82, 'FUSÉE / ROCKET', p.rocket / p.rocketDur, COL.jaune, COL.orange, false); gy += 30;
-  text('TORPILLE ' + p.torpSize + '×' + p.torpSize, 6, gy, COL.perle); gy += 10;
-  text(p.torpLeft > 0 ? (IS_TOUCH ? 'A : PRÊTE' : 'ESPACE : PRÊTE') : 'UTILISÉE', 6, gy, p.torpLeft > 0 ? COL.vertC : COL.ardoC); gy += 16;
-  text('BONUS : ' + p.bonusPts, 6, gy, COL.jaune); gy += 16;
-  ctx.fillStyle = COL.lilasF; ctx.fillRect(6, gy, 82, 1); gy += 6;
-  text('LAYA', 6, gy, COL.vertC); gy += 2;
-  gauge(6, gy + 8, 82, '', w.laya.water / 100, COL.cyan, COL.bleuF, false);
-  gauge(6, gy + 22, 82, '', w.laya.grime / 100, COL.orange, COL.rougeF, false);
-  // panneau droit : plan, salle, infos de manche
-  const rx = GX + COLS * CELL + 6, rw = W - rx;
-  panel(rx, HUD_H, rw, H - HUD_H, COL.marine, COL.lilasF);
-  text('PLAN', rx + 6, HUD_H + 6, COL.perle);
-  const ms = 6, mx = rx + Math.floor((rw - COLS * ms) / 2), my = HUD_H + 17;
-  for (let y = 0; y < ROWS; y++) for (let x2 = 0; x2 < COLS; x2++) {
-    const t = MAP.tile[y][x2];
-    let c = COL.prune;
-    if (t === 'P') c = COL.framb;
-    else if (t === '.') {
-      const s = w.st[y][x2];
-      c = s === DIRTY ? COL.sale : s === NEST || s === WET ? '#4A2E20' : s === PLAYER ? COL.bleu : s === LAYA ? COL.vert : COL.cremeC;
-      if (isStation(x2, y)) c = MAP.stations.R[0] === x2 ? COL.cyan : COL.orange;
-    }
-    ctx.fillStyle = c; ctx.fillRect(mx + x2 * ms, my + y * ms, ms - 1, ms - 1);
-  }
-  const blink = Math.floor(app.time * 5) % 2;
-  for (const m of [w.player, w.laya]) { ctx.fillStyle = blink ? COL.blanc : (m.owner === PLAYER ? COL.bleuF : COL.vertF); ctx.fillRect(mx + m.x * ms - 1, my + m.y * ms - 1, ms + 1, ms + 1); }
-  let ry = my + ROWS * ms + 10;
-  text('SALLE ' + LV.num, rx + 6, ry, LV.accent); ry += 11;
-  wrap(LV.name, 14).forEach((l) => { text(l, rx + 6, ry, COL.blanc); ry += 10; });
-  const starsDiff = '★'.repeat(LV.stars) + ' ' + LV.diff;
-  text(starsDiff.length > 14 ? '★'.repeat(LV.stars) + LV.diff : starsDiff, rx + 6, ry, COL.jaune); ry += 16;
-  const active = w.polluters.filter((q) => q.state !== 'rest').length;
-  text('POLLUEURS : ' + w.polluters.length, rx + 6, ry, COL.perle); ry += 10;
-  text('ACTIFS : ' + active, rx + 6, ry, COL.perle); ry += 10;
-  text('RESALIES : ' + w.dirtyByPolluters, rx + 6, ry, COL.saleC); ry += 10;
-  text('NIDS : ' + sc.nests, rx + 6, ry, COL.saleC); ry += 16;
-  text('BONUS', rx + 6, ry, COL.perle); ry += 10;
-  pastille(rx + 6, ry, COL.bleu); text(String(p.bonusPts), rx + 18, ry, COL.bleuC);
-  pastille(rx + 44, ry, COL.vert); text(String(w.laya.bonusPts), rx + 56, ry, COL.vertC); ry += 16;
-  text(app.muted ? 'SON : COUPÉ' : 'SON : OUI', rx + 6, ry, COL.ardoC); ry += 10;
-  if (IS_TOUCH) text('⏸ : PAUSE', rx + 6, ry, COL.ardoC);
-  else { text('M : SON', rx + 6, ry, COL.ardoC); text('P : PAUSE', rx + 6, ry + 10, COL.ardoC); }
+  // ---- bandeau bas : tes jauges à gauche, torpille et bonus au centre, Laya à droite
+  const p = w.player, Y = VIEW.h - BOT_H;
+  ctx.fillStyle = COL.lilasF; ctx.fillRect(X0, Y, VIEW.w, 2);
+  ctx.fillStyle = COL.prune; ctx.fillRect(X0, Y + 2, VIEW.w, BOT_H - 2);
+  gauge(X0 + 6, Y + 5, 92, 'EAU', p.water / 100, COL.cyan, COL.bleuF, p.water < 15);
+  gauge(X0 + 106, Y + 5, 92, 'CRASSE', p.grime / 100, COL.orange, COL.rougeF, p.grime > 85);
+  let mid = p.torpLeft > 0 ? (IS_TOUCH ? 'TORPILLE : A' : 'TORPILLE : ESPACE') : 'TORPILLE UTILISÉE';
+  text(mid, X0 + 210, Y + 6, p.torpLeft > 0 ? COL.vertC : COL.ardoC);
+  const extra = p.soap > 0 ? 'SAVON ' + Math.ceil(p.soap) + ' s' : p.rocket > 0 ? 'FUSÉE ' + Math.ceil(p.rocket) + ' s' : 'BONUS ' + p.bonusPts;
+  text(extra, X0 + 210, Y + 17, p.soap > 0 ? COL.rose : p.rocket > 0 ? COL.jaune : COL.jaune);
+  const lx = X1 - 6 - 70;
+  text('LAYA', lx - 30, Y + 11, COL.vertC);
+  gauge(lx, Y + 1, 70, '', w.laya.water / 100, COL.cyan, COL.bleuF, false);
+  gauge(lx, Y + 11, 70, '', w.laya.grime / 100, COL.orange, COL.rougeF, false);
   // message clignotant (dans le bandeau des boutiques, au-dessus du mur : hors arène)
   if (!w.demo && w.msgT > 0 && w.msg) {
     const str = w.msg === 'empty' ? 'RÉSERVOIR VIDE ! VA À LA RECHARGE' : 'BAC PLEIN ! VA À LA VIDANGE';
@@ -2151,9 +2118,18 @@ function renderCountdown() {
 function renderPause() {
   renderArena(world); renderHUD(world);
   const cx = GX + COLS * CELL / 2;
-  panel(cx - 120, 180, 240, 70, COL.prune, COL.lilas);
-  text('PAUSE', cx, 194, COL.jaune, 3, 'center');
-  text(IS_TOUCH ? 'B : REPRENDRE' : 'P / ÉCHAP / ENTRÉE : REPRENDRE', cx, 228, COL.blanc, 1, 'center');
+  ctx.globalAlpha = 0.55; ctx.fillStyle = COL.nuit; ctx.fillRect(VIEW.x, HUD_H, VIEW.w, VIEW.h - HUD_H - BOT_H); ctx.globalAlpha = 1;
+  panel(cx - 120, 96, 240, 70, COL.prune, COL.lilas);
+  text('PAUSE', cx, 110, COL.jaune, 3, 'center');
+  const w = world, ms = 6, mx = Math.round(cx - COLS * ms / 2), my = 190;
+  panel(mx - 8, my - 8, COLS * ms + 16, ROWS * ms + 30, COL.prune, COL.lilas);
+  for (let y = 0; y < ROWS; y++) for (let x2 = 0; x2 < COLS; x2++) {
+    const t = MAP.tile[y][x2]; let c = COL.marine;
+    if (t === '.') { const s = w.st[y][x2]; c = s === DIRTY ? COL.sale : s === NEST || s === WET ? '#4A2E20' : s === PLAYER ? COL.bleu : s === LAYA ? COL.vert : COL.cremeC; }
+    ctx.fillStyle = c; ctx.fillRect(mx + x2 * ms, my + y * ms, ms - 1, ms - 1);
+  }
+  { const cap = 'SALLE ' + LV.num + ' · ' + LV.name, tw = textW(cap) + 12; panel(cx - tw / 2, my + ROWS * ms + 3, tw, 15, COL.prune, COL.lilas); text(cap, cx, my + ROWS * ms + 7, COL.blanc, 1, 'center'); }
+  text(IS_TOUCH ? 'B : REPRENDRE' : 'P / ÉCHAP / ENTRÉE : REPRENDRE', cx, 144, COL.blanc, 1, 'center');
 }
 function renderResults() {
   const r = app.results;
@@ -2285,12 +2261,15 @@ function layout() {
   let aw = innerWidth, ah = innerHeight;
   if (IS_TOUCH) { if (land) aw -= 2 * 188; else ah -= 230; }
   aw = Math.max(aw, 100); ah = Math.max(ah, 100);
-  // échelle entière en pixels physiques ; si même ×1 ne tient pas, on réduit (cas des très petits écrans)
-  const k = Math.floor(Math.min(aw * dpr / W, ah * dpr / H));
-  const css = k >= 1 ? k / dpr : Math.min(aw / W, ah / H);
-  canvas.style.width = (W * css) + 'px';
-  canvas.style.height = (H * css) + 'px';
-  app.scale = k >= 1 ? k : +(css * dpr).toFixed(3);
+  // Échelle entière en pixels physiques SI elle remplit au moins 95 % de la place ; sinon échelle libre
+  // (sur iPhone, dpr 3 : l'échelle entière ×1 donnait un jeu de 226 pt de large sur 390).
+  const cw = canvas.width, ch = canvas.height;
+  const fit = Math.min(aw / cw, ah / ch);
+  const k = Math.floor(fit * dpr);
+  const css = k >= 1 && k / dpr >= 0.95 * fit ? k / dpr : fit;
+  canvas.style.width = (cw * css) + 'px';
+  canvas.style.height = (ch * css) + 'px';
+  app.scale = +(css * dpr).toFixed(3);
 }
 let last = 0;
 function frame(ts) {
@@ -2331,6 +2310,10 @@ function update(dt) {
   }
 }
 function render() {
+  const v = IN_ARENA[app.mode] && world ? VIEW : null;
+  const cw = v ? v.w : W, ch = v ? v.h : H;
+  if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; layout(); }
+  ctx.setTransform(1, 0, 0, 1, v ? -v.x : 0, v ? -v.y : 0);
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = COL.nuit; ctx.fillRect(0, 0, W, H);
   switch (app.mode) {
