@@ -1575,6 +1575,49 @@ function drawSal(g, x, y, w) {
   if (i == null) return;
   g.drawImage(IMG.atlas, i * 32, 0, 32, 20, x * CELL + 8, y * ROW + 5, 16, 10);
 }
+// Saleté = TACHE sombre irrégulière posée sur le sol (le sol reste visible autour) ; nid = tache plus
+// grande et plus sombre. Jamais une case pleine : une case pleine se lit comme un revêtement.
+function hcell(x, y, k) { const v = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); }
+const tacheCv = {};
+function tache(g, x, y, nid) {   // dessin mis en cache par case : le sol se redessine souvent
+  const k = x + ',' + y + (nid ? 'n' : '');
+  if (!tacheCv[k]) { const c = document.createElement('canvas'); c.width = CELL; c.height = ROW; tacheDraw(c.getContext('2d'), x, y, nid); tacheCv[k] = c; }
+  g.drawImage(tacheCv[k], x * CELL, y * ROW);
+}
+function tacheDraw(g, x, y, nid) {
+  // 1 à 3 taches de tailles très variées, placées librement dans la case : jamais un motif régulier
+  const blobs = [];
+  const n = nid ? 1 : 1 + (hcell(x, y, 12) < 0.35 ? 1 : 0) + (hcell(x, y, 13) < 0.12 ? 1 : 0);
+  for (let b = 0; b < n; b++) {
+    const big = b === 0;
+    const rx = nid ? 14 : big ? 6 + hcell(x, y, 3 + b) * 8 : 3 + hcell(x, y, 20 + b) * 3;
+    const ry = nid ? 8.5 : rx * (0.55 + hcell(x, y, 30 + b) * 0.15);
+    const cx = rx + 1 + hcell(x, y, 1 + b * 7) * Math.max(0, CELL - 2 * rx - 2);
+    const cy = ry + 1 + hcell(x, y, 2 + b * 7) * Math.max(0, ROW - 2 * ry - 2);
+    blobs.push({ rx, ry, cx, cy, ph: [hcell(x, y, 5 + b), hcell(x, y, 6 + b), hcell(x, y, 7 + b)].map((v) => v * 6.283) });
+  }
+  const inside = (px, py) => blobs.some((o) => {
+    const dx = (px + 0.5 - o.cx) / o.rx, dy = (py + 0.5 - o.cy) / o.ry, a = Math.atan2(dy, dx);
+    const bord = 1 + 0.18 * Math.sin(3 * a + o.ph[0]) + 0.11 * Math.sin(5 * a + o.ph[1]) + 0.07 * Math.sin(7 * a + o.ph[2]);
+    return dx * dx + dy * dy < bord * bord;
+  });
+  const fonce = nid ? '#2E1C14' : '#55361F', moyen = nid ? '#3E2618' : '#6A4428', bord = nid ? '#2E1C14' : '#5A3922';   // tache plate : bord à peine plus sombre, aucun reflet
+  for (let py = 0; py < ROW; py++) for (let px = 0; px < CELL; px++) {
+    if (!inside(px, py)) continue;
+    const edge = !inside(px - 1, py) || !inside(px + 1, py) || !inside(px, py - 1) || !inside(px, py + 1);
+    let c = edge ? bord : moyen;
+    if (!edge && hcell(x * 40 + px, y * 40 + py, 9) < 0.2) c = fonce;
+    g.fillStyle = c; g.fillRect(px, py, 1, 1);
+  }
+}
+// Territoire : le sol reste visible, teinte légère de la couleur du joueur + liseré net
+function teinte(g, x, y, col, colF, al) {
+  const ox = x * CELL, oy = y * ROW;
+  g.globalAlpha = al; g.fillStyle = col; g.fillRect(ox + 1, oy + 1, CELL - 2, ROW - 2); g.globalAlpha = 0.75;
+  g.fillStyle = colF; g.fillRect(ox + 1, oy + 1, CELL - 2, 1); g.fillRect(ox + 1, oy + ROW - 2, CELL - 2, 1);
+  g.fillRect(ox + 1, oy + 1, 1, ROW - 2); g.fillRect(ox + CELL - 2, oy + 1, 1, ROW - 2);
+  g.globalAlpha = 1;
+}
 function redrawFloor(w) {
   const g = fctx;
   g.clearRect(0, 0, floorCanvas.width, floorCanvas.height);
@@ -1590,13 +1633,13 @@ function redrawFloor(w) {
     if (x === R[0] && y === R[1]) { tileOf('station_recharge_dalle', x, y); continue; }
     if (x === V[0] && y === V[1]) { tileOf('station_vidange_dalle', x, y); continue; }
     const s = w.st[y][x];
-    if (s === DIRTY) { tileOf('etat_sale', x, y); drawSal(g, x, y, w); }
-    else if (s === NEST) { tileOf('etat_nid', x, y); drawSal(g, x, y, w); }
+    if (s === DIRTY) { tache(g, x, y, false); drawSal(g, x, y, w); }
+    else if (s === NEST) { tache(g, x, y, true); drawSal(g, x, y, w); }
     else if (s === WET) tileOf('etat_humide', x, y);
-    else if (s === PLAYER) tileOf('etat_lave_joueur', x, y);
-    else if (s === LAYA) tileOf('etat_lave_laya', x, y);
+    else if (s === PLAYER) teinte(g, x, y, '#2E8CF0', '#1A56B8', 0.40);   // tes cases : bleu franc, l'info n° 1
+    else if (s === LAYA) teinte(g, x, y, '#4EC452', '#2A8640', 0.26);
   }
-  g.globalAlpha = 0.35; g.drawImage(shadowCanvas, 0, 0); g.globalAlpha = 1;
+  g.globalAlpha = 0.55; g.drawImage(shadowCanvas, 0, 0); g.globalAlpha = 1;   // ombres de contact nettes : un meuble se pose, une tache non
   w.floorDirty = false;
 }
 
@@ -1697,7 +1740,12 @@ function drawPolluter(w, p, spr) {
     ctx.fillRect(fx - Math.round(meta.fw / 3), fy - 2, Math.round(meta.fw * 2 / 3), 3); ctx.globalAlpha = 1;
   }
   drawSprite(spr.img, spr.sx, spr.sy, meta.fw, meta.fh, fx - meta.fw / 2, fy - meta.sol - h, spr.flip);
-  if (p.state === 'act') text('!', fx, fy - meta.fh - 4, COL.jaune, 1, 'center', COL.nuit);
+  if (p.state === 'act') {   // il est en train de salir : bulle rouge
+    const by = fy - meta.fh - 10 - h;
+    ctx.fillStyle = COL.nuit; ctx.fillRect(fx - 5, by - 1, 11, 12);
+    ctx.fillStyle = COL.rouge; ctx.fillRect(fx - 4, by, 9, 10);
+    text('!', fx + 1, by + 1, COL.blanc, 1, 'center');
+  }
 }
 function drawSprite(img, sx, sy, sw, sh, dx, dy, flip) {
   dx = Math.round(dx); dy = Math.round(dy);
@@ -1842,6 +1890,19 @@ function renderArena(w) {
   for (const p of w.polluters.concat(w.ambient)) {
     if (p.fly && p.h > 4) drawPolluter(w, p, p._spr);
   }
+  // flèche rebondissante vers la station utile (réservoir presque vide / cuve presque pleine)
+  if (!w.demo) {
+    const p = w.player, need = p.water < 15 ? 'R' : p.grime > 85 ? 'V' : null;
+    if (need) {
+      const [sx, sy] = MAP.stations[need];
+      // flèche posée au sol devant la station, pointe vers elle (le haut de la station sort du cadre)
+      const ax = GX + sx * CELL + CELL / 2, ay = GY + (sy + 1) * ROW + 6 + Math.round(Math.abs(Math.sin(w.elapsed * 6)) * 4);
+      const col = need === 'R' ? COL.cyan : COL.orange;
+      for (let i = 0; i < 7; i++) { ctx.fillStyle = COL.nuit; ctx.fillRect(ax - 1 - i, ay - 1 + i, 3 + 2 * i, 2); }
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = col; ctx.fillRect(ax - i, ay + i, 1 + 2 * i, 1); }
+      ctx.fillStyle = COL.nuit; ctx.fillRect(ax - 3, ay + 6, 7, 7); ctx.fillStyle = col; ctx.fillRect(ax - 2, ay + 6, 5, 6);
+    }
+  }
   // libellés des stations (le texte du picto est trop fin une fois réduit)
   for (const kk of ['R', 'V']) {
     const [sx, sy] = MAP.stations[kk];
@@ -1958,6 +2019,14 @@ function renderHUD(w) {
   text('LAYA', lx - 30, Y + 11, COL.vertC);
   gauge(lx, Y + 1, 70, '', w.laya.water / 100, COL.cyan, COL.bleuF, false);
   gauge(lx, Y + 11, 70, '', w.laya.grime / 100, COL.orange, COL.rougeF, false);
+  // objectif : affiché les 6 premières secondes de la manche
+  if (!w.demo && w.elapsed < 6 && !(w.msgT > 0 && w.msg)) {
+    const str = 'LAVE LES TACHES BRUNES · PLUS DE CASES BLEUES QUE LAYA !';
+    const tw = textW(str) + 12, cx2 = GX + COLS * CELL / 2;
+    ctx.fillStyle = COL.nuit; ctx.fillRect(cx2 - tw / 2 - 1, HUD_H + 3, tw + 2, 16);
+    ctx.fillStyle = COL.bleuF; ctx.fillRect(cx2 - tw / 2, HUD_H + 4, tw, 14);
+    text(str, cx2, HUD_H + 8, COL.blanc, 1, 'center');
+  }
   // message clignotant (dans le bandeau des boutiques, au-dessus du mur : hors arène)
   if (!w.demo && w.msgT > 0 && w.msg) {
     const str = w.msg === 'empty' ? 'RÉSERVOIR VIDE ! VA À LA RECHARGE' : 'BAC PLEIN ! VA À LA VIDANGE';
