@@ -1636,8 +1636,8 @@ function redrawFloor(w) {
     if (s === DIRTY) { tache(g, x, y, false); drawSal(g, x, y, w); }
     else if (s === NEST) { tache(g, x, y, true); drawSal(g, x, y, w); }
     else if (s === WET) tileOf('etat_humide', x, y);
-    else if (s === PLAYER) teinte(g, x, y, '#2E8CF0', '#1A56B8', 0.40);   // tes cases : bleu franc, l'info n° 1
-    else if (s === LAYA) teinte(g, x, y, '#4EC452', '#2A8640', 0.26);
+    else if (s === PLAYER) teinte(g, x, y, '#9CD2FF', '#2A68C6', 0.85);   // tes cases : bleu franc, l'info n° 1
+    else if (s === LAYA) teinte(g, x, y, '#B8F09A', '#2A8640', 0.60);
   }
   g.globalAlpha = 0.55; g.drawImage(shadowCanvas, 0, 0); g.globalAlpha = 1;   // ombres de contact nettes : un meuble se pose, une tache non
   w.floorDirty = false;
