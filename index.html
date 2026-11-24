@@ -3,34 +3,219 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta http-equiv="Cache-Control" content="no-cache">
-<title>popalazerk — nouveau projet bientôt</title>
-<style>
-  :root{--bg:#f5f5f7;--tx:#1d1d1f;--tx2:#6e6e73;--ac:#0071e3}
-  @media (prefers-color-scheme:dark){:root{--bg:#000;--tx:#f5f5f7;--tx2:#a1a1a6;--ac:#2997ff}}
-  *{box-sizing:border-box;margin:0}
-  html,body{height:100%}
-  body{display:grid;place-items:center;min-height:100svh;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
-    background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;text-align:center}
-  main{max-width:640px}
-  .marque{font-size:clamp(15px,2.2vw,17px);font-weight:600;letter-spacing:.02em;color:var(--tx2)}
-  h1{margin-top:14px;font-size:clamp(40px,8vw,72px);line-height:1.05;font-weight:700;letter-spacing:-.025em}
-  p{margin-top:18px;font-size:clamp(17px,2.4vw,21px);line-height:1.45;color:var(--tx2)}
-  .point{display:inline-block;width:.18em;height:.18em;border-radius:50%;background:var(--ac);margin-left:.06em;vertical-align:.08em;
-    animation:pulse 2.4s ease-in-out infinite}
-  @keyframes pulse{50%{opacity:.25}}
-  @media (prefers-reduced-motion:reduce){.point{animation:none}}
-</style>
+<title>Atelier — technologie &amp; SVT, 5e · 3e · 2de</title>
+<meta name="description" content="Environnement de travail pour le collège et le lycée : technologie, SVT, clavier, IA, Pix. Progression gardée sur l'ordinateur.">
+<meta name="theme-color" content="#F5F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-<main>
-  <div class="marque">popalazerk</div>
-  <h1>Nouveau projet bientôt<span class="point" aria-hidden="true"></span></h1>
-  <p>Un nouveau chantier est en préparation. Revenez dans quelques jours.</p>
-</main>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top">technologie &amp; SVT</span></a>
+    <nav class="profil" id="profils" aria-label="Profil de travail"></nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <span class="kicker" id="kicker">Technologie · 5e · Léa</span>
+      <h1>Ouvre la tour,<br><span class="grad">comprends la machine.</span></h1>
+      <p class="sub">Démonte, place, vérifie : chaque geste juste rapporte des points de compétence du programme. Trois niveaux, trois profils, une progression gardée sur cet ordinateur.</p>
+      <div class="cta">
+        <a class="btn p" href="module-composants.html" id="btnReprendre">▶ Commencer la séquence</a>
+        <a class="btn s" href="module-composants.html#fiches">Les fiches</a>
+        <button class="btn ghost" id="btnExport" title="Enregistrer la progression dans un fichier">⤓ Sauvegarder</button>
+        <button class="btn ghost" id="btnImport" title="Restaurer une sauvegarde">⤒ Restaurer</button>
+        <input type="file" id="fichier" accept="application/json" class="sr">
+      </div>
+      <div class="xp" id="xp"></div>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 620 340" class="illus" role="img" aria-label="Vue éclatée d'un ordinateur : boîtier, carte mère, processeur, mémoire, stockage, alimentation">
+        <defs>
+          <linearGradient id="gCase" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E6EEFC"/><stop offset="1" stop-color="#C9D7F0"/></linearGradient>
+          <linearGradient id="gMobo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DBE9FF"/><stop offset="1" stop-color="#BAD4FF"/></linearGradient>
+          <linearGradient id="gCpu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6AA6FF"/><stop offset="1" stop-color="#2F5BFF"/></linearGradient>
+          <linearGradient id="gRam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B57BFF"/><stop offset="1" stop-color="#6A5BFF"/></linearGradient>
+          <linearGradient id="gSsd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2EE6C8"/><stop offset="1" stop-color="#0EA47A"/></linearGradient>
+          <linearGradient id="gPsu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB340"/><stop offset="1" stop-color="#FF7A3D"/></linearGradient>
+        </defs>
+        <g stroke="#B9C6E2" stroke-width="2" stroke-dasharray="6 7" fill="none">
+          <path d="M136 190 H178"/><path d="M356 118 H404"/><path d="M356 176 H404"/><path d="M356 232 H404"/>
+        </g>
+        <!-- boîtier : tour vue de 3/4 (façade + panneau latéral avec ventilateur) -->
+        <g transform="translate(40 82)">
+          <!-- pieds -->
+          <rect x="10" y="202" width="92" height="7" rx="3.5" fill="#BCC8DE"/>
+          <rect x="22" y="196" width="14" height="9" rx="3" fill="#AEBBD4"/>
+          <rect x="76" y="196" width="14" height="9" rx="3" fill="#AEBBD4"/>
+          <!-- panneau latéral -->
+          <rect x="16" y="0" width="92" height="200" rx="6" fill="url(#gCase)" stroke="#AEBBD4" stroke-width="1.6"/>
+          <!-- ventilateur arrière (pales + moyeu) -->
+          <g transform="translate(62 50)">
+            <circle r="27" fill="#FFFFFF" stroke="#C3CEE4" stroke-width="2"/>
+            <g fill="#CAD7ED">
+              <ellipse cx="0" cy="-13" rx="6.5" ry="10.5" transform="rotate(0)"/>
+              <ellipse cx="0" cy="-13" rx="6.5" ry="10.5" transform="rotate(72)"/>
+              <ellipse cx="0" cy="-13" rx="6.5" ry="10.5" transform="rotate(144)"/>
+              <ellipse cx="0" cy="-13" rx="6.5" ry="10.5" transform="rotate(216)"/>
+              <ellipse cx="0" cy="-13" rx="6.5" ry="10.5" transform="rotate(288)"/>
+            </g>
+            <circle r="6" fill="#8FA2C0"/>
+            <circle r="24" fill="none" stroke="#E1E8F5" stroke-width="1.4"/>
+          </g>
+          <!-- fentes d'aération du panneau -->
+          <g fill="#D5DFF0">
+            <rect x="30" y="96" width="64" height="6" rx="3"/><rect x="30" y="110" width="64" height="6" rx="3"/>
+            <rect x="30" y="124" width="64" height="6" rx="3"/><rect x="30" y="138" width="64" height="6" rx="3"/>
+          </g>
+          <!-- baie d'alimentation, vue de côté -->
+          <rect x="30" y="154" width="64" height="32" rx="5" fill="#FFE3BC" stroke="#F0A73A" stroke-width="1.6"/>
+          <g fill="#F7C685"><rect x="36" y="160" width="52" height="5" rx="2.5"/><rect x="36" y="169" width="52" height="5" rx="2.5"/><rect x="36" y="178" width="34" height="4" rx="2"/></g>
+          <!-- façade avant -->
+          <path d="M0 8 L16 0 L16 200 L0 192 Z" fill="#DCE5F4" stroke="#B7C3DA" stroke-width="1.4"/>
+          <circle cx="8" cy="22" r="3.2" fill="#2EE6C8"/>
+          <rect x="3" y="42" width="10" height="5" rx="2.5" fill="#C2CDE2"/>
+          <rect x="3" y="58" width="10" height="5" rx="2.5" fill="#C2CDE2"/>
+          <rect x="3" y="120" width="10" height="34" rx="4" fill="#CBD6EA"/>
+        </g>
+        <!-- carte mère -->
+        <g transform="translate(182 88)">
+          <rect width="172" height="156" rx="14" fill="url(#gMobo)" stroke="#1D1D1F10"/>
+          <rect x="20" y="26" width="54" height="54" rx="8" fill="#fff" opacity=".65" stroke="#9DBFF5" stroke-width="2" stroke-dasharray="6 5"/>
+          <g fill="#B4C8EA">
+            <rect x="98" y="28" width="9" height="44" rx="3"/><rect x="114" y="28" width="9" height="44" rx="3"/>
+            <rect x="130" y="28" width="9" height="44" rx="3"/><rect x="146" y="28" width="9" height="44" rx="3"/>
+            <rect x="20" y="104" width="72" height="10" rx="4"/><rect x="20" y="124" width="112" height="7" rx="3.5"/>
+          </g>
+        </g>
+        <!-- CPU -->
+        <g transform="translate(406 96)">
+          <rect width="52" height="52" rx="11" fill="url(#gCpu)"/>
+          <rect x="12" y="12" width="28" height="28" rx="6" fill="#fff" opacity=".9"/>
+          <path d="M9 4v-6M26 4v-6M43 4v-6M9 54v-6M26 54v-6M43 54v-6" stroke="#9DBBF5" stroke-width="2.6" stroke-linecap="round"/>
+        </g>
+        <!-- RAM -->
+        <g transform="translate(404 160)">
+          <rect width="88" height="22" rx="7" fill="url(#gRam)"/>
+          <g fill="#fff" opacity=".92"><rect x="14" y="5" width="13" height="12" rx="2"/><rect x="33" y="5" width="13" height="12" rx="2"/><rect x="52" y="5" width="13" height="12" rx="2"/></g>
+        </g>
+        <!-- SSD -->
+        <g transform="translate(404 208)">
+          <rect width="88" height="22" rx="7" fill="url(#gSsd)"/>
+          <rect x="16" y="5" width="18" height="12" rx="2" fill="#fff" opacity=".92"/>
+          <rect x="40" y="5" width="18" height="12" rx="2" fill="#fff" opacity=".75"/>
+        </g>
+        <!-- alimentation -->
+        <g transform="translate(404 254)">
+          <rect width="88" height="40" rx="9" fill="url(#gPsu)"/>
+          <circle cx="26" cy="20" r="11" fill="#fff" opacity=".9"/>
+          <path d="M26 9 a11 11 0 0 1 0 22" fill="none" stroke="#FF9F0A" stroke-width="2.4"/>
+          <rect x="48" y="12" width="28" height="6" rx="3" fill="#fff" opacity=".8"/>
+          <rect x="48" y="23" width="18" height="6" rx="3" fill="#fff" opacity=".6"/>
+        </g>
+        <g font-family="-apple-system,SF Mono,Menlo,monospace" font-size="11" font-weight="600" fill="#86868B" letter-spacing=".06em">
+          <text x="92" y="312" text-anchor="middle">BOÎTIER (TOUR)</text>
+          <text x="268" y="76" text-anchor="middle">CARTE MÈRE</text>
+          <text x="268" y="122" text-anchor="middle" font-size="10" fill="#5B8EF0" font-weight="700">SOCKET</text>
+          <text x="470" y="128">PROCESSEUR</text>
+          <text x="504" y="192">MÉMOIRE</text>
+          <text x="504" y="240">STOCKAGE</text>
+          <text x="504" y="288">ALIMENTATION</text>
+        </g>
+      </svg>
+      <figcaption class="cap"><span>Fig. 1 — vue éclatée</span><span>programme de technologie, cycle 4</span></figcaption>
+    </figure>
+  </section>
+
+  <h2 class="sec"><span>Technologie</span><span>9 compétences du programme</span></h2>
+  <div class="cards" id="modules"></div>
+
+  <h2 class="sec"><span>Ateliers</span><span>clavier · IA · Pix</span></h2>
+  <div class="cards" id="ateliers"></div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <button class="btn ghost" id="btnReset" style="font-size:11.5px;padding:8px 12px">Réinitialiser</button>
+  </footer>
+</div>
+
+<script src="assets/store.js"></script>
+<script>
+(function () {
+  const A = window.Atelier;
+  const mods = [
+    { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
+      desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
+    { id: 'demarrage', titre: 'Ce qui se passe au démarrage', ico: '⚡', c: ['#2EE6C8', '#0EA47A'],
+      desc: "Suivre les échanges d'énergie et de données, du bouton jusqu'à l'écran allumé.", min: 12, href: null, total: 3 },
+    { id: 'panne', titre: 'Chasse à la panne', ico: '🔎', c: ['#FFB340', '#FF4D6D'],
+      desc: "Un ordinateur ne démarre pas : lire les indices, isoler la pièce fautive.", min: 15, href: null, total: 3 },
+  ];
+  const ateliers = [
+    { id: 'frappe', titre: 'Frappe · 10 doigts', ico: '⌨️', c: ['#B57BFF', '#6A5BFF'],
+      desc: 'Apprendre l’AZERTY sans regarder les mains, touche par touche.', min: 5, total: 5 },
+    { id: 'ia', titre: 'Comprendre une IA', ico: '🤖', c: ['#FF7EB3', '#F0417E'],
+      desc: 'Entraîner un classifieur, le voir se tromper, corriger son biais.', min: 10, total: 4 },
+    { id: 'pix', titre: 'Badge Pix · domaine 1', ico: '🏅', c: ['#FFDE59', '#FF9F0A'],
+      desc: 'Rechercher, gérer et traiter des données — niveau 3 attendu en 3e.', min: 8, total: 6 },
+  ];
+  const AVATARS = { lea: '🦊', noe: '🦉', manon: '🐬' };
+
+  function rendreProfil() {
+    const d = A.lire();
+    const nav = document.getElementById('profils');
+    nav.innerHTML = Object.entries(d.profils).map(([id, p]) =>
+      `<button data-id="${id}" class="${id === d.actif ? 'on' : ''}"><span class="av">${AVATARS[id] || '👤'}</span>${p.nom}<span class="cl">${p.classe}</span></button>`).join('');
+  }
+  function rendreXp() {
+    const p = A.profil(), niv = A.niveau(p.xp), dans = p.xp % 200;
+    document.getElementById('xp').innerHTML =
+      `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div>
+       <small>${p.xp} XP · ${p.nom} · ${p.classe}</small>`;
+    document.getElementById('kicker').textContent = `Technologie · ${p.classe} · ${p.nom}`;
+    const fait = p.fait.composants || 0;
+    document.getElementById('btnReprendre').textContent =
+      fait >= 3 ? '↻ Revoir la séquence' : fait > 0 ? '▶ Reprendre la séquence' : '▶ Commencer la séquence';
+  }
+  function carte(m, i, prefixe) {
+    const p = A.profil(), fait = p.fait[m.id] || 0, pc = Math.round((fait / m.total) * 100);
+    const etat = pc === 100 ? '<span class="pill ok">✓ terminé</span>'
+      : pc > 0 ? `<span class="pill go">en cours · ${fait}/${m.total}</span>`
+      : '<span class="pill">à découvrir</span>';
+    return `<article class="card" style="--c1:${m.c[0]};--c2:${m.c[1]}">
+      <div class="ico" aria-hidden="true">${m.ico}</div>
+      <div class="no">${prefixe}</div>
+      <h3>${m.href ? `<a href="${m.href}">${m.titre}</a>` : m.titre}</h3>
+      <p>${m.desc}</p>
+      <div class="bar"><i style="width:${pc}%"></i></div>
+      <div class="meta">${etat}<span>${m.min} min</span></div>
+    </article>`;
+  }
+  function rendreCartes() {
+    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 09')).join('');
+    document.getElementById('ateliers').innerHTML = ateliers.map((a) => carte(a, 0, 'Atelier')).join('');
+  }
+  function tout() { rendreProfil(); rendreXp(); rendreCartes(); }
+
+  document.getElementById('profils').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-id]'); if (!b) return;
+    A.choisir(b.dataset.id); tout();
+  });
+  document.getElementById('btnExport').onclick = () => A.exporter();
+  document.getElementById('btnImport').onclick = () => document.getElementById('fichier').click();
+  document.getElementById('fichier').onchange = async (e) => {
+    if (!e.target.files[0]) return;
+    try { await A.importer(e.target.files[0]); tout(); alert('Sauvegarde restaurée.'); }
+    catch (err) { alert('Ce fichier n’est pas une sauvegarde valide.'); }
+  };
+  document.getElementById('btnReset').onclick = () => {
+    if (confirm('Effacer toute la progression des trois profils ? Cette action ne peut pas être annulée.')) { A.reinitialiser(); tout(); }
+  };
+  window.addEventListener('atelier:maj', tout);
+  tout();
+})();
+</script>
 </body>
 </html>

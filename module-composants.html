@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Les composants d'un ordinateur — Atelier</title>
+<meta name="theme-color" content="#F5F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top">technologie · séquence 1</span></a>
+    <a class="btn s small" href="index.html">← Accueil</a>
+  </header>
+
+  <section style="padding:30px 0 6px">
+    <span class="kicker">Technologie · compétences 1 et 4</span>
+    <h1 style="font-size:clamp(32px,4.4vw,50px);margin-top:18px">Les composants<br><span class="grad">d'un ordinateur.</span></h1>
+    <p class="sub">Trois étapes : poser les pièces au bon endroit, lire les fiches, puis vérifier avec six questions. Le bilan s'affiche à la fin.</p>
+    <div class="xp" id="xp"></div>
+  </section>
+
+  <h2 class="sec"><span>Étape 1 · l'atelier</span><span>4 pièces à poser</span></h2>
+  <div class="atelier">
+    <div class="etabli" id="etabli"></div>
+    <div>
+      <div class="tray" id="tray"></div>
+      <div class="jauge" id="jauge"></div>
+      <div class="commentaire" id="commentaire">Choisis une pièce à droite, puis clique sur son logement dans le boîtier. Tu peux aussi faire glisser la pièce sur le dessin.</div>
+    </div>
+  </div>
+
+  <h2 class="sec"><span>Étape 2 · les fiches</span><span>déplie « En savoir plus »</span></h2>
+  <div class="fiches" id="fiches"></div>
+
+  <h2 class="sec"><span>Étape 3 · vérification</span><span>6 questions · 10 XP par bonne réponse</span></h2>
+  <div class="quiz" id="quiz"></div>
+  <div class="bilan" id="bilan"></div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <span>Compétences 1 « décrire et nommer » et 4 « organisation interne »</span>
+  </footer>
+</div>
+<script src="assets/store.js"></script>
+<script src="assets/composants.js"></script>
+</body>
+</html>
