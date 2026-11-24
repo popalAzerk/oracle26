@@ -129,7 +129,7 @@
     </figure>
   </section>
 
-  <h2 class="sec"><span>Technologie</span><span>9 compétences du programme</span></h2>
+  <h2 class="sec"><span>Technologie &amp; sciences</span><span>10 blocs · programme français + meilleurs programmes étrangers</span></h2>
   <div class="cards" id="modules"></div>
 
   <h2 class="sec"><span>Ateliers</span><span>clavier · IA · Pix</span></h2>
@@ -146,12 +146,18 @@
 (function () {
   const A = window.Atelier;
   const mods = [
+    { id: 'electricite', titre: 'Électricité', ico: '⚡', c: ['#FFD84D', '#FF9F0A'],
+      desc: "Fermer une boucle, comparer série et dérivation, tester conducteurs et isolants, éviter le court-circuit.", min: 20, href: 'module-electricite.html', total: 3 },
     { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
       desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
-    { id: 'demarrage', titre: 'Ce qui se passe au démarrage', ico: '⚡', c: ['#2EE6C8', '#0EA47A'],
-      desc: "Suivre les échanges d'énergie et de données, du bouton jusqu'à l'écran allumé.", min: 12, href: null, total: 3 },
-    { id: 'panne', titre: 'Chasse à la panne', ico: '🔎', c: ['#FFB340', '#FF4D6D'],
-      desc: "Un ordinateur ne démarre pas : lire les indices, isoler la pièce fautive.", min: 15, href: null, total: 3 },
+    { id: 'lumiere', titre: 'Lumière', ico: '🔆', c: ['#FF9EC4', '#F0417E'],
+      desc: "Ombres, miroirs, réfraction, lentille et œil : comment la lumière voyage et nous fait voir.", min: 22, href: null, total: 3 },
+    { id: 'eau', titre: 'Eau et fluides', ico: '💧', c: ['#5AC8FA', '#0071E3'],
+      desc: "Cycle de l'eau, pression, flottabilité, hydraulique : ce que la techno française oublie.", min: 22, href: null, total: 3 },
+    { id: 'forces', titre: 'Forces et machines', ico: '⚙️', c: ['#A0A6B8', '#5A6478'],
+      desc: "Newtons, frottement, gravité, ressorts, leviers, poulies et engrenages.", min: 20, href: null, total: 3 },
+    { id: 'energie', titre: 'Énergie', ico: '🔋', c: ['#34D399', '#0EA47A'],
+      desc: "Formes d'énergie, conversions, rendement, sources et empreinte carbone.", min: 18, href: null, total: 3 },
   ];
   const ateliers = [
     { id: 'frappe', titre: 'Frappe · 10 doigts', ico: '⌨️', c: ['#B57BFF', '#6A5BFF'],
@@ -183,18 +189,18 @@
     const p = A.profil(), fait = p.fait[m.id] || 0, pc = Math.round((fait / m.total) * 100);
     const etat = pc === 100 ? '<span class="pill ok">✓ terminé</span>'
       : pc > 0 ? `<span class="pill go">en cours · ${fait}/${m.total}</span>`
-      : '<span class="pill">à découvrir</span>';
+      : m.href ? '<span class="pill">à découvrir</span>' : '<span class="pill">bientôt</span>';
     return `<article class="card" style="--c1:${m.c[0]};--c2:${m.c[1]}">
       <div class="ico" aria-hidden="true">${m.ico}</div>
       <div class="no">${prefixe}</div>
-      <h3>${m.href ? `<a href="${m.href}">${m.titre}</a>` : m.titre}</h3>
+      <h3>${m.href ? `<a href="${m.href}">${m.titre}</a>` : m.titre + ' <span style="font-size:12.5px;font-weight:600;color:var(--ink3)">· bientôt</span>'}</h3>
       <p>${m.desc}</p>
       <div class="bar"><i style="width:${pc}%"></i></div>
       <div class="meta">${etat}<span>${m.min} min</span></div>
     </article>`;
   }
   function rendreCartes() {
-    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 09')).join('');
+    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 10')).join('');
     document.getElementById('ateliers').innerHTML = ateliers.map((a) => carte(a, 0, 'Atelier')).join('');
   }
   function tout() { rendreProfil(); rendreXp(); rendreCartes(); }

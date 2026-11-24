@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Électricité — Atelier</title>
+<meta name="theme-color" content="#F5F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .banc-wrap{background:var(--card);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-2)}
+  .banc-wrap svg{width:100%;height:auto}
+  .lab{font-family:-apple-system,"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:.04em}
+  .flux{animation:courir 1s linear infinite}
+  @keyframes courir{to{stroke-dashoffset:-20}}
+  .commandes{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 6px}
+  .grp{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.04);border-radius:980px;padding:5px}
+  .grp>span{font-size:12px;font-weight:700;color:var(--ink3);padding:0 8px 0 10px;text-transform:uppercase;letter-spacing:.04em}
+  .grp button{border:0;background:transparent;border-radius:980px;padding:9px 14px;font:600 13.5px/1 inherit;color:var(--ink2);cursor:pointer;transition:transform .16s ease-out, background .16s, color .16s}
+  .grp button:hover{background:rgba(0,0,0,.05)}
+  .grp button:active{transform:scale(.96)}
+  .grp button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-1)}
+  .grp.danger button.on{background:#E5342B;color:#fff}
+  .legende{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--ink2);font-weight:600}
+  .legende span{display:inline-flex;align-items:center;gap:6px}
+  .legende em{font-style:normal;color:var(--ink3);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+  .mesures{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .mes{background:var(--card);border-radius:var(--r-md);padding:12px 16px;box-shadow:var(--sh-1);min-width:130px}
+  .mes b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .mes span{font-size:12px;color:var(--ink3);font-weight:600}
+  .mes.alerte{background:linear-gradient(180deg,#FFF1F0,#FFE4E1);box-shadow:0 0 0 1.5px rgba(229,52,43,.28), var(--sh-1)}
+  .mes.alerte b{color:#B3231B}
+  .defis{display:grid;gap:10px;margin-top:6px}
+  .defi{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--sh-1)}
+  .defi .n{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:14px;
+    background:linear-gradient(145deg,#FFD60A,#FF9F0A);color:#5A3B00;flex:none}
+  .defi p{font-size:14.5px;line-height:1.35;flex:1;margin:0}
+  .defi .st{font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
+  .defi.fait{background:linear-gradient(180deg,#F1FBF5,#E9F8F0);box-shadow:0 0 0 1.5px rgba(31,163,92,.22), var(--sh-1)}
+  .defi.fait .st{color:#127A44}
+  .defi.fait .n{background:linear-gradient(145deg,#34D399,#0EA47A);color:#fff}
+  #bravo{margin-top:14px;background:linear-gradient(135deg,#34D399,#0EA47A);color:#fff;
+    font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;
+    opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;width:max-content;max-width:100%}
+  #bravo.vu{opacity:1;transform:none}
+  .muted{color:var(--ink3)}
+  .maison{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:920px){.maison{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top">électricité</span></a>
+    <a class="btn s small" href="index.html">← Accueil</a>
+  </header>
+
+  <section style="padding:30px 0 6px">
+    <span class="kicker">Technologie · sciences · l'électricité</span>
+    <h1 style="font-size:clamp(32px,4.4vw,50px);margin-top:18px">Fais circuler<br><span class="grad">le courant.</span></h1>
+    <p class="sub">Un banc de test complet : ouvre et ferme l'interrupteur, change la pile, monte deux lampes en série ou en dérivation, teste un isolant. Les mesures s'affichent en direct.</p>
+    <div class="xp" id="xp"></div>
+  </section>
+
+  <h2 class="sec"><span>Étape 1 · le banc de test</span><span>3 défis à réussir</span></h2>
+  <div class="banc-wrap"><div id="banc"></div></div>
+  <div class="commandes" id="commandes">
+    <div class="grp"><span>Circuit</span>
+      <button data-act="inter">Interrupteur ouvert</button></div>
+    <div class="grp"><span>Montage</span>
+      <button data-act="topo" data-val="simple">1 lampe</button>
+      <button data-act="topo" data-val="serie">Série</button>
+      <button data-act="topo" data-val="parallele">Dérivation</button></div>
+    <div class="grp"><span>Pile</span>
+      <button data-act="tension" data-val="1.5">1,5 V</button>
+      <button data-act="tension" data-val="3">3 V</button>
+      <button data-act="tension" data-val="4.5" class="on">4,5 V</button>
+      <button data-act="tension" data-val="9">9 V</button></div>
+    <div class="grp"><span>Matériau testé</span>
+      <button data-act="mat" data-val="cuivre" class="on">Cuivre</button>
+      <button data-act="mat" data-val="aluminium">Aluminium</button>
+      <button data-act="mat" data-val="eau_salee">Eau salée</button>
+      <button data-act="mat" data-val="bois">Bois</button>
+      <button data-act="mat" data-val="verre">Verre</button>
+      <button data-act="mat" data-val="plastique">Plastique</button></div>
+    <div class="grp danger"><span>Danger</span>
+      <button data-act="cc">Court-circuit</button></div>
+  </div>
+  <div class="legende">
+    <span><svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><path d="M16 3V21" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M26 8V16" stroke="#334155" stroke-width="7" stroke-linecap="round"/></svg>pile</span>
+    <span><svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><circle cx="20" cy="12" r="9" fill="none" stroke="#6E6E73" stroke-width="2.4"/><path d="M13 5 L27 19 M27 5 L13 19" stroke="#6E6E73" stroke-width="2.4"/></svg>lampe</span>
+    <span><svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><circle cx="8" cy="12" r="2.6" fill="#6E6E73"/><circle cx="32" cy="12" r="2.6" fill="#6E6E73"/><path d="M8 12 L27 5" stroke="#6E6E73" stroke-width="2.6" stroke-linecap="round"/></svg>interrupteur ouvert</span>
+    <span><svg viewBox="0 0 40 24" width="40" height="24" aria-hidden="true"><rect x="9" y="6" width="22" height="12" rx="3" fill="none" stroke="#6E6E73" stroke-width="2.4"/></svg>matériau testé</span>
+    <em>symboles normalisés</em>
+  </div>
+  <div class="mesures" id="mesures"></div>
+  <div class="commentaire" id="commentaire" style="margin-top:14px"></div>
+  <div class="defis" style="margin-top:16px">
+    <div class="defi" id="defi1"><span class="n">1</span><p>Allume une lampe : ferme l'interrupteur en gardant une seule lampe.</p><span class="st">à faire</span></div>
+    <div class="defi" id="defi2"><span class="n">2</span><p>Compare : fais briller deux lampes en série, puis en dérivation.</p><span class="st">à faire</span></div>
+    <div class="defi" id="defi3"><span class="n">3</span><p>Prouve qu'un isolant coupe le courant (bois, verre ou plastique).</p><span class="st">à faire</span></div>
+  </div>
+  <div id="bravo" role="status" aria-live="polite"></div>
+
+  <h2 class="sec"><span>Étape 2 · les fiches</span><span>déplie « En savoir plus »</span></h2>
+  <div class="fiches" id="fiches"></div>
+
+  <h2 class="sec"><span>À faire à la maison</span><span>avec un adulte · jamais sur le secteur</span></h2>
+  <div class="maison">
+    <article class="fiche" style="--c1:#FFD60A;--c2:#FF9F0A">
+      <div class="role">Expérience 1</div><h3>La boucle et l'interrupteur</h3>
+      <p>Une pile plate 4,5 V, une ampoule 3,5 V avec douille, deux fils. Fais une boucle : l'ampoule s'allume. Débranche un fil : elle s'éteint. C'est tout le principe d'un interrupteur.</p>
+    </article>
+    <article class="fiche" style="--c1:#B57BFF;--c2:#6A5BFF">
+      <div class="role">Expérience 2</div><h3>Conducteur ou isolant ?</h3>
+      <p>Intercale dans la boucle une cuillère en métal, puis une règle en plastique, un crayon de bois, une pièce de monnaie. Note ce qui allume l'ampoule : tu viens de trier conducteurs et isolants.</p>
+    </article>
+    <article class="fiche" style="--c1:#FF7EB3;--c2:#F0417E">
+      <div class="role">Expérience 3</div><h3>Deux lampes, deux montages</h3>
+      <p>Avec deux ampoules : branche-les l'une après l'autre (série) puis chacune sur les bornes de la pile (dérivation). Compare l'éclat. Dévisse une ampoule : que devient l'autre ?</p>
+    </article>
+  </div>
+  <div class="commentaire" style="margin-top:14px"><b>Règle absolue.</b> Ces expériences se font uniquement avec des <b>piles</b>. On ne touche jamais à une prise, un fil dénudé ou un appareil branché sur le secteur : le courant du mur peut tuer.</div>
+
+  <h2 class="sec"><span>Étape 3 · vérification</span><span>6 questions · 10 XP par bonne réponse</span></h2>
+  <div class="quiz" id="quiz"></div>
+  <div class="bilan" id="bilan"></div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <span>D'après les programmes publiés d'Angleterre (KS2-KS3), de Singapour et du Japon</span>
+  </footer>
+</div>
+<script src="assets/store.js"></script>
+<script src="assets/electricite.js"></script>
+</body>
+</html>
