@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atelier</title>
+<meta name="theme-color" content="#F5F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .banc-wrap{background:var(--card);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-2)}
+  .banc-wrap svg{width:100%;height:auto;display:block}
+  .lab{font-family:-apple-system,"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:.04em}
+  .commandes{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 6px}
+  .grp{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.04);border-radius:980px;padding:5px;flex-wrap:wrap}
+  .grp>span{font-size:12px;font-weight:700;color:var(--ink3);padding:0 8px 0 10px;text-transform:uppercase;letter-spacing:.04em}
+  .grp button{border:0;background:transparent;border-radius:980px;padding:9px 14px;font:600 13.5px/1 inherit;color:var(--ink2);cursor:pointer;transition:transform .16s ease-out, background .16s, color .16s}
+  .grp button:hover{background:rgba(0,0,0,.05)}
+  .grp button:active{transform:scale(.96)}
+  .grp button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-1)}
+  .grp.danger button.on{background:#E5342B;color:#fff}
+  .grp.curseur{gap:12px;padding:8px 16px 8px 4px}
+  .grp.curseur input[type=range]{width:min(260px,46vw);accent-color:var(--blue);cursor:pointer}
+  .grp.curseur output{font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--ink);min-width:64px;text-align:right}
+  .mesures{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .mes{background:var(--card);border-radius:var(--r-md);padding:12px 16px;box-shadow:var(--sh-1);min-width:132px}
+  .mes b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .mes span{font-size:12px;color:var(--ink3);font-weight:600}
+  .mes.alerte{background:linear-gradient(180deg,#FFF1F0,#FFE4E1);box-shadow:0 0 0 1.5px rgba(229,52,43,.28), var(--sh-1)}
+  .mes.alerte b{color:#B3231B}
+  .defis{display:grid;gap:10px;margin-top:16px}
+  .defi{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--sh-1)}
+  .defi .n{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:14px;background:linear-gradient(145deg,#FFD60A,#FF9F0A);color:#5A3B00;flex:none}
+  .defi p{font-size:14.5px;line-height:1.35;flex:1;margin:0}
+  .defi .st{font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
+  .defi.fait{background:linear-gradient(180deg,#F1FBF5,#E9F8F0);box-shadow:0 0 0 1.5px rgba(31,163,92,.22), var(--sh-1)}
+  .defi.fait .st{color:#127A44}
+  .defi.fait .n{background:linear-gradient(145deg,#34D399,#0EA47A);color:#fff}
+  #bravo{margin-top:14px;background:linear-gradient(135deg,#34D399,#0EA47A);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;width:max-content;max-width:100%}
+  #bravo.vu{opacity:1;transform:none}
+  .muted{color:var(--ink3)}
+  .maison{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:920px){.maison{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top" id="tag-haut">module</span></a>
+    <a class="btn s small" id="lien-accueil" href="index.html">← Accueil</a>
+  </header>
+
+  <section style="padding:30px 0 6px">
+    <span class="kicker" id="kicker">Atelier</span>
+    <h1 id="titre" style="font-size:clamp(32px,4.4vw,50px);margin-top:18px"></h1>
+    <p class="sub" id="soustitre"></p>
+    <div class="xp" id="xp"></div>
+  </section>
+
+  <h2 class="sec"><span>Étape 1 · l'atelier</span><span>change un réglage à la fois</span></h2>
+  <div class="banc-wrap"><div id="banc"></div></div>
+  <div class="commandes" id="commandes"></div>
+  <div class="mesures" id="mesures"></div>
+  <div class="commentaire" id="commentaire" style="margin-top:14px"></div>
+  <div class="defis" id="defis"></div>
+  <div id="bravo" role="status" aria-live="polite"></div>
+
+  <h2 class="sec"><span>Étape 2 · les fiches</span><span>déplie « En savoir plus »</span></h2>
+  <div class="fiches" id="fiches"></div>
+
+  <div id="bloc-experiences">
+    <h2 class="sec"><span>À faire à la maison</span><span>avec un adulte · sans danger</span></h2>
+    <div class="maison" id="experiences"></div>
+  </div>
+
+  <h2 class="sec"><span>Étape 3 · vérification</span><span>6 questions · 10 XP par bonne réponse</span></h2>
+  <div class="quiz" id="quiz"></div>
+  <div class="bilan" id="bilan"></div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <span>Atelier · technologie &amp; sciences</span>
+  </footer>
+</div>
+<script src="assets/store.js"></script>
+<script src="assets/mod-eau.js"></script>
+<script src="assets/engine.js"></script>
+</body>
+</html>

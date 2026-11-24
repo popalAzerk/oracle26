@@ -129,7 +129,7 @@
     </figure>
   </section>
 
-  <h2 class="sec"><span>Technologie &amp; sciences</span><span>10 blocs · programme français + meilleurs programmes étrangers</span></h2>
+  <h2 class="sec"><span>Technologie &amp; sciences</span><span>10 blocs · 6 matières · programme français + meilleurs programmes étrangers</span></h2>
   <div class="cards" id="modules"></div>
 
   <h2 class="sec"><span>Ateliers</span><span>clavier · IA · Pix</span></h2>
@@ -148,16 +148,24 @@
   const mods = [
     { id: 'electricite', titre: 'Électricité', ico: '⚡', c: ['#FFD84D', '#FF9F0A'],
       desc: "Fermer une boucle, comparer série et dérivation, tester conducteurs et isolants, éviter le court-circuit.", min: 20, href: 'module-electricite.html', total: 3 },
+    { id: 'lumiere', titre: 'Lumière', ico: '🔆', c: ['#FF9EC4', '#F0417E'],
+      desc: "Ombres, propagation rectiligne, réfraction, lentilles et couleurs.", min: 20, href: 'module-lumiere.html', total: 3 },
     { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
       desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
-    { id: 'lumiere', titre: 'Lumière', ico: '🔆', c: ['#FF9EC4', '#F0417E'],
-      desc: "Ombres, miroirs, réfraction, lentille et œil : comment la lumière voyage et nous fait voir.", min: 22, href: null, total: 3 },
-    { id: 'eau', titre: 'Eau et fluides', ico: '💧', c: ['#5AC8FA', '#0071E3'],
-      desc: "Cycle de l'eau, pression, flottabilité, hydraulique : ce que la techno française oublie.", min: 22, href: null, total: 3 },
-    { id: 'forces', titre: 'Forces et machines', ico: '⚙️', c: ['#A0A6B8', '#5A6478'],
-      desc: "Newtons, frottement, gravité, ressorts, leviers, poulies et engrenages.", min: 20, href: null, total: 3 },
     { id: 'energie', titre: 'Énergie', ico: '🔋', c: ['#34D399', '#0EA47A'],
-      desc: "Formes d'énergie, conversions, rendement, sources et empreinte carbone.", min: 18, href: null, total: 3 },
+      desc: "Formes d'énergie, chaîne de conversion, rendement, sources et CO₂.", min: 18, href: 'module-energie.html', total: 3 },
+    { id: 'forces', titre: 'Forces et machines', ico: '⚙️', c: ['#A0A6B8', '#5A6478'],
+      desc: "Newtons, loi de Hooke sur un ressort, leviers et moments.", min: 20, href: 'module-forces.html', total: 3 },
+    { id: 'eau', titre: 'Eau et fluides', ico: '💧', c: ['#5AC8FA', '#0071E3'],
+      desc: "Cycle de l'eau, flottabilité, pression et vérins hydrauliques.", min: 22, href: 'module-eau.html', total: 3 },
+    { id: 'chaleur', titre: 'Chaleur et son', ico: '🌡️', c: ['#FB923C', '#EA580C'],
+      desc: "Conduction thermique, isolants, ondes sonores et vitesse du son.", min: 20, href: 'module-chaleur.html', total: 3 },
+    { id: 'matiere', titre: 'Matière et matériaux', ico: '🧪', c: ['#8B5CF6', '#6D28D9'],
+      desc: "États et changements d'état, mélanges homogènes, filtration et distillation.", min: 20, href: 'module-matiere.html', total: 3 },
+    { id: 'structures', titre: 'Structures', ico: '🏗️', c: ['#0EA5E9', '#1E40AF'],
+      desc: "Formes, triangulation, centre de gravité, charge maximale et rupture.", min: 20, href: 'module-structures.html', total: 3 },
+    { id: 'information', titre: 'Information', ico: '💻', c: ['#F472B6', '#BE185D'],
+      desc: "Binaire, portes logiques ET/OU/NON, capteur → programme → actionneur, biais d'IA.", min: 22, href: 'module-information.html', total: 3 },
   ];
   const ateliers = [
     { id: 'frappe', titre: 'Frappe · 10 doigts', ico: '⌨️', c: ['#B57BFF', '#6A5BFF'],
