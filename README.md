@@ -1,9 +1,7 @@
-# MOB RACER — popalazerk.com
+# popalazerk.com — racine
 
-Jeu 8-bit : des machines à laver le sol s'affrontent pour nettoyer la plus grande surface de la salle.
-Mélange Bomberman / Mario Kart / F-Zero — loutres trop mignonnes, panneaux « attention ça glisse ».
+Page d'attente « nouveau projet bientôt » (24/11/2026).
 
-- `index.html` = tout-inclus (aucun CDN), ouvrable tel quel
-- Bots pilotés par un serveur LAYA optionnel (POST :8765/bot), fallback IA locale sinon
-- Specs + dev : NAS `Media/Hermes/MOB RACER/`
-- Pulse (ancien site racine) : branche `pulse-archive-20261017` (data 2026101704)
+Archives (branches) :
+- MOB RACER (jeu 16-bit, index/mob2d/mob3d/proto + aperçus) : `mob-racer-archive-20261124` — specs NAS `Media/Hermes/MOB RACER/`
+- Pulse (ancien site racine) : `pulse-archive-20261017`
