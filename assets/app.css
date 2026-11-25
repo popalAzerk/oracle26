@@ -58,6 +58,42 @@ header{
 .profil button .cl{font-size:11.5px;font-weight:600;opacity:.78}
 .profil button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-1)}
 
+/* ---------- héros filmé (bande annonce) ---------- */
+.mark-img{width:34px;height:34px;border-radius:11px;box-shadow:0 6px 16px rgba(23,26,34,.28)}
+.hero-film{margin:0;position:relative}
+.film-cadre{position:relative;border-radius:24px;overflow:hidden;background:#0B0D12;
+  box-shadow:0 18px 50px rgba(12,16,24,.28), 0 2px 0 rgba(255,255,255,.4) inset;
+  outline:1px solid rgba(12,16,24,.10);outline-offset:-1px}
+.film-cadre::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.16),transparent 38%)}
+.film-cadre video{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#0B0D12}
+.film-play{position:absolute;right:12px;bottom:12px;width:38px;height:38px;border:0;border-radius:999px;cursor:pointer;
+  display:grid;place-items:center;color:#fff;background:rgba(12,16,24,.55);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);transition:transform .16s ease-out,background .16s}
+.film-play:hover{background:rgba(12,16,24,.78)}
+.film-play:active{transform:scale(.94)}
+.hero-film .cap{margin-top:12px}
+
+/* ---------- bandeau de chiffres ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:34px 0 6px}
+.stat{background:var(--card);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--sh-1);
+  display:flex;flex-direction:column;gap:2px}
+.stat b{font-size:30px;font-weight:800;letter-spacing:-.03em;
+  background:linear-gradient(120deg,#5B5BF0,#0071E3 60%,#00C7BE);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{font-size:12.5px;font-weight:600;color:var(--ink2);letter-spacing:.01em}
+
+/* ---------- vue éclatée, pleine largeur ---------- */
+.illus-sec{margin:26px 0 10px;background:var(--card);border-radius:var(--r-lg);padding:22px 22px 14px;box-shadow:var(--sh-1)}
+.illus-sec .illus{width:100%;height:auto}
+
+@media (max-width:860px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat b{font-size:25px}
+  .film-cadre{border-radius:18px}.film-cadre::after{border-radius:18px}
+  .illus-sec{padding:14px 12px 8px}
+}
+@media (prefers-reduced-motion:reduce){ .film-cadre video{transition:none} }
+
 /* ---------- héros ---------- */
 .hero{display:grid;grid-template-columns:1.02fr .98fr;gap:44px;align-items:center;padding:54px 0 20px}
 .kicker{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.02em;

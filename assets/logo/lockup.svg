@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 64" width="268" height="64" role="img" aria-label="Atelier — sciences et technologie">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#171A22"/><stop offset="1" stop-color="#2C313D"/></linearGradient>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FB2FF"/><stop offset=".5" stop-color="#2F6BFF"/><stop offset="1" stop-color="#00C7BE"/></linearGradient>
+    <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".14"/><stop offset=".6" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="17" fill="url(#t)"/><rect width="64" height="64" rx="17" fill="url(#sh)"/>
+  <path d="M32 15.5 L15.5 49.5 M32 15.5 L48.5 49.5 M22.8 37.4 H41.2" fill="none" stroke="url(#a)" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M46.4 37.4 H52.6" stroke="url(#a)" stroke-width="3.2" stroke-linecap="round"/><circle cx="54.6" cy="37.4" r="3.1" fill="url(#a)"/>
+  <text x="80" y="35" font-family="-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Inter,system-ui,sans-serif" font-size="28" font-weight="800" letter-spacing="-1.2" fill="#1D1D1F">Atelier</text>
+  <text x="81" y="51" font-family="-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Inter,system-ui,sans-serif" font-size="11.2" font-weight="700" letter-spacing="1.9" fill="#86868B">TECHNOLOGIE &amp; SVT</text>
+</svg>
