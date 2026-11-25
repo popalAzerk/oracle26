@@ -339,8 +339,8 @@ function demarrer() {
         const pale = box(46, 3, 2, PLASTIQUE_CLAIR); pale.position.set(52, 0, 0); pale.rotation.x = 0.42;
         pivot.add(pale); g.add(pivot);
       }
-      g.userData.procedural = true;
     });
+  fanPiece.userData.blender = false;
   // chargement asynchrone du GLB (léger, mis en cache par le navigateur)
   new GLTFLoader().load('assets/models/ventilateur140.glb', (gltf) => {
     const modele = gltf.scene;
@@ -358,10 +358,11 @@ function demarrer() {
     modele.rotation.y = Math.PI / 2;
     while (fanPiece.children.length) fanPiece.remove(fanPiece.children[0]);
     fanPiece.add(modele);
+    fanPiece.userData.blender = true;
     fanPiece.userData.procedural = false;
     fanPiece.userData.detail = '140 × 140 × 25 mm · modèle Blender · 2 306 triangles';
     marquer();
-  }, undefined, () => { /* silencieux : le repli procédural reste affiché */ });
+  }, undefined, (err) => { console.warn('[atelier] GLB ventilateur non chargé, repli procédural :', err && (err.message || err)); });
 
   /* ---------- positions éclatées (mm, éventail large) ---------- */
   const ECLATE = {
