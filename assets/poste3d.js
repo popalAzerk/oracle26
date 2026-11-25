@@ -135,7 +135,17 @@ function demarrer() {
   const VERRE = new THREE.MeshPhysicalMaterial({ color: 0xdfe8f5, metalness: 0, roughness: 0.06, transmission: 0.92, thickness: 4, transparent: true, opacity: 0.34, depthWrite: false });
 
   const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
-  const cyl = (r, h, m, s = 24) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, s), m);
+  const cyl = (r, h, m, s = 24, creux = false) => {
+    if (!creux) return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, s), m);
+    // anneau : le cadre du ventilateur, ouvert au centre pour laisser voir les pales
+    const forme = new THREE.Shape();
+    forme.absarc(0, 0, r, 0, Math.PI * 2, false);
+    const trou = new THREE.Path(); trou.absarc(0, 0, r * 0.86, 0, Math.PI * 2, true);
+    forme.holes.push(trou);
+    const geo = new THREE.ExtrudeGeometry(forme, { depth: h, bevelEnabled: false, curveSegments: s });
+    geo.translate(0, 0, -h / 2); geo.rotateX(-Math.PI / 2);
+    return new THREE.Mesh(geo, m);
+  };
   const ar = (mesh, c = 0x0e1116, o = 0.45) => { mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: o }))); return mesh; };
 
   const pieces = [];
@@ -237,35 +247,58 @@ function demarrer() {
   /* ================= 2 · processeur + ventirad 120 mm ================= */
   piece('cpu', 'Processeur', 'Exécute les instructions : c\u2019est le cerveau du poste.', '#6AA6FF', new THREE.Vector3(-84, 60, -70),
     'LGA1700 · IHS 45 × 37,5 · ventirad 120 mm', 2, (g) => {
-      const pcbCpu = ar(box(1.4, 45, 37.5, PCB), 0x0b1410, 0.5); g.add(pcbCpu);
-      const ihs = ar(box(3, 45, 37.5, ALU), 0x6b7480, 0.5); ihs.position.y = 2.2; g.add(ihs);
-      // socle + caloducs + ailettes + ventilateur
-      const socle = ar(box(6, 60, 60, ALU), 0x6b7480, 0.4); socle.position.y = 8; g.add(socle);
-      for (let i = 0; i < 38; i++) { const f = box(1.2, 52, 52, ALU); f.position.set(-16 + i * 1.35, 22, 0); g.add(f); }
-      for (let i = 0; i < 4; i++) { const cal = cyl(3, 52, CUIVRE, 12); cal.rotation.z = Math.PI / 2; cal.position.set(-8, 10 + i * 4, -18); g.add(cal); }
-      const vent = cyl(58, 22, PLASTIQUE, 32); vent.rotation.x = Math.PI / 2; vent.position.set(34, 22, 0); g.add(vent);
-      for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; const p = box(6, 46, 2, PLASTIQUE_CLAIR); p.position.set(34, 22 + Math.cos(a) * 30, Math.sin(a) * 30); p.rotation.x = -a; g.add(p); }
-      const anneau = new THREE.Mesh(new THREE.TorusGeometry(58, 2.4, 8, 48), acc(0x6aa6ff)); anneau.rotation.y = Math.PI / 2; anneau.position.set(34, 22, 0); g.add(anneau);
+      /* Tout est empilé sur l'axe X, qui est l'axe de montage :
+         substrat → pâte → IHS (couvercle) → embase du ventirad → caloducs → ailettes → ventilateur. */
+      const sub = ar(box(1.4, 45, 37.5, PCB), 0x0b1410, 0.5); g.add(sub);                 // substrat 45 × 37,5
+      const ihs = ar(box(3.2, 40, 33, ALU), 0x9aa3b2, 0.35); ihs.position.x = 2.3; g.add(ihs); // couvercle, DESSUS du substrat
+      const emb = ar(box(9, 58, 58, ALU), 0x8a93a2, 0.4); emb.position.x = 8.6; g.add(emb);    // embase du ventirad
+      // 4 caloducs qui traversent les ailettes, le long de X
+      for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const cal = cyl(2.6, 34, CUIVRE, 14); cal.rotation.z = Math.PI / 2; cal.position.set(28, sy * 13, sz * 13); g.add(cal);
+      }
+      // 26 ailettes, toutes parallèles, empilées sur X
+      for (let i = 0; i < 26; i++) { const f = box(0.7, 54, 54, ALU); f.position.set(14 + i * 1.35, 0, 0); g.add(f); }
+      const chap = box(1.6, 56, 56, PLASTIQUE); chap.position.x = 50; g.add(chap);          // chapeau supérieur
+      // ventilateur au-dessus du radiateur, même axe X
+      const moyeu = cyl(13, 18, PLASTIQUE, 24); moyeu.rotation.z = Math.PI / 2; moyeu.position.set(61, 0, 0); g.add(moyeu);
+      const cadre = cyl(56, 20, PLASTIQUE, 40, true); cadre.rotation.z = Math.PI / 2; cadre.position.set(61, 0, 0); g.add(cadre);
+      for (let i = 0; i < 9; i++) {
+        const a = i / 9 * Math.PI * 2;
+        const p = box(2, 42, 11, PLASTIQUE_CLAIR); p.position.set(61, Math.cos(a) * 27, Math.sin(a) * 27); p.rotation.x = -a; g.add(p);
+      }
+      const anneau = new THREE.Mesh(new THREE.TorusGeometry(56, 2.2, 8, 40), acc(0x6aa6ff)); anneau.rotation.y = Math.PI / 2; anneau.position.set(69, 0, 0); g.add(anneau);
     });
 
   /* ================= 3 · barrettes DIMM 133,35 × 31,25 ================= */
   piece('ram', 'Mémoire vive', 'Garde les données en cours d\u2019utilisation. Effacée à l\u2019extinction.', '#B57BFF', new THREE.Vector3(-64, 84, 60),
     '2 × 16 Go · DIMM 133,35 mm · 288 broches', 3, (g) => {
+      /* Un module DIMM est un circuit imprimé : longueur 133,35 mm (Z), hauteur 31,25 mm (Y),
+         épaisseur 1,2 mm (X). Les broches dorées sont sur la TRANCHE DU BAS et débouchent
+         sur les DEUX faces ; les puces mémoire sont au-dessus, sur les deux faces. */
+      const L = 133.35, H = 31.25, E = 1.2;
       for (let i = 0; i < 2; i++) {
-        const x = i * 10;
-        const pcb = ar(box(1.2, 133.35, 31.25, PCB), 0x0b1410, 0.5); pcb.rotation.x = Math.PI / 2; pcb.position.set(x, 0, 0); g.add(pcb);
-        // 288 broches dorées (instanciées)
-        const broches = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 1.5, 1.1), OR, 40);
-        const d = new THREE.Object3D();
-        for (let k = 0; k < 40; k++) { d.position.set(x, -66 + k * 3.1, 15.4); d.updateMatrix(); broches.setMatrixAt(k, d.matrix); }
-        g.add(broches);
-        // dissipateur : deux plaques + crêtes
-        for (const s of [-1, 1]) {
-          const pl = ar(box(1, 128, 30, PLASTIQUE), 0x11151b, 0.45); pl.rotation.x = Math.PI / 2; pl.position.set(x + s * 3.4, 0, 0); g.add(pl);
+        const x = i * 9;                                     // deux barrettes, deux slots voisins
+        const pcb = ar(box(E, H, L, PCB), 0x0b1410, 0.5); pcb.position.set(x, 0, 0); g.add(pcb);
+        // broches : une seule pièce qui traverse l'épaisseur → contact visible des deux côtés
+        const broches = new THREE.InstancedMesh(new THREE.BoxGeometry(E + 0.9, 5.6, 2.2), OR, 40);
+        const d = new THREE.Object3D(); let n = 0;
+        for (let k = 0; k < 40; k++) {
+          const z = -L / 2 + 3 + k * 3.28;
+          if (Math.abs(z - 6) < 10) continue;                // encoche de détrompage
+          d.position.set(x, -H / 2 + 2.8, z); d.updateMatrix(); broches.setMatrixAt(n++, d.matrix);
         }
-        const crete = box(1, 120, 6, acc(0xb57bff)); crete.rotation.x = Math.PI / 2; crete.position.set(x + 4.2, 0, 0); g.add(crete);
-        // puces mémoire
-        for (let k = 0; k < 8; k++) { const c = box(0.8, 11, 8, PLASTIQUE); c.position.set(x + 1.8, -52 + k * 14, 0); g.add(c); }
+        broches.count = n; g.add(broches);
+        for (const s of [-1, 1]) {
+          // 8 puces DRAM par face, alignées au-dessus des broches
+          for (let k = 0; k < 8; k++) {
+            const c = box(1.3, 10, 12.5, PLASTIQUE); c.position.set(x + s * (E / 2 + 0.65), 3.5, -55 + k * 15.6); g.add(c);
+          }
+          // petite puce SPD (celle qui dit au poste à quelle fréquence aller)
+          if (s > 0) { const spd = box(1.1, 5, 7, PLASTIQUE_CLAIR); spd.position.set(x + s * (E / 2 + 0.55), 8, -60); g.add(spd); }
+        }
+        // crête colorée sur la tranche haute + étiquette constructeur
+        const crete = box(6.4, 2.6, L - 12, acc(0xb57bff)); crete.position.set(x, H / 2 + 0.3, 0); g.add(crete);
+        const etiq = box(0.5, 11, 58, PLASTIQUE_CLAIR); etiq.position.set(x + 3.3, 3, -8); g.add(etiq);
       }
     });
 
@@ -278,9 +311,9 @@ function demarrer() {
       const dos = ar(box(3, 100, 270, ACIER), 0x9aa3b2, 0.4); dos.position.set(-3, 0, 0); g.add(dos);
       // 3 ventilateurs 90 mm
       for (const z of [-88, 0, 88]) {
-        const f = ar(cyl(45, 12, PLASTIQUE, 36), 0x14171c, 0.4); f.rotation.z = Math.PI / 2; f.position.set(44, 6, z); g.add(f);
-        for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2; const p = box(2.4, 40, 10, PLASTIQUE_CLAIR); p.position.set(45, 6 + Math.cos(a) * 26, z + Math.sin(a) * 26); p.rotation.x = -a; g.add(p); }
-        const moyeu = cyl(9, 14, ALU, 20); moyeu.rotation.z = Math.PI / 2; moyeu.position.set(44, 6, z); g.add(moyeu);
+        const cadre = cyl(45, 12, PLASTIQUE, 40, true); cadre.rotation.z = Math.PI / 2; cadre.position.set(44, 6, z); g.add(cadre);
+        for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2; const p = box(2.4, 34, 11, PLASTIQUE_CLAIR); p.position.set(44, 6 + Math.cos(a) * 24, z + Math.sin(a) * 24); p.rotation.x = -a; g.add(p); }
+        const moyeu = cyl(11, 14, ALU, 20); moyeu.rotation.z = Math.PI / 2; moyeu.position.set(44, 6, z); g.add(moyeu);
         const anneau = new THREE.Mesh(new THREE.TorusGeometry(45, 1.6, 8, 40), acc(0x0ea47a)); anneau.rotation.y = Math.PI / 2; anneau.position.set(42, 6, z); g.add(anneau);
       }
       // équerre 120 mm + connecteurs d'alimentation 8 broches
