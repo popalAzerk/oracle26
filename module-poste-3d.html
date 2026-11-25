@@ -6,8 +6,8 @@
 <title>Le poste de travail en 3D — Atelier</title>
 <meta name="theme-color" content="#F5F5F7">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/app.css?v=20261125s">
-<link rel="stylesheet" href="assets/recit.css?v=20261125s">
+<link rel="stylesheet" href="assets/app.css?v=20261125t">
+<link rel="stylesheet" href="assets/recit.css?v=20261125t">
 <style>
   .scene{position:relative;background:radial-gradient(120% 90% at 50% 0%,#EEF4FF 0%,#F7F9FC 55%,#F2F4F8 100%);
     border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden}
@@ -80,12 +80,12 @@
   </header>
 
   <section style="padding:30px 0 6px">
-    <span class="kicker" style="background:linear-gradient(135deg,#6AA6FF,#2F5BFF)">Technologie · visite 3D</span>
+    <span class="kicker" style="background:linear-gradient(135deg,color-mix(in srgb,#6AA6FF 50%,#1D1D1F),color-mix(in srgb,#2F5BFF 50%,#1D1D1F))">Technologie · visite 3D</span>
     <h1 style="font-size:clamp(32px,4.4vw,50px);margin-top:18px">Ouvre la tour,<br><span class="grad">pièce par pièce.</span></h1>
     <p class="sub">Un vrai modèle 3D dans le navigateur : fais tourner le poste, clique une pièce pour lire son rôle, puis remets les cinq composants à leur place.</p>
     <div class="xp" id="xp"></div>
   </section>
-  <section id="recit" data-recit="poste-3d" data-v="20261125s" style="--c1:#B57BFF;--c2:#6A5BFF" hidden></section>
+  <section id="recit" data-recit="poste-3d" data-v="20261125t" style="--c1:#B57BFF;--c2:#6A5BFF" hidden></section>
 
 
   <h2 class="sec"><span>La scène</span><span>glisse pour tourner · clique pour choisir</span></h2>
@@ -115,7 +115,7 @@
 
   <div class="duo">
     <div>
-      <div class="progres3d"><b id="compteur">1 / 8</b><span style="font-size:13px;color:var(--ink3)">pièces en place</span>
+      <div class="progres3d"><b id="compteur">0 / 7</b><span style="font-size:13px;color:var(--ink3)">pièces en place</span>
         <div class="rail" id="barre3d"><i></i></div></div>
       <div class="defis">
         <div class="defi" id="defi-identifier"><span class="n">1</span><p>Clique les cinq composants pour lire leur rôle.</p><span class="st">à faire</span></div>
@@ -156,13 +156,13 @@
 
   <footer>
     <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
-    <span>Moteur 3D : three.js (licence MIT) · géométrie dessinée par code, aucun modèle téléchargé</span>
+    <span>Moteur 3D : three.js (licence MIT) · géométrie dessinée par code, ventilateur modélisé sous Blender</span>
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261125s"></script>
-<script type="module" src="assets/poste3d.js?v=20261125s"></script>
-<script src="assets/quiz3d.js?v=20261125s"></script>
-<script src="assets/recit.js?v=20261125s"></script>
+<script src="assets/store.js?v=20261125t"></script>
+<script type="module" src="assets/poste3d.js?v=20261125t"></script>
+<script src="assets/quiz3d.js?v=20261125t"></script>
+<script src="assets/recit.js?v=20261125t"></script>
 </body>
 </html>

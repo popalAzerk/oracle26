@@ -25,13 +25,13 @@
 .recit-reperes i{position:absolute;top:-6px;width:2px;height:12px;background:#fff;border-radius:2px;opacity:.9}
 .recit-temps{flex:0 0 84px;text-align:right;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
 .recit-chapitres{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
-.recit-chapitres button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:8px 14px 8px 8px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;min-height:40px;transition:background .2s}
+.recit-chapitres button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:8px 14px 8px 8px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px;transition:background .2s}
 .recit-chapitres button b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:12px}
 .recit-chapitres button.on{background:var(--c2);color:#fff}
 .recit-chapitres button.on b{background:rgba(255,255,255,.25)}
 .recit-sous{margin:14px 0 6px;min-height:92px;padding:16px 18px;border-radius:var(--r-md);background:color-mix(in srgb,var(--c1) 9%,#fff)}
 .recit-sous p{font-size:20px;line-height:1.42;letter-spacing:-.015em;font-weight:500}
-.recit-qui{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c2);margin-bottom:4px}
+.recit-qui{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb,var(--c2) 70%,#1D1D1F);margin-bottom:4px}
 .recit-qui:empty{display:none}
 .recit-qui.q{color:#C2185B}
 .recit-texte{margin-top:8px}
@@ -39,7 +39,7 @@
 .recit-texte h4{font-size:14px;margin:14px 0 6px;color:var(--ink2)}
 .recit-texte p{font-size:15px;padding:6px 10px;border-radius:10px;cursor:pointer;margin:2px 0}
 .recit-texte p:hover{background:var(--bg)}
-.recit-texte p span{font-weight:700;margin-right:8px;color:var(--c2)}
+.recit-texte p span{font-weight:700;margin-right:8px;color:color-mix(in srgb,var(--c2) 70%,#1D1D1F)}
 .recit-texte p.q span{color:#C2185B}
 .recit-texte p.lu{background:color-mix(in srgb,var(--c1) 16%,#fff)}
 
@@ -50,7 +50,7 @@
 .recit-bulle.arret .rb-svg *{animation-play-state:paused!important}
 .rb-tete{display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .rb-tete b{flex:1;font-size:15px;letter-spacing:-.01em}
-.rb-tete button{width:36px;height:36px;border:0;border-radius:50%;background:var(--bg);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.rb-tete button{width:44px;height:44px;border:0;border-radius:50%;background:var(--bg);color:var(--ink);cursor:pointer;display:grid;place-items:center}
 .rb-tete button svg{width:16px;height:16px}
 .rb-svg{background:#F8FAFC;border-radius:14px;overflow:hidden}
 .rb-svg svg{width:100%;height:auto}

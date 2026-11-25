@@ -29,11 +29,9 @@ AddDefaultCharset utf-8
   </FilesMatch>
 
   # --- sécurité et vie privée (public mineur) ---
-  # Pages de l'Atelier : aucun script ni ressource d'un autre site, aucun cadre, aucun formulaire envoyé.
-  # (Limité aux pages de l'Atelier : les démos de /apercu ont leur propre .htaccess.)
-  <FilesMatch "^(index|module-[a-z0-9-]+)\.html$">
-    Header always set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
-  </FilesMatch>
+  # Tout le site : aucun script ni ressource d'un autre site, aucun cadre, aucun formulaire envoyé.
+  # Posée globalement pour couvrir aussi « / » ; les démos de /apercu la retirent dans leur propre .htaccess.
+  Header always set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
   Header always set Referrer-Policy "no-referrer"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
   Header always set X-Frame-Options "DENY"

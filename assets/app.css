@@ -78,7 +78,7 @@ header{
 .hero-film .cap{margin-top:12px}
 
 .xp-outils{display:flex;gap:16px;margin-top:12px}
-.xp-outils .lien{border:0;background:none;padding:12px 2px;cursor:pointer;font:600 13px/1 inherit;color:var(--ink3);
+.xp-outils .lien{border:0;background:none;padding:15px 2px;min-height:44px;cursor:pointer;font:600 13px/1 inherit;color:var(--ink3);
   border-bottom:1px solid transparent;transition:color .16s,border-color .16s}
 .xp-outils .lien:hover{color:var(--blue);border-color:rgba(0,113,227,.35)}
 

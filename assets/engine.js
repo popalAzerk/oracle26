@@ -18,7 +18,7 @@
   const c1 = (M.couleur || ['#6AA6FF', '#2F5BFF'])[0], c2 = (M.couleur || ['#6AA6FF', '#2F5BFF'])[1];
   document.title = M.titre + ' — Atelier';
   document.getElementById('kicker').textContent = M.kicker || 'Atelier';
-  document.getElementById('kicker').style.background = `linear-gradient(135deg,${c1},${c2})`;
+  document.getElementById('kicker').style.background = `linear-gradient(135deg,color-mix(in srgb,${c1} 50%,#1D1D1F),color-mix(in srgb,${c2} 50%,#1D1D1F))`;   // texte blanc ≥ 5:1
   document.getElementById('titre').innerHTML = M.titreHtml || M.titre;
   document.getElementById('soustitre').textContent = M.sousTitre || '';
   document.getElementById('lien-accueil').href = 'index.html';

@@ -112,7 +112,13 @@
         audio.play().catch(() => {});
       } else audio.pause();
     }
-    function aller(t) { audio.currentTime = Math.max(0, Math.min(R.duree - 0.05, t)); fermees.clear(); maj(); }
+    function aller(t) {
+      const cible = Math.max(0, Math.min(R.duree - 0.05, t));
+      // Safari iOS ignore currentTime tant que les métadonnées ne sont pas chargées (preload="none")
+      if (audio.readyState < 1) { audio.addEventListener('loadedmetadata', () => { audio.currentTime = cible; maj(); }, { once: true }); audio.load(); }
+      else audio.currentTime = cible;
+      fermees.clear(); maj();
+    }
 
     btn.addEventListener('click', basculer);
     bulle.querySelector('.rb-pause').addEventListener('click', basculer);

@@ -9,7 +9,7 @@
     { id: 'poste3d', titre: 'Le poste en 3D', ico: '🧊', c: ['#38BDF8', '#0E7490'],
       desc: "Visite WebGL : tourne le poste, clique chaque pièce, remets les 7 composants en place.", min: 15, href: 'module-poste-3d.html', total: 3, badge: '3D' },
     { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
-      desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
+      desc: "Processeur, mémoire, stockage, alimentation : les placer dans le boîtier et expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
     { id: 'energie', titre: 'Énergie', ico: '🔋', c: ['#34D399', '#0EA47A'],
       desc: "Formes d'énergie, chaîne de conversion, rendement, sources et CO₂.", min: 18, href: 'module-energie.html', total: 3 },
     { id: 'forces', titre: 'Forces et machines', ico: '⚙️', c: ['#A0A6B8', '#5A6478'],

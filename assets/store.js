@@ -60,27 +60,31 @@
     let b = document.getElementById('atelier-stockage');
     if (!ok && !b && document.body) {
       b = document.createElement('div'); b.id = 'atelier-stockage'; b.setAttribute('role', 'status');
-      b.textContent = 'Ta progression ne peut pas être enregistrée sur cet appareil (navigation privée ou stockage bloqué). Tu peux continuer, mais elle sera perdue en fermant la page.';
+      b.textContent = 'Ta progression ne peut pas être enregistrée sur cet appareil (navigation privée ou stockage bloqué). Elle est gardée pendant cette visite, puis perdue en fermant le navigateur : pense à « Sauvegarder la progression ».';
       document.body.prepend(b);
     } else if (ok && b) b.remove();
   }
 
+  let memoire = null;   // copie de travail quand le navigateur refuse d'enregistrer : la progression tient pendant la visite
   function lire() {
-    try {
-      const brut = localStorage.getItem(CLE);
-      if (!brut) return NEUF();
-      return normaliser(JSON.parse(brut));
-    } catch (_) { return NEUF(); }
+    if (!stockageOK && memoire) return JSON.parse(JSON.stringify(memoire));
+    let brut = null;
+    try { brut = localStorage.getItem(CLE); } catch (_) { return memoire ? JSON.parse(JSON.stringify(memoire)) : NEUF(); }
+    if (!brut) return NEUF();
+    try { return normaliser(JSON.parse(brut)); }
+    catch (_) {
+      // donnée illisible : on la met de côté avant qu'une prochaine écriture ne l'écrase
+      try { if (!localStorage.getItem(CLE_SECOURS)) localStorage.setItem(CLE_SECOURS, brut); } catch (__) {}
+      return NEUF();
+    }
   }
 
-  let persistanceDemandee = false;
   function ecrire(d) {
     d.maj = Date.now();
+    memoire = JSON.parse(JSON.stringify(d));
     try {
       localStorage.setItem(CLE, JSON.stringify(d));
       signalerStockage(true);
-      // Safari efface le stockage d'un site après 7 jours sans visite, sauf stockage « persistant »
-      if (!persistanceDemandee && navigator.storage && navigator.storage.persist) { persistanceDemandee = true; navigator.storage.persist().catch(() => {}); }
     } catch (_) { signalerStockage(false); }
     window.dispatchEvent(new CustomEvent('atelier:maj', { detail: d }));
     return d;
@@ -104,6 +108,9 @@
   function etape(module) { return profil().fait[module] || 0; }
   function niveau(xp) { return Math.floor(xp / 200) + 1; }
   function exporter() {
+    // Safari efface le stockage d'un site après 7 jours sans visite, sauf stockage « persistant » ;
+    // demandé ici, sur un geste de l'enfant, car Firefox affiche alors une question d'autorisation.
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     const d = lire();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 1)], { type: 'application/json' }));
@@ -135,6 +142,7 @@
   /* --- voix : lit un texte en français avec la voix du système --- */
   function parler(texte) {
     if (!('speechSynthesis' in window)) return false;
+    document.querySelectorAll('audio').forEach((a) => { if (!a.paused) a.pause(); });   // pas deux voix en même temps
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = 'fr-FR'; u.rate = 0.98; u.pitch = 1;
