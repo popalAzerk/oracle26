@@ -117,7 +117,7 @@
     zone.addEventListener('click', (e) => {
       const b = e.target.closest('[data-lire]'); if (!b) return;
       const f = (M.fiches || []).find((x) => x.id === b.dataset.lire); if (!f) return;
-      A.voix(`${f.nom}. ` + f.texte.replace(/<[^>]+>/g, '') + ' ' + f.plus.replace(/<[^>]+>/g, ''));
+      A.voix(`${f.nom}. ` + f.texte.replace(/<[^>]+>/g, '') + ' ' + f.plus.replace(/<[^>]+>/g, ''), b);
     });
   }
   function construireExperiences() {

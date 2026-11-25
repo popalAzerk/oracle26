@@ -194,10 +194,7 @@
     const b = e.target.closest('[data-lire]');
     if (!b) return;
     const p = PIECES[b.dataset.lire];
-    if (A.voix(`${p.nom}. ${p.role}. ` + p.texte.replace(/<[^>]+>/g, ''))) {
-      b.innerHTML = SVG_STOP + 'Arrêter';
-      setTimeout(() => { b.innerHTML = SVG_PLAY + 'Écouter'; }, 1000 * Math.max(6, p.texte.length / 14));
-    }
+    A.voix(`${p.nom}. ${p.role}. ` + p.texte.replace(/<[^>]+>/g, ''), b);
   });
 
   /* ---------- quiz ---------- */

@@ -238,7 +238,7 @@
   fiches.addEventListener('click', (e) => {
     const b = e.target.closest('[data-lire]'); if (!b) return;
     const f = FICHES.find((x) => x.id === b.dataset.lire);
-    A.voix(`${f.nom}. ` + f.texte.replace(/<[^>]+>/g, '') + ' ' + f.plus.replace(/<[^>]+>/g, ''));
+    A.voix(`${f.nom}. ` + f.texte.replace(/<[^>]+>/g, '') + ' ' + f.plus.replace(/<[^>]+>/g, ''), b);
   });
 
   /* ---------- quiz ---------- */

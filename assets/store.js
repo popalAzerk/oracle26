@@ -148,22 +148,61 @@
   }
 
   /* --- voix : lit un texte en français avec la voix du système --- */
-  function parler(texte) {
-    if (!('speechSynthesis' in window)) return false;
-    document.querySelectorAll('audio').forEach((a) => { if (!a.paused) a.pause(); });   // pas deux voix en même temps
-    speechSynthesis.cancel();
+  /* ---------- voix des fiches : pistes audio enregistrées (même voix que les récits) ----------
+     Chaque texte a sa piste assets/audio/voix/<empreinte>.mp3 ; l'empreinte (FNV-1a 32 bits du texte
+     normalisé) est recalculée à l'identique par recits/voix_fiches.py. Si une piste manque, repli sur
+     la synthèse du système. Un second clic sur le même bouton arrête la lecture. */
+  const VOIX = 'assets/audio/voix/';
+  const ICO_STOP = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" style="display:inline-block;vertical-align:-2px;margin-right:6px"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+  function empreinte(texte) {
+    const t = String(texte).replace(/\s+/g, ' ').trim();
+    let h = 0x811c9dc5;
+    for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return h.toString(16).padStart(8, '0');
+  }
+  let piste = null, bouton = null;
+  function remettreBouton() {
+    if (bouton && bouton.dataset.repos != null) { bouton.innerHTML = bouton.dataset.repos; bouton.removeAttribute('aria-pressed'); bouton.classList.remove('joue'); }
+    bouton = null;
+  }
+  function stop() {
+    if (piste) { piste.pause(); piste.removeAttribute('src'); piste = null; }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    remettreBouton();
+  }
+  function synthese(texte) {
+    if (!('speechSynthesis' in window)) { remettreBouton(); return false; }
     const u = new SpeechSynthesisUtterance(texte);
-    u.lang = 'fr-FR'; u.rate = 0.98; u.pitch = 1;
+    u.lang = 'fr-FR'; u.rate = 0.98;
     const v = speechSynthesis.getVoices().find((x) => /^fr/i.test(x.lang));
     if (v) u.voice = v;
+    u.onend = remettreBouton;
     speechSynthesis.speak(u);
     return true;
   }
-  const stop = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); };
+  function parler(texte, btn) {
+    const h = empreinte(texte);
+    const memeTexte = piste && piste.dataset.h === h;
+    stop();
+    if (memeTexte) return false;                                                       // second clic : arrêt
+    document.querySelectorAll('audio').forEach((a) => { if (!a.paused) a.pause(); });   // pas deux voix en même temps
+    if (btn) {
+      bouton = btn; if (btn.dataset.repos == null) btn.dataset.repos = btn.innerHTML;
+      btn.innerHTML = ICO_STOP + 'Arrêter'; btn.setAttribute('aria-pressed', 'true'); btn.classList.add('joue');
+    }
+    const a = new Audio(VOIX + h + '.mp3');
+    a.dataset.h = h; a.preload = 'auto';
+    piste = a;
+    const repli = () => { if (piste === a) { piste = null; synthese(texte); } };
+    a.addEventListener('ended', () => { if (piste === a) { piste = null; remettreBouton(); } });
+    a.addEventListener('error', repli);
+    a.play().catch((e) => { if (e && e.name === 'NotAllowedError') stop(); else repli(); });
+    return true;
+  }
 
   // test d'écriture au chargement : prévient tout de suite si le stockage est bloqué
   try { localStorage.setItem(CLE + '.test', '1'); localStorage.removeItem(CLE + '.test'); }
   catch (_) { const f = () => signalerStockage(false); if (document.body) f(); else document.addEventListener('DOMContentLoaded', f); }
 
-  window.Atelier = { lire, ecrire, profil, profilId, choisir, gagner, terminer, badge, etape, niveau, exporter, importer, reinitialiser, voix: parler, stopVoix: stop, esc, normaliser, stockageOK: () => stockageOK };
+  window.Atelier = { lire, ecrire, profil, profilId, choisir, gagner, terminer, badge, etape, niveau, exporter, importer, reinitialiser, voix: parler, stopVoix: stop, empreinte, esc, normaliser, stockageOK: () => stockageOK };
 })();

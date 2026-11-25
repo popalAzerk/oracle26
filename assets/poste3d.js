@@ -707,7 +707,7 @@ function demarrer() {
       <p>${u.role}</p><p class="detail">${u.detail || ''}</p>
       <button class="dire" data-lire="${u.id}">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-2px;margin-right:6px"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg>Écouter</button>`;
-    b.querySelector('[data-lire]').addEventListener('click', () => A.voix(`${u.nom}. ${u.role}`));
+    b.querySelector('[data-lire]').addEventListener('click', (e) => A.voix(`${u.nom}. ${u.role}`, e.currentTarget));
   }
 
   const faits = new Set(), identifiees = new Set();
