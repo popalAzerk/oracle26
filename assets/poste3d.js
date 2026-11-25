@@ -5,7 +5,7 @@
    M.2 2280 22×80 · ATX PSU 150×86×140 · ventilateur 140×25 · tour 210×460×440.
    Perf : un seul contexte, rendu à la demande, dpr plafonné, pause hors écran, repli poster. */
 import * as THREE from './three.module.min.js';
-import { GLTFLoader } from './three-addons/GLTFLoader.js';
+import { GLTFLoader } from './three-addons/GLTFLoader.js?v=1';
 
 const zone = document.getElementById('scene3d');
 const A = window.Atelier;
@@ -342,7 +342,7 @@ function demarrer() {
     });
   fanPiece.userData.blender = false;
   // chargement asynchrone du GLB (léger, mis en cache par le navigateur)
-  new GLTFLoader().load('assets/models/ventilateur140.glb', (gltf) => {
+  new GLTFLoader().load('assets/models/ventilateur140.glb?v=1', (gltf) => {
     const modele = gltf.scene;
     modele.traverse((o) => {
       if (!o.isMesh) return;
