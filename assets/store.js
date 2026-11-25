@@ -3,12 +3,15 @@
 (function () {
   const CLE = 'atelier.profils.v1';
 
+  // profils enregistrés avant le changement de prénoms : renommage appliqué une seule fois
+  const RENOMMAGES = { 'Léa': 'Nellia', 'Noé': 'Elyas', 'Manon': 'Maël' };
+
   const NEUF = () => ({
-    version: 1,
+    version: 2,
     profils: {
-      lea:  { nom: 'Léa',   classe: '5e',   avatar: '🦊', xp: 0, badges: [], fait: {}, note: {} },
-      noe:  { nom: 'Noé',   classe: '3e',   avatar: '🦉', xp: 0, badges: [], fait: {}, note: {} },
-      manon:{ nom: 'Manon', classe: '2de',  avatar: '🐬', xp: 0, badges: [], fait: {}, note: {} },
+      lea:  { nom: 'Nellia', classe: '5e',  avatar: '🦊', xp: 0, badges: [], fait: {}, note: {} },
+      noe:  { nom: 'Elyas',  classe: '3e',  avatar: '🦉', xp: 0, badges: [], fait: {}, note: {} },
+      manon:{ nom: 'Maël',   classe: '2de', avatar: '🐬', xp: 0, badges: [], fait: {}, note: {} },
     },
     actif: 'lea',
     maj: Date.now(),
@@ -20,16 +23,27 @@
       if (!brut) return NEUF();
       const d = JSON.parse(brut);
       if (!d || !d.profils) return NEUF();
+      if (migrer(d)) localStorage.setItem(CLE, JSON.stringify(d));
       return d;
     } catch (_) { return NEUF(); }
   }
+  /** renomme les profils hérités de l'ancienne version ; vrai si quelque chose a changé */
+  function migrer(d) {
+    let change = false;
+    Object.values(d.profils || {}).forEach((p) => {
+      if (p && RENOMMAGES[p.nom]) { p.nom = RENOMMAGES[p.nom]; change = true; }
+    });
+    if ((d.version || 1) < 2) { d.version = 2; change = true; }
+    return change;
+  }
+
   function ecrire(d) {
     d.maj = Date.now();
     localStorage.setItem(CLE, JSON.stringify(d));
     window.dispatchEvent(new CustomEvent('atelier:maj', { detail: d }));
     return d;
   }
-  const profil = () => { const d = lire(); return d.profils[d.actif] || d.profils.lea; };
+  const profil = () => { const d = lire(); return d.profils[d.actif] || d.profils.lea || Object.values(d.profils)[0]; };
   const profilId = () => lire().actif;
   function choisir(id) { const d = lire(); if (d.profils[id]) { d.actif = id; ecrire(d); } }
 
@@ -62,7 +76,7 @@
         try {
           const d = JSON.parse(r.result);
           if (!d.profils) throw new Error('fichier inattendu');
-          ecrire(d); ok(d);
+          migrer(d); ecrire(d); ok(d);
         } catch (e) { ko(e); }
       };
       r.onerror = ko;
