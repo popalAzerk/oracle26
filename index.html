@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/logo/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/logo/icon-180.png">
 <meta name="theme-color" content="#0B0D12">
-<link rel="stylesheet" href="assets/app.css?v=20261125c">
+<link rel="stylesheet" href="assets/app.css?v=20261125d">
 </head>
 <body>
 <div class="wrap">
@@ -20,12 +20,13 @@
 
   <section class="hero">
     <div>
-      <span class="kicker" id="kicker">Technologie · 5e</span>
-      <h1>Ouvre la tour,<br><span class="grad">comprends la machine.</span></h1>
-      <p class="sub">Démonte, place, vérifie : chaque geste juste rapporte des points de compétence du programme. Trois niveaux, trois profils, une progression gardée sur cet ordinateur.</p>
+      <span class="kicker" id="kicker">Technologie &amp; sciences · 5ᵉ · 3ᵉ · 2ᵈᵉ</span>
+      <h1>Manipule, mesure,<br><span class="grad">comprends le monde.</span></h1>
+      <p class="sub">Un atelier pour la technologie et les sciences du collège et du lycée : électricité, lumière, eau, énergie, forces, matière, structures, information — et le poste informatique.
+        On ouvre un thème, on manipule, on vérifie par la mesure, on répond au quiz. Tout tient dans cet ordinateur, sans compte.</p>
       <div class="cta">
-        <a class="btn p" href="module-composants.html" id="btnReprendre">▶ Commencer la séquence</a>
-        <a class="btn s" href="#modules">Voir les 11 ateliers</a>
+        <a class="btn p" href="module-composants.html" id="btnReprendre">▶ Reprendre où j'en étais</a>
+        <a class="btn s" href="#comment">Comment ça marche</a>
         <input type="file" id="fichier" accept="application/json" class="sr">
       </div>
       <div class="xp" id="xp"></div>
@@ -37,7 +38,7 @@
 
     <figure class="hero-film">
       <div class="film-cadre">
-        <video id="film" src="assets/video/bande-annonce.mp4?v=20261125c" poster="assets/video/bande-annonce.jpg?v=20261125c"
+        <video id="film" src="assets/video/bande-annonce.mp4?v=20261125d" poster="assets/video/bande-annonce.jpg?v=20261125d"
                autoplay muted loop playsinline preload="metadata"
                aria-label="Bande annonce de l'Atelier : électricité, lumière, eau, énergie, modélisation 3D"></video>
         <button class="film-play" id="filmPlay" type="button" aria-label="Mettre la bande annonce en pause">
@@ -57,6 +58,74 @@
     <div class="stat"><b>100 %</b><span>local, sans compte</span></div>
   </div>
 
+
+  <h2 class="sec" id="but"><span>À quoi ça sert</span><span>trois usages, un seul outil</span></h2>
+  <div class="trio">
+    <article class="tuile">
+      <span class="tuile-ico" style="background:linear-gradient(140deg,#6AA6FF,#2F5BFF)">🎯</span>
+      <h3>Comprendre le programme</h3>
+      <p>Chaque atelier suit le programme officiel de technologie (cycle 4, BO du 29 février 2024) et de sciences.
+        Rien d'inventé : les grandeurs, les unités et les calculs sont ceux du cours.</p>
+    </article>
+    <article class="tuile">
+      <span class="tuile-ico" style="background:linear-gradient(140deg,#2EE6C8,#0EA47A)">🧪</span>
+      <h3>S'entraîner sans matériel</h3>
+      <p>Un banc électrique, un banc optique, une scène 3D, des animations : on essaie, on se trompe, on recommence.
+        Pas besoin d'acheter une pile, une lampe ou un ordinateur à démonter.</p>
+    </article>
+    <article class="tuile">
+      <span class="tuile-ico" style="background:linear-gradient(140deg,#FFB340,#FF7A3D)">📈</span>
+      <h3>Garder sa progression</h3>
+      <p>Points d'expérience, badges, modules terminés : tout est enregistré dans cet ordinateur, jamais envoyé ailleurs.
+        Trois profils séparés, et une sauvegarde dans un fichier si tu changes de machine.</p>
+    </article>
+  </div>
+
+  <h2 class="sec" id="comment"><span>Comment s'en servir</span><span>quatre gestes, dans l'ordre</span></h2>
+  <ol class="etapes">
+    <li><b>Choisis ton profil</b><span>en haut à droite : chaque profil garde ses propres points.</span></li>
+    <li><b>Ouvre un thème</b><span>électricité, lumière, eau… chaque carte mène à un atelier interactif.</span></li>
+    <li><b>Manipule, puis relève les trois défis</b><span>l'atelier se découvre, les défis vérifient que c'est acquis. Les fiches « En savoir plus » donnent le cours, et le bouton « Écouter » le lit.</span></li>
+    <li><b>Réponds au quiz</b><span>six questions, une note, un badge. C'est ce qui fait monter le niveau.</span></li>
+  </ol>
+
+  <h2 class="sec" id="themes"><span>Les thèmes abordés</span><span>onze ateliers, trois familles</span></h2>
+  <div class="familles">
+    <div class="famille">
+      <h3>Physique et énergie</h3>
+      <ul class="puces">
+        <li><i style="background:#FF9F0A"></i><div><b>Électricité</b><span>boucle, série, dérivation, court-circuit</span></div></li>
+        <li><i style="background:#F0417E"></i><div><b>Lumière</b><span>ombres, réfraction, lentilles, couleurs</span></div></li>
+        <li><i style="background:#5A6478"></i><div><b>Forces et machines</b><span>newtons, ressorts, leviers, moments</span></div></li>
+        <li><i style="background:#0EA47A"></i><div><b>Énergie</b><span>chaîne de conversion, rendement, CO₂</span></div></li>
+        <li><i style="background:#EA580C"></i><div><b>Chaleur et son</b><span>conduction, isolants, ondes, vitesse du son</span></div></li>
+      </ul>
+    </div>
+    <div class="famille">
+      <h3>Matière et fluides</h3>
+      <ul class="puces">
+        <li><i style="background:#0071E3"></i><div><b>Eau et fluides</b><span>cycle de l'eau, flottabilité, pression, vérins</span></div></li>
+        <li><i style="background:#6D28D9"></i><div><b>Matière et matériaux</b><span>états, changements d'état,&nbsp;mélanges, filtration</span></div></li>
+      </ul>
+    </div>
+    <div class="famille">
+      <h3>Objets et informatique</h3>
+      <ul class="puces">
+        <li><i style="background:#2F5BFF"></i><div><b>Les composants</b><span>rôle de chaque pièce du poste</span></div></li>
+        <li><i style="background:#0E7490"></i><div><b>Le poste en 3D</b><span>sept pièces à remonter, à l'échelle réelle</span></div></li>
+        <li><i style="background:#BE185D"></i><div><b>Information</b><span>binaire, portes logiques, capteur → actionneur, biais d'IA</span></div></li>
+        <li><i style="background:#1E40AF"></i><div><b>Structures</b><span>triangulation, centre de gravité,&nbsp;charge, rupture</span></div></li>
+      </ul>
+    </div>
+  </div>
+  <div class="famille-pratiques">
+    <span class="fp-titre">En plus des thèmes</span>
+    <span class="fp-item"><i style="background:#B57BFF"></i><b>Frappe au clavier</b> apprendre l’AZERTY sans regarder ses mains</span>
+    <span class="fp-item"><i style="background:#F0417E"></i><b>Comprendre une IA</b> entraîner un classifieur, voir son biais</span>
+    <span class="fp-item"><i style="background:#FF9F0A"></i><b>Badge Pix</b> rechercher, gérer et traiter des données</span>
+  </div>
+
+  <h2 class="sec"><span>Zoom sur un thème</span><span>le poste informatique, en vue éclatée</span></h2>
   <section class="illus-sec">
     <figure>
       <svg viewBox="0 0 620 340" class="illus" role="img" aria-label="Vue éclatée d'un ordinateur : boîtier, carte mère, processeur, mémoire, stockage, alimentation">
@@ -168,7 +237,7 @@
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261125c"></script>
+<script src="assets/store.js?v=20261125d"></script>
 <script>
 (function () {
   const A = window.Atelier;
@@ -217,7 +286,7 @@
     document.getElementById('xp').innerHTML =
       `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div>
        <small>${p.xp} XP · ${p.nom} · ${p.classe}</small>`;
-    document.getElementById('kicker').textContent = `Technologie · ${p.classe} · ${p.nom}`;
+    document.getElementById('kicker').textContent = `Technologie & sciences · ${p.classe} · profil de ${p.nom}`;
     const fait = p.fait.composants || 0;
     document.getElementById('btnReprendre').textContent =
       fait >= 3 ? '↻ Revoir la séquence' : fait > 0 ? '▶ Reprendre la séquence' : '▶ Commencer la séquence';

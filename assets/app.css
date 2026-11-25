@@ -82,6 +82,51 @@ header{
   border-bottom:1px solid transparent;transition:color .16s,border-color .16s}
 .xp-outils .lien:hover{color:var(--blue);border-color:rgba(0,113,227,.35)}
 
+/* ---------- tuiles « à quoi ça sert » ---------- */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.tuile{background:var(--card);border-radius:var(--r-lg);padding:22px 22px 20px;box-shadow:var(--sh-1);
+  display:flex;flex-direction:column;gap:10px}
+.tuile-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:21px;
+  box-shadow:0 8px 20px rgba(12,16,24,.16)}
+.tuile h3{font-size:19px;font-weight:750;letter-spacing:-.02em}
+.tuile p{font-size:14.5px;line-height:1.5;color:var(--ink2)}
+
+/* ---------- les quatre étapes ---------- */
+.etapes{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;counter-reset:etape}
+.etapes li{position:relative;background:var(--card);border-radius:var(--r-lg);padding:46px 20px 20px;box-shadow:var(--sh-1)}
+.etapes li::before{counter-increment:etape;content:counter(etape);position:absolute;top:16px;left:20px;
+  width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;
+  background:linear-gradient(140deg,#6AA6FF,#2F5BFF)}
+.etapes b{display:block;font-size:15.5px;font-weight:750;letter-spacing:-.01em;margin-bottom:6px}
+.etapes span{font-size:13.5px;line-height:1.45;color:var(--ink2)}
+
+/* ---------- les familles de thèmes ---------- */
+.familles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.famille{background:var(--card);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-1)}
+.famille h3{font-size:15px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ink2);
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.puces{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px}
+.puces li{display:grid;grid-template-columns:9px 1fr;gap:10px;align-items:start;font-size:13.8px;line-height:1.4}
+.puces i{width:9px;height:9px;border-radius:3px;margin-top:5px}
+.puces b{color:var(--ink);font-weight:700;display:block}
+.puces span{color:var(--ink2);display:block}
+.famille-pratiques{margin-top:14px;background:var(--card);border-radius:var(--r-lg);padding:16px 22px;box-shadow:var(--sh-1);
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.fp-titre{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.fp-item{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink2)}
+.fp-item i{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.fp-item b{color:var(--ink);font-weight:700}
+
+@media (max-width:860px){
+  .trio,.familles,.etapes{grid-template-columns:1fr}
+  .etapes{gap:10px}
+  .tuile{padding:18px}
+}
+@media (min-width:861px) and (max-width:1040px){
+  .trio{grid-template-columns:1fr 1fr}
+  .etapes{grid-template-columns:1fr 1fr}
+}
+
 /* ---------- bandeau de chiffres ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:34px 0 6px}
 .stat{background:var(--card);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--sh-1);
