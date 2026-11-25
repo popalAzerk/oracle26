@@ -10,9 +10,9 @@
   const NEUF = () => ({
     version: 2,
     profils: {
-      lea:  { nom: 'Nellia', classe: '5e',  avatar: '🦊', xp: 0, badges: [], fait: {}, note: {} },
-      noe:  { nom: 'Elyas',  classe: '3e',  avatar: '🦉', xp: 0, badges: [], fait: {}, note: {} },
-      manon:{ nom: 'Maël',   classe: '2de', avatar: '🐬', xp: 0, badges: [], fait: {}, note: {} },
+      lea:  { nom: 'Nellia', classe: '5e',  avatar: '🦊', xp: 0, badges: [], fait: {}, note: {}, acquis: [] },
+      noe:  { nom: 'Elyas',  classe: '3e',  avatar: '🦉', xp: 0, badges: [], fait: {}, note: {}, acquis: [] },
+      manon:{ nom: 'Maël',   classe: '2de', avatar: '🐬', xp: 0, badges: [], fait: {}, note: {}, acquis: [] },
     },
     actif: 'lea',
     maj: Date.now(),
@@ -37,6 +37,8 @@
       p.avatar = texte(src.avatar, 4, p.avatar);
       p.xp = entier(src.xp);
       p.badges = Array.isArray(src.badges) ? [...new Set(src.badges.filter((b) => typeof b === 'string' && /^[\w-]{1,40}$/.test(b)))].slice(0, 50) : [];
+      // réussites déjà payées en XP (« module:quiz:3 », « module:defi:id ») : une bonne réponse ne rapporte qu'une fois
+      p.acquis = Array.isArray(src.acquis) ? [...new Set(src.acquis.filter((k) => typeof k === 'string' && /^[\w:-]{1,60}$/.test(k)))].slice(0, 600) : [];
       p.fait = {};
       if (src.fait && typeof src.fait === 'object') {
         for (const [m, n] of Object.entries(src.fait)) if (/^[\w-]{1,40}$/.test(m)) p.fait[m] = Math.min(entier(n), 10);
@@ -93,8 +95,14 @@
   const profilId = () => lire().actif;
   function choisir(id) { const d = lire(); if (Object.prototype.hasOwnProperty.call(d.profils, id)) { d.actif = id; ecrire(d); } }
 
-  /** gagner(25) ; terminer('composants', 3) ; badge('composants') */
-  function gagner(xp) { const d = lire(); d.profils[d.actif].xp += Math.max(0, +xp || 0); return ecrire(d); }
+  /** gagner(25, 'composants:pose:cpu') ; terminer('composants', 3) ; badge('composants')
+      Avec une clé, l'XP n'est donnée qu'une fois : refaire un quiz ou recharger la page ne rapporte plus rien.
+      Renvoie true si l'XP a été comptée. */
+  function gagner(xp, cle) {
+    const d = lire(), p = d.profils[d.actif];
+    if (cle) { if (p.acquis.includes(cle)) return false; p.acquis.push(cle); }
+    p.xp += Math.max(0, +xp || 0); ecrire(d); return true;
+  }
   function terminer(module, etapes) {
     const d = lire(), p = d.profils[d.actif];
     p.fait[module] = Math.max(p.fait[module] || 0, etapes);

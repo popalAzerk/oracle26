@@ -12,7 +12,7 @@
   const etat = JSON.parse(JSON.stringify(M.etat || {}));
   const reussis = {};
   const vusFiches = new Set();
-  const quiz = { fait: 0, bon: 0 };
+  const quiz = { fait: 0, bon: 0, deja: 0 };
 
   /* ---------- en-tête de page ---------- */
   const c1 = (M.couleur || ['#6AA6FF', '#2F5BFF'])[0], c2 = (M.couleur || ['#6AA6FF', '#2F5BFF'])[1];
@@ -85,7 +85,7 @@
         reussis[d.id] = true;
         const el = document.getElementById('defi-' + d.id);
         if (el) { el.classList.add('fait'); el.querySelector('.st').textContent = '✓ réussi'; }
-        A.gagner(d.xp || 20);
+        A.gagner(d.xp || 20, `${M.id}:defi:${d.id}`);
         const b = document.getElementById('bravo');
         b.textContent = `Défi ${i + 1} réussi : ${d.bravo || d.texte}`;
         b.classList.add('vu'); setTimeout(() => b.classList.remove('vu'), 4000);
@@ -144,16 +144,18 @@
       const i = +b.dataset.i, k = +b.dataset.k, item = Q[i];
       art.classList.add('repondu');
       art.querySelectorAll('button').forEach((x, idx) => { x.disabled = true; if (idx === item.b) x.classList.add('bon'); else if (idx === k) x.classList.add('faux'); });
-      quiz.fait++; if (k === item.b) { quiz.bon++; A.gagner(10); }
+      quiz.fait++; if (k === item.b) { quiz.bon++; if (!A.gagner(10, `${M.id}:quiz:${i}`)) quiz.deja++; }
       majXP();
       if (quiz.fait === Q.length) bilan();
     });
   }
   function bilan() {
     const Q = M.quiz || [], bon = quiz.bon, n = Q.length, el = document.getElementById('bilan');
-    const badge = bon >= Math.ceil(n * 0.83) ? `Badge « ${M.badge || M.titre.toLowerCase()} »`
+    const maitrise = bon >= Math.ceil(n * 0.83);
+    const badge = maitrise ? `Badge « ${M.badge || M.titre.toLowerCase()} »`
       : bon >= Math.ceil(n * 0.5) ? 'Badge « explorateur »' : null;
-    if (badge) A.badge(M.id);
+    // le badge du module (maîtrise) n'est enregistré qu'à 5/6 ; « explorateur » est un palier distinct
+    if (badge) A.badge(maitrise ? M.id : M.id + '-explorateur');
     terminerEtape(3);
     el.innerHTML = `
       <div class="kicker">Bilan du module</div>
@@ -164,13 +166,14 @@
         : 'Reprends l\u2019atelier pas à pas, en changeant un seul réglage à la fois. Puis reviens au quiz.'}
       </p>
       ${badge ? `<span class="tagb">${badge} obtenu</span>` : ''}
+      ${quiz.deja ? `<p style="margin-top:8px;color:var(--ink3);font-size:14px">${quiz.deja} bonne${quiz.deja > 1 ? 's' : ''} réponse${quiz.deja > 1 ? 's' : ''} déjà comptée${quiz.deja > 1 ? 's' : ''} : l'XP ne se gagne qu'une fois par question.</p>` : ''}
       <div class="cta"><a class="btn p" href="index.html">Retour à l'accueil</a>
         <button class="btn s" id="refaire">Refaire le quiz</button>
         <a class="btn s" href="index.html#modules">Voir les autres blocs</a></div>`;
     el.classList.add('vu');
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('refaire').onclick = () => {
-      quiz.fait = 0; quiz.bon = 0;
+      quiz.fait = 0; quiz.bon = 0; quiz.deja = 0;
       document.querySelectorAll('#quiz .q').forEach((q) => { q.classList.remove('repondu'); q.querySelectorAll('button').forEach((b) => { b.disabled = false; b.classList.remove('bon', 'faux'); }); });
       el.classList.remove('vu'); window.scrollTo({ top: document.getElementById('quiz').offsetTop - 80, behavior: 'smooth' });
     };

@@ -36,7 +36,18 @@ window.MODULE = {
     const fleche = st.bascule ? 0 : Math.min(60, (e.charge / Math.max(1, max)) * 28);
     const { x1, x2, bout, baseY } = g, cx = (x1 + x2) / 2;
     const remplir = rupture ? '#FCA5A5' : '#94A3B8', trait = rupture ? '#DC2626' : '#475569';
-    const plateau = `<rect x="${x1}" y="${baseY - e.epaisseur * 4}" width="${bout - x1}" height="${e.epaisseur * 8}" rx="3" fill="${remplir}" stroke="${trait}" stroke-width="2"/>`;
+    /* La poutre fléchit ENTRE les appuis (ses extrémités restent posées dessus) :
+       charge entre les appuis → creux au milieu, le bout du porte-à-faux se relève un peu ;
+       charge sur le porte-à-faux → le bout plonge, la travée se soulève légèrement. */
+    const sA = x1, sB = g.baseD - 30, h = e.epaisseur * 4;
+    const surPorteAFaux = st.px > sB;
+    const creux = (x) => {
+      if (x <= sA) return 0;
+      if (x <= sB) { const t = (x - sA) / (sB - sA); return (surPorteAFaux ? -0.25 : 1) * fleche * Math.sin(Math.PI * t); }
+      const u = (x - sB) / (bout - sB); return (surPorteAFaux ? 1 : -0.35) * fleche * u;
+    };
+    const xs = []; for (let x = x1; x < bout; x += 10) xs.push(x); xs.push(bout);
+    const plateau = `<path d="M${xs.map((x) => `${x} ${(baseY - h + creux(x)).toFixed(1)}`).join(' L')} L${xs.slice().reverse().map((x) => `${x} ${(baseY + h + creux(x)).toFixed(1)}`).join(' L')} Z" fill="${remplir}" stroke="${trait}" stroke-width="2" stroke-linejoin="round"/>`;
     let forme = plateau;
     if (e.forme === 'triangule') {
       forme += `<path d="M${x1} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70} L${x2} ${baseY + e.epaisseur * 4} Z" fill="none" stroke="#1E40AF" stroke-width="5"/>
@@ -47,13 +58,13 @@ window.MODULE = {
     const yAppui = baseY + e.epaisseur * 4 + 2, sol = 372, hAppui = Math.max(6, sol - yAppui);
     const pivot = `${g.baseD} ${baseY + e.epaisseur * 4}`;
     const ensemble = `
-      <g transform="translate(0 ${fleche})">${forme}</g>
-      <g transform="translate(${st.px} ${baseY - e.epaisseur * 4 + fleche})">
+      ${forme}
+      <g transform="translate(${st.px} ${baseY - h + creux(st.px)})">
         <rect x="-46" y="-46" width="92" height="46" rx="8" fill="${rupture ? '#DC2626' : '#FCD34D'}" stroke="#B45309" stroke-width="2.5"/>
         <text x="0" y="-16" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="15" font-weight="700" fill="${rupture ? '#fff' : '#5A3B00'}">${e.charge} kg</text>
       </g>
-      <circle cx="${st.xG}" cy="${baseY + fleche}" r="11" fill="${st.bascule ? '#DC2626' : '#0EA5E9'}" stroke="#fff" stroke-width="2.5"/>
-      <text x="${st.xG}" y="${baseY + fleche + 5}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">G</text>`;
+      <circle cx="${st.xG}" cy="${baseY + creux(st.xG)}" r="11" fill="${st.bascule ? '#DC2626' : '#0EA5E9'}" stroke="#fff" stroke-width="2.5"/>
+      <text x="${st.xG}" y="${baseY + creux(st.xG) + 5}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">G</text>`;
     const couleurBase = st.bascule ? '#DC2626' : '#16A34A';
     return `
       <rect x="${g.baseG}" y="${yAppui}" width="60" height="${hAppui}" fill="#CBD5E1"/>

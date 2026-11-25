@@ -8,6 +8,11 @@ AddType text/javascript .js .mjs
 AddType audio/mpeg .mp3
 AddType video/mp4 .mp4
 AddType image/svg+xml .svg
+
+# Compression du modèle 3D et des SVG (218 Ko → ~75 Ko pour le ventilateur)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE model/gltf-binary image/svg+xml application/json
+</IfModule>
 AddDefaultCharset utf-8
 
 # --- cache ---

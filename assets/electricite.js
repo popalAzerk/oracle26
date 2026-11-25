@@ -165,15 +165,15 @@
   function verifierDefis(c, lum) {
     const d = etat.defis;
     if (!d.allumer && c.ferme && !c.alerte && etat.topologie === 'simple') {
-      d.allumer = true; A.gagner(20); direDefi('Défi 1 réussi : tu as fermé la boucle.', 1);
+      d.allumer = true; A.gagner(20, 'electricite:defi:allumer'); direDefi('Défi 1 réussi : tu as fermé la boucle.', 1);
     }
     if (etat.topologie === 'serie' && c.ferme && !c.alerte) etat.vuSerie = true;
     if (etat.topologie === 'parallele' && c.ferme && !c.alerte) etat.vuParallele = true;
     if (!d.comparer && etat.vuSerie && etat.vuParallele) {
-      d.comparer = true; A.gagner(25); direDefi('Défi 2 réussi : tu as comparé série et dérivation.', 2);
+      d.comparer = true; A.gagner(25, 'electricite:defi:comparer'); direDefi('Défi 2 réussi : tu as comparé série et dérivation.', 2);
     }
     if (!d.isolant && !MATERIAUX[etat.materiau].conduit && etat.interrupteur) {
-      d.isolant = true; A.gagner(20); direDefi('Défi 3 réussi : tu as prouvé qu\u2019un isolant coupe le courant.', 3);
+      d.isolant = true; A.gagner(20, 'electricite:defi:isolant'); direDefi('Défi 3 réussi : tu as prouvé qu\u2019un isolant coupe le courant.', 3);
     }
     if (d.allumer && d.comparer && d.isolant) terminerEtape(1);
   }
@@ -271,7 +271,7 @@
     art.classList.add('repondu');
     art.querySelectorAll('button').forEach((x, idx) => { x.disabled = true; if (idx === item.b) x.classList.add('bon'); else if (idx === k) x.classList.add('faux'); });
     etat.quiz.fait++;
-    if (k === item.b) { etat.quiz.bon++; A.gagner(10); }
+    if (k === item.b) { etat.quiz.bon++; A.gagner(10, `electricite:quiz:${i}`); }
     majXP();
     if (etat.quiz.fait === QUIZ.length) bilan();
   });
@@ -280,7 +280,7 @@
   function bilan() {
     const bon = etat.quiz.bon, n = QUIZ.length, el = document.getElementById('bilan');
     const badge = bon >= 5 ? 'Badge « électricien »' : bon >= 3 ? 'Badge « apprenti »' : null;
-    if (badge) A.badge('electricite');
+    if (badge) A.badge(bon >= 5 ? 'electricite' : 'electricite-apprenti');   // badge du module = maîtrise seulement
     terminerEtape(3);
     el.innerHTML = `
       <div class="kicker">Bilan du module</div>

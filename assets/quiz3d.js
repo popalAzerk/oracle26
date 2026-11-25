@@ -18,13 +18,13 @@
       const i = +b.dataset.i, k = +b.dataset.k;
       art.classList.add('repondu');
       art.querySelectorAll('button').forEach((x, idx) => { x.disabled = true; if (idx === Q[i].b) x.classList.add('bon'); else if (idx === k) x.classList.add('faux'); });
-      fait++; if (k === Q[i].b) { bon++; window.Atelier.gagner(10); }
+      fait++; if (k === Q[i].b) { bon++; window.Atelier.gagner(10, `poste3d:quiz:${i}`); }
       if (fait === Q.length) {
         bilan.innerHTML = `<div class="kicker">Bilan</div><div class="note">${bon} / ${Q.length} — ${Math.round(bon / Q.length * 20)}/20</div>
           <div class="cta"><a class="btn p" href="index.html">Retour à l'accueil</a><a class="btn s" href="module-composants.html">Refaire le module 2D</a></div>`;
         bilan.classList.add('vu');
         window.Atelier.terminer('poste3d', 3);
-        if (bon >= 3) window.Atelier.badge('poste3d');
+        if (bon === Q.length) window.Atelier.badge('poste3d'); else if (bon >= 2) window.Atelier.badge('poste3d-explorateur');
       }
     });
   })();

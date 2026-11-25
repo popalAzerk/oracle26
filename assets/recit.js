@@ -1,6 +1,22 @@
 /* Récit audio synchronisé : lecteur, sous-titres phrase par phrase, bulles animées.
    Données : window.RECIT (assets/recits/<id>.js, généré par recits/fabriquer.py).
    Montage : <section id="recit" data-recit="<id>" hidden></section> + ce script. */
+/* Les styles des bulles (classes .d2, .rb-glisse…) restent dans leur bulle : chaque sélecteur est préfixé par .rb-svg,
+   pour ne jamais toucher au reste de la page. Les @keyframes et @media sont respectés. */
+function cloisonner(svg) {
+  return svg.replace(/<style>([\s\S]*?)<\/style>/g, (m, css) => {
+    const pile = []; let out = ''; const re = /([^{}]*)([{}])/g; let t;
+    while ((t = re.exec(css))) {
+      if (t[2] === '{') {
+        const sel = t[1].trim(), parent = pile[pile.length - 1] || '';
+        const prefixer = sel && !sel.startsWith('@') && !/^@(-webkit-)?keyframes/.test(parent);
+        out += (prefixer ? sel.split(',').map((x) => '.rb-svg ' + x.trim()).join(',') : t[1]) + '{';
+        pile.push(sel);
+      } else { pile.pop(); out += t[1] + '}'; }
+    }
+    return '<style>' + out + '</style>';
+  });
+}
 (function () {
   const zone = document.getElementById('recit');
   if (!zone) return;
@@ -71,7 +87,7 @@
       bulleActive = b;
       if (!b) { bulle.classList.remove('vue'); setTimeout(() => { if (!bulleActive) bulle.hidden = true; }, 260); return; }
       bulle.querySelector('b').textContent = b.titre;
-      bulle.querySelector('.rb-svg').innerHTML = b.svg;
+      bulle.querySelector('.rb-svg').innerHTML = cloisonner(b.svg);
       bulle.querySelector('p').textContent = b.legende;
       bulle.hidden = false; requestAnimationFrame(() => bulle.classList.add('vue'));
       if (bulle.classList.contains('integree')) {          // téléphone : amener l'image à l'écran si l'enfant regarde le lecteur
@@ -135,7 +151,7 @@
     }));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bulleActive) bulle.querySelector('.rb-fermer').click(); });
     if (reduit) bulle.classList.add('fixe');
-    window.__recit = { audio, R, aller, maj };   // crochet de test
+    if (/[?&]qa\b/.test(location.search)) window.__recit = { audio, R, aller, maj };   // crochet de test, seulement avec ?qa
   }
   charger();
 })();

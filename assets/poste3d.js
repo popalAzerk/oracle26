@@ -9,6 +9,7 @@ import { GLTFLoader } from './three-addons/GLTFLoader.js?v=1';
 
 const zone = document.getElementById('scene3d');
 const A = window.Atelier;
+const QA = /[?&]qa\b/.test(location.search);   // crochets de test exposés seulement avec ?qa
 const etat = { frames: 0, selection: null, places: 0, total: 7, webgl: false, vue: 'eclate', settled: false };
 
 function poster(raison) {
@@ -29,7 +30,7 @@ function poster(raison) {
 }
 
 let renderer = null;
-try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) { renderer = null; }
+try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'default' }); } catch (e) { renderer = null; }
 if (!renderer) poster('Ton appareil ne prend pas en charge WebGL : voici le schéma.'); else demarrer();
 
 /* ------------------------------------------------------------------ */
@@ -132,7 +133,8 @@ function demarrer() {
   const OR = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 1, roughness: 0.28 });
   const CUIVRE = new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 1, roughness: 0.35 });
   const acc = (hex) => new THREE.MeshStandardMaterial({ color: hex, metalness: 0.4, roughness: 0.38, emissive: new THREE.Color(hex), emissiveIntensity: 0.16 });
-  const VERRE = new THREE.MeshPhysicalMaterial({ color: 0xdfe8f5, metalness: 0, roughness: 0.06, transmission: 0.92, thickness: 4, transparent: true, opacity: 0.34, depthWrite: false });
+  // verre « simple » (transparence) : la transmission physique imposait une seconde passe de rendu de toute la scène
+  const VERRE = new THREE.MeshStandardMaterial({ color: 0xdfe8f5, metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.22, depthWrite: false });
 
   const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
   const cyl = (r, h, m, s = 24, creux = false) => {
@@ -375,7 +377,7 @@ function demarrer() {
     });
   fanPiece.userData.blender = false;
   // chargement asynchrone du GLB (léger, mis en cache par le navigateur)
-  new GLTFLoader().load('assets/models/ventilateur140.glb?v=2', (gltf) => {
+  new GLTFLoader().load('assets/models/ventilateur140.glb?v=3', (gltf) => {
     const modele = gltf.scene;
     modele.traverse((o) => {
       if (!o.isMesh) return;
@@ -457,8 +459,10 @@ function demarrer() {
     orb.r * Math.sin(orb.phi) * Math.sin(orb.theta), orb.r * Math.cos(orb.phi), orb.r * Math.sin(orb.phi) * Math.cos(orb.theta)
   ).add(orb.cible);
 
-  let salir = true, enVue = true;
-  const marquer = () => { salir = true; };
+  let salir = true, enVue = true, enCours = false;
+  // rendu à la demande : la boucle s'arrête dès que tout est immobile, et repart au moindre geste
+  const relancer = () => { if (!enCours) { enCours = true; requestAnimationFrame(boucle); } };
+  const marquer = () => { salir = true; relancer(); };
 
   function cadrer() {
     scene.updateMatrixWorld(true);
@@ -482,8 +486,21 @@ function demarrer() {
 
   /* ---------- interactions ---------- */
   let pointeur = null;
-  zone.addEventListener('pointerdown', (e) => { pointeur = { x: e.clientX, y: e.clientY, t: performance.now(), bouge: 0 }; zone.setPointerCapture(e.pointerId); });
+  // deux doigts = pincer pour zoomer (iPhone, iPad, tablettes)
+  const doigts = new Map(); let pince = null;
+  const ecart = () => { const [a, b] = [...doigts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  zone.addEventListener('pointerdown', (e) => {
+    doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (doigts.size === 2) { pointeur = null; pince = { d: ecart(), r: orb.r }; return; }
+    pointeur = { x: e.clientX, y: e.clientY, t: performance.now(), bouge: 0 }; zone.setPointerCapture(e.pointerId);
+  });
+  const lever = (e) => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
   zone.addEventListener('pointermove', (e) => {
+    if (doigts.has(e.pointerId)) doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pince && doigts.size === 2) {
+      const d = ecart(); if (d > 10) { orb.r = Math.min(pince.r * 2.2, Math.max(240, pince.r * pince.d / d)); marquer(); }
+      return;
+    }
     if (!pointeur) return;
     const dx = e.clientX - pointeur.x, dy = e.clientY - pointeur.y;
     pointeur.bouge += Math.abs(dx) + Math.abs(dy);
@@ -492,10 +509,12 @@ function demarrer() {
     pointeur.x = e.clientX; pointeur.y = e.clientY; marquer();
   });
   zone.addEventListener('pointerup', (e) => {
+    const deuxDoigts = doigts.size >= 2 || pince; lever(e);
+    if (deuxDoigts) { pointeur = null; return; }
     const court = pointeur && performance.now() - pointeur.t < 430 && pointeur.bouge < 10;
     pointeur = null; if (court) choisir(e.clientX, e.clientY);
   });
-  zone.addEventListener('pointercancel', () => { pointeur = null; });
+  zone.addEventListener('pointercancel', (e) => { pointeur = null; lever(e); });
   zone.addEventListener('wheel', (e) => { e.preventDefault(); orb.r = Math.min(orb.r * 2.2, Math.max(240, orb.r + e.deltaY * 2.2)); marquer(); }, { passive: false });
   zone.addEventListener('keydown', (e) => {
     const k = e.key;
@@ -618,21 +637,24 @@ function demarrer() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) marquer(); });
 
   function boucle() {
-    requestAnimationFrame(boucle);
-    if (!enVue || document.hidden) return;
+    enCours = false;
+    if (!enVue || document.hidden) return;          // repart via l'observateur ou le retour sur l'onglet
+    let anime = false;
     const cible = camPos();
-    if (camera.position.distanceTo(cible) > 0.8) { camera.position.lerp(cible, 0.2); salir = true; }
-    else if (!etat.settled) { camera.position.copy(cible); etat.settled = true; }
+    if (camera.position.distanceTo(cible) > 0.8) { camera.position.lerp(cible, 0.2); salir = anime = true; }
+    else if (!etat.settled || !camera.position.equals(cible)) { camera.position.copy(cible); etat.settled = true; salir = true; }
     camera.lookAt(orb.cible);
     aPlacer().forEach((g) => {
       if (!g.userData.place) return;
-      if (g.position.distanceTo(g.userData.logement) > 0.4) { g.position.lerp(g.userData.logement, 0.24); salir = true; }
+      if (g.position.distanceTo(g.userData.logement) > 0.4) { g.position.lerp(g.userData.logement, 0.24); salir = anime = true; }
+      else if (!g.position.equals(g.userData.logement)) { g.position.copy(g.userData.logement); salir = true; }
     });
+    if (anime) relancer();
     if (salir) {
       renderer.render(scene, camera);
       placerEtiquettes();
       salir = false; etat.frames++;
-      zone.dataset.verifyState = JSON.stringify({
+      if (QA) zone.dataset.verifyState = JSON.stringify({
         frames: etat.frames, webgl: etat.webgl, selection: etat.selection, places: etat.places,
         total: aPlacer().length, vue: etat.vue, settled: etat.settled,
         camera: [Math.round(orb.theta * 100) / 100, Math.round(orb.phi * 100) / 100, Math.round(orb.r)],
@@ -641,12 +663,19 @@ function demarrer() {
       document.getElementById('hud-cam').textContent = `θ ${(orb.theta * 180 / Math.PI).toFixed(0)}° · φ ${(orb.phi * 180 / Math.PI).toFixed(0)}° · recul ${Math.round(orb.r)} mm`;
     }
   }
-  requestAnimationFrame(boucle);
+  relancer();
+
+  // perte du contexte WebGL (mise en veille, trop d'onglets 3D) : on prévient, puis on redessine au retour
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault(); zone.dataset.perdu = '1';
+    const hud = document.getElementById('hud-cam'); if (hud) hud.textContent = 'Affichage 3D en pause : il reprend tout seul.';
+  });
+  renderer.domElement.addEventListener('webglcontextrestored', () => { delete zone.dataset.perdu; marquer(); });
 
   addEventListener('resize', () => {
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1.25 : 1.5));
     renderer.setSize(zone.clientWidth, zone.clientHeight, false);
-    camera.aspect = zone.clientWidth / zone.clientHeight; camera.updateProjectionMatrix(); cadrer();
+    camera.aspect = zone.clientWidth / zone.clientHeight; camera.updateProjectionMatrix(); cadrer(); marquer();
   });
 
   /* ---------- contrôles ---------- */
@@ -692,9 +721,9 @@ function demarrer() {
     faits.add(id);
     const el = document.getElementById('defi-' + id);
     if (el) { el.classList.add('fait'); el.querySelector('.st').textContent = '✓ réussi'; }
-    A.gagner(id === 'assemble' ? 30 : 15);
+    A.gagner(id === 'assemble' ? 30 : 15, `poste3d:defi:${id}`);
     const b = document.getElementById('bravo');
-    b.textContent = id === 'assemble' ? 'Défi réussi : toutes les pièces sont en place.' : 'Défi réussi : tu as identifié les cinq pièces.';
+    b.textContent = id === 'assemble' ? 'Défi réussi : toutes les pièces sont en place.' : 'Défi réussi : tu as identifié les pièces principales.';
     b.classList.add('vu'); setTimeout(() => b.classList.remove('vu'), 4000);
     majXP();
     if (faits.size >= 2) { A.terminer('poste3d', 3); majXP(); }
@@ -708,5 +737,5 @@ function demarrer() {
 
   vue('eclate'); camera.position.copy(camPos()); camera.lookAt(orb.cible);
   majPanneau(null); majXP(); majProgression();
-  window.__scene = { etat, pieces, aPlacer, eclater, vue, selectionner, placer, orb, marquer, camera, cadrer, renderer };
+  if (/[?&]qa\b/.test(location.search)) window.__scene = { etat, pieces, aPlacer, eclater, vue, selectionner, placer, orb, marquer, camera, cadrer, renderer };
 }

@@ -111,7 +111,7 @@
     }
     etat.pose[id] = true;
     dessinerPose(id);
-    A.gagner(25);
+    A.gagner(25, `composants:pose:${id}`);
     majXP();
     tray.querySelector(`[data-piece="${id}"]`).classList.add('fait');
     tray.querySelector(`[data-piece="${id}"]`).setAttribute('aria-pressed', 'false');
@@ -241,7 +241,7 @@
       else if (idx === k) x.classList.add('faux');
     });
     etat.quiz.fait++;
-    if (k === item.b) { etat.quiz.bon++; A.gagner(10); }
+    if (k === item.b) { etat.quiz.bon++; A.gagner(10, `composants:quiz:${i}`); }
     etat.quiz.total = QUIZ.length;
     majXP();
     if (etat.quiz.fait === QUIZ.length) bilan();
@@ -253,7 +253,7 @@
     const bon = etat.quiz.bon, n = QUIZ.length;
     const note = Math.round((bon / n) * 20);
     const badge = bon >= 5 ? 'Badge « dépanneur »' : bon >= 3 ? 'Badge « assembleur »' : null;
-    if (badge) A.badge('composants');
+    if (badge) A.badge(bon >= 5 ? 'composants' : 'composants-assembleur');   // badge du module = maîtrise seulement
     terminerEtape(3);
     bilanEl.innerHTML = `
       <div class="kicker">Bilan du module</div>
