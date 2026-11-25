@@ -342,7 +342,7 @@ function demarrer() {
     });
   fanPiece.userData.blender = false;
   // chargement asynchrone du GLB (léger, mis en cache par le navigateur)
-  new GLTFLoader().load('assets/models/ventilateur140.glb?v=1', (gltf) => {
+  new GLTFLoader().load('assets/models/ventilateur140.glb?v=2', (gltf) => {
     const modele = gltf.scene;
     modele.traverse((o) => {
       if (!o.isMesh) return;
@@ -355,7 +355,8 @@ function demarrer() {
       m.envMapIntensity = 0.8; o.material = m;
     });
     // le GLB est en millimètres : échelle 1
-    modele.rotation.y = Math.PI / 2;
+    // glTF est en Y-up : l'axe du ventilateur est Y ; on le couche pour qu'il soit face à l'avant (+Z)
+    modele.rotation.x = Math.PI / 2;
     while (fanPiece.children.length) fanPiece.remove(fanPiece.children[0]);
     fanPiece.add(modele);
     fanPiece.userData.blender = true;
