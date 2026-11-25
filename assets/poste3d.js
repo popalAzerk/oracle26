@@ -366,9 +366,13 @@ function demarrer() {
   }, undefined, (err) => { console.warn('[atelier] GLB ventilateur non chargé, repli procédural :', err && (err.message || err)); });
 
   /* ---------- positions éclatées (mm, éventail large) ---------- */
+  // Chaque pièce sort LE LONG DE SON AXE DE MONTAGE : le processeur, la mémoire et le SSD
+  // restent donc exactement devant leur socket ou leur connecteur (mêmes Y et Z), à des
+  // distances croissantes en X. L'alimentation sort par le bas, le ventilateur par l'avant.
   const ECLATE = {
-    cm: [-330, 20, 40], cpu: [-250, 210, -70], ram: [-120, 230, 150], gpu: [-330, -220, -40],
-    ssd: [40, -250, 210], psu: [300, -180, -60], fan: [330, 120, 200],
+    cm: [-70, 0, 0],
+    cpu: [110, 0, 0], ram: [250, 0, 0], ssd: [180, 0, 0], gpu: [330, 0, 0],
+    psu: [0, -150, 0], fan: [0, 0, 235],
   };
   aPlacer().forEach((p) => {
     const e = ECLATE[p.userData.id] || [260, 0, 260];
@@ -376,6 +380,26 @@ function demarrer() {
     p.userData.place = false;
     p.position.copy(p.userData.logement).add(p.userData.eclate);
   });
+
+  /* ---------- lignes de rappel : chaque pièce reliée à son emplacement ---------- */
+  const liens = new Map();
+  aPlacer().forEach((p) => {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const mat = new THREE.LineDashedMaterial({ color: new THREE.Color(p.userData.couleur || '#2F5BFF'),
+      dashSize: 12, gapSize: 8, transparent: true, opacity: 0.8 });
+    const l = new THREE.Line(geo, mat);
+    l.visible = false; l.frustumCulled = false; scene.add(l); liens.set(p, l);
+  });
+  const majLiens = () => {
+    liens.forEach((l, p) => {
+      const a = l.geometry.attributes.position;
+      a.setXYZ(0, p.position.x, p.position.y, p.position.z);
+      a.setXYZ(1, p.userData.logement.x, p.userData.logement.y, p.userData.logement.z);
+      a.needsUpdate = true;
+      l.geometry.computeBoundingSphere();
+      l.computeLineDistances();
+    });
+  };
 
   /* ---------- halo au sol (remplace un plan d'ombre qui noircit la scène) ---------- */
   const halo = document.createElement('canvas'); halo.width = halo.height = 128;
@@ -492,6 +516,7 @@ function demarrer() {
   function placer(g) {
     g.userData.place = true; g.position.copy(g.userData.logement);
     const f = fantomes.get(g); if (f) f.visible = false;
+    const l = liens.get(g); if (l) l.visible = false;
     etat.places = aPlacer().filter((p) => p.userData.place).length;
     selectionner(g); majProgression(); marquer();
     if (etat.places >= aPlacer().length) reussi('assemble');
@@ -502,13 +527,15 @@ function demarrer() {
       p.position.copy(p.userData.logement);
       if (v) p.position.add(p.userData.eclate);
       const f = fantomes.get(p); if (f) f.visible = v;
+      const l = liens.get(p); if (l) l.visible = v;
     });
+    if (v) majLiens();
     etat.places = aPlacer().filter((p) => p.userData.place).length;
     majProgression(); marquer();
   }
   function vue(nom) {
     etat.vue = nom;
-    if (nom === 'eclate') { orb.theta = 0.62; orb.phi = 1.22; eclater(true); focus = null; cadrer(); }
+    if (nom === 'eclate') { orb.theta = 1.05; orb.phi = 1.26; eclater(true); focus = null; cadrer(); }
     if (nom === 'face') { orb.theta = 0.06; orb.phi = 1.38; focus = null; eclater(false); cadrer(); }
     if (nom === 'dessus') { orb.theta = 0.5; orb.phi = 0.62; focus = null; eclater(false); cadrer(); }
     if (nom === 'interieur') { orb.theta = 1.42; orb.phi = 1.3; focus = null; eclater(false); cadrer(); orb.r = orb.r * 0.72; }
