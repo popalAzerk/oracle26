@@ -47,8 +47,11 @@ header{
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:19px;letter-spacing:-.02em}
 .mark{width:32px;height:32px;border-radius:10px;background:linear-gradient(145deg,var(--g-violet1),var(--g-blue2));
   box-shadow:0 6px 16px rgba(91,91,240,.35); display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800}
-.brand span.tagline-top{font-size:12.5px;font-weight:600;color:var(--ink2);letter-spacing:0}
-.profil{display:flex;gap:8px;padding:4px;background:rgba(0,0,0,.04);border-radius:980px}
+.brand span.tagline-top{font-size:12.5px;font-weight:600;color:#5B5B60;letter-spacing:0;white-space:nowrap}
+.profil{display:flex;gap:8px;padding:4px;background:rgba(0,0,0,.04);border-radius:980px;
+  min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.profil::-webkit-scrollbar{display:none}
+.profil button{flex:0 0 auto}
 .profil button{
   display:flex;align-items:center;gap:7px;border:0;cursor:pointer;font:600 14px/1 inherit;color:var(--ink2);
   background:transparent;padding:9px 14px;border-radius:980px;transition:transform .16s ease-out, background .16s, color .16s;
@@ -74,6 +77,11 @@ header{
 .film-play:active{transform:scale(.94)}
 .hero-film .cap{margin-top:12px}
 
+.xp-outils{display:flex;gap:16px;margin-top:12px}
+.xp-outils .lien{border:0;background:none;padding:0;cursor:pointer;font:600 13px/1 inherit;color:var(--ink3);
+  border-bottom:1px solid transparent;transition:color .16s,border-color .16s}
+.xp-outils .lien:hover{color:var(--blue);border-color:rgba(0,113,227,.35)}
+
 /* ---------- bandeau de chiffres ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:34px 0 6px}
 .stat{background:var(--card);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--sh-1);
@@ -87,6 +95,11 @@ header{
 .illus-sec .illus{width:100%;height:auto}
 
 @media (max-width:860px){
+  header{gap:8px}
+  .brand{font-size:17px;min-width:0;flex:0 0 auto}
+  .brand span.tagline-top{display:none}
+  .profil{-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+  .profil button{padding:8px 11px;font-size:13px}
   .stats{grid-template-columns:repeat(2,1fr)}
   .stat b{font-size:25px}
   .film-cadre{border-radius:18px}.film-cadre::after{border-radius:18px}
