@@ -5,6 +5,7 @@
    M.2 2280 22×80 · ATX PSU 150×86×140 · ventilateur 140×25 · tour 210×460×440.
    Perf : un seul contexte, rendu à la demande, dpr plafonné, pause hors écran, repli poster. */
 import * as THREE from './three.module.min.js';
+import { GLTFLoader } from './three-addons/GLTFLoader.js';
 
 const zone = document.getElementById('scene3d');
 const A = window.Atelier;
@@ -327,32 +328,40 @@ function demarrer() {
       const liseré = box(3, 3, 138, acc(0xe5342b)); liseré.position.set(74, 40, 0); g.add(liseré);
     });
 
-  /* ================= 7 · ventilateur 140 × 25 ================= */
-  piece('fan', 'Ventilateur', 'Fait circuler l\u2019air pour évacuer la chaleur.', '#8FA2C0', new THREE.Vector3(0, 120, 200),
-    '140 × 140 × 25 mm · 1 000 tr/min', 7, (g) => {
-      // cadre carré 140
-      const cadre = new THREE.Group();
-      const ep = 25, cote = 140, bras = 7;
-      for (const [w, h, x, y] of [[cote, 6, 0, cote / 2 - 3], [cote, 6, 0, -cote / 2 + 3], [6, cote, -cote / 2 + 3, 0], [6, cote, cote / 2 - 3, 0]]) {
-        const b = box(w, h, ep, PLASTIQUE); b.position.set(x, y, 0); cadre.add(b);
-      }
-      for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + Math.PI / 4; const br = box(bras, 52, ep * 0.7, PLASTIQUE); br.position.set(Math.cos(a) * 36, Math.sin(a) * 36, 0); br.rotation.z = a; cadre.add(br); }
-      g.add(cadre);
-      // moyeu + 7 pales vrillées (extrusion)
-      const moyeu = cyl(21, ep, PLASTIQUE, 26); moyeu.rotation.x = Math.PI / 2; g.add(moyeu);
-      const forme = new THREE.Shape();
-      forme.moveTo(0, 0); forme.quadraticCurveTo(30, 8, 62, 2); forme.quadraticCurveTo(30, -10, 0, -6); forme.lineTo(0, 0);
-      const geo = new THREE.ExtrudeGeometry(forme, { depth: 1.6, bevelEnabled: true, bevelSize: 0.6, bevelThickness: 0.6, bevelSegments: 1, curveSegments: 6 });
+  /* ================= 7 · ventilateur 140 × 25 (modèle fait sous Blender) ================= */
+  const fanPiece = piece('fan', 'Ventilateur', 'Fait circuler l\u2019air pour évacuer la chaleur.', '#8FA2C0', new THREE.Vector3(0, 120, 200),
+    '140 × 140 × 25 mm · 1 000 tr/min · modèle Blender', 7, (g) => {
+      // repli immédiat : pales vrillées procédurales (remplacées dès que le GLB est chargé)
+      const moyeu = cyl(21, 25, PLASTIQUE, 26); moyeu.rotation.x = Math.PI / 2; g.add(moyeu);
+      const cadre = box(140, 140, 25, PLASTIQUE); cadre.visible = false; g.add(cadre);
       for (let i = 0; i < 7; i++) {
-        const pivot = new THREE.Group();
-        pivot.rotation.z = i / 7 * Math.PI * 2;
-        const pale = new THREE.Mesh(geo, PLASTIQUE_CLAIR);
-        pale.rotation.x = 0.42;             // vrillage réel autour de l'axe de la pale
-        pale.position.set(20, 0, 0);
+        const pivot = new THREE.Group(); pivot.rotation.z = i / 7 * Math.PI * 2;
+        const pale = box(46, 3, 2, PLASTIQUE_CLAIR); pale.position.set(52, 0, 0); pale.rotation.x = 0.42;
         pivot.add(pale); g.add(pivot);
       }
-      const anneau = new THREE.Mesh(new THREE.TorusGeometry(66, 2.2, 8, 60), acc(0x8fa2c0)); anneau.position.z = ep / 2 + 1; g.add(anneau);
+      g.userData.procedural = true;
     });
+  // chargement asynchrone du GLB (léger, mis en cache par le navigateur)
+  new GLTFLoader().load('assets/models/ventilateur140.glb', (gltf) => {
+    const modele = gltf.scene;
+    modele.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true; o.receiveShadow = true;
+      const nom = (o.material && o.material.name || '').toLowerCase();
+      const m = o.material ? o.material.clone() : PLASTIQUE;
+      if (nom.includes('pale')) { m.color.setHex(0xdfe4ec); m.metalness = 0.05; m.roughness = 0.4; }
+      else if (nom.includes('moyeu')) { m.color.setHex(0x3a3f47); m.metalness = 0.65; m.roughness = 0.3; }
+      else { m.color.setHex(0x35373c); m.metalness = 0.1; m.roughness = 0.6; }
+      m.envMapIntensity = 0.8; o.material = m;
+    });
+    // le GLB est en millimètres : échelle 1
+    modele.rotation.y = Math.PI / 2;
+    while (fanPiece.children.length) fanPiece.remove(fanPiece.children[0]);
+    fanPiece.add(modele);
+    fanPiece.userData.procedural = false;
+    fanPiece.userData.detail = '140 × 140 × 25 mm · modèle Blender · 2 306 triangles';
+    marquer();
+  }, undefined, () => { /* silencieux : le repli procédural reste affiché */ });
 
   /* ---------- positions éclatées (mm, éventail large) ---------- */
   const ECLATE = {

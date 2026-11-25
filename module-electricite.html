@@ -44,6 +44,10 @@
     opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;width:max-content;max-width:100%}
   #bravo.vu{opacity:1;transform:none}
   .muted{color:var(--ink3)}
+  .video-cadre{margin:0;background:var(--card);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-2)}
+  .video-cadre video{width:100%;display:block;border-radius:var(--r-md);background:#0F172A}
+  .video-cadre figcaption{margin-top:12px;font-size:13.5px;line-height:1.5;color:var(--ink2)}
+  .video-cadre figcaption .muted{display:block;margin-top:4px;color:var(--ink3)}
   .maison{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   @media(max-width:920px){.maison{grid-template-columns:1fr}}
 </style>
@@ -101,6 +105,14 @@
     <div class="defi" id="defi3"><span class="n">3</span><p>Prouve qu'un isolant coupe le courant (bois, verre ou plastique).</p><span class="st">à faire</span></div>
   </div>
   <div id="bravo" role="status" aria-live="polite"></div>
+
+  <h2 class="sec"><span>L'animation</span><span>12 s · boucle, série, dérivation</span></h2>
+  <figure class="video-cadre">
+    <video id="video-circuit" src="assets/video/circuit.mp4" poster="assets/video/circuit.jpg"
+           controls playsinline muted loop preload="metadata" aria-label="Animation : le circuit électrique, série et dérivation"></video>
+    <figcaption>Quatre temps : la boucle fermée, une lampe, deux lampes en série qui éclairent faiblement, puis en dérivation qui éclairent normalement.
+      <span class="muted">Fabriquée image par image avec Remotion : chaque valeur affichée est calculée, pas décorative.</span></figcaption>
+  </figure>
 
   <h2 class="sec"><span>Étape 2 · les fiches</span><span>déplie « En savoir plus »</span></h2>
   <div class="fiches" id="fiches"></div>
