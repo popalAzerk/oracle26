@@ -129,7 +129,7 @@
     </figure>
   </section>
 
-  <h2 class="sec"><span>Technologie &amp; sciences</span><span>10 blocs · 6 matières · programme français + meilleurs programmes étrangers</span></h2>
+  <h2 class="sec"><span>Technologie &amp; sciences</span><span>11 blocs · 6 matières · programmes français, anglais, japonais, canadien, finlandais</span></h2>
   <div class="cards" id="modules"></div>
 
   <h2 class="sec"><span>Ateliers</span><span>clavier · IA · Pix</span></h2>
@@ -150,6 +150,8 @@
       desc: "Fermer une boucle, comparer série et dérivation, tester conducteurs et isolants, éviter le court-circuit.", min: 20, href: 'module-electricite.html', total: 3 },
     { id: 'lumiere', titre: 'Lumière', ico: '🔆', c: ['#FF9EC4', '#F0417E'],
       desc: "Ombres, propagation rectiligne, réfraction, lentilles et couleurs.", min: 20, href: 'module-lumiere.html', total: 3 },
+    { id: 'poste3d', titre: 'Le poste en 3D', ico: '🧊', c: ['#38BDF8', '#0E7490'],
+      desc: "Visite WebGL : tourne le poste, clique chaque pièce, remets les 7 composants en place.", min: 15, href: 'module-poste-3d.html', total: 3, badge: '3D' },
     { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
       desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
     { id: 'energie', titre: 'Énergie', ico: '🔋', c: ['#34D399', '#0EA47A'],
@@ -208,7 +210,7 @@
     </article>`;
   }
   function rendreCartes() {
-    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 10')).join('');
+    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 11')).join('');
     document.getElementById('ateliers').innerHTML = ateliers.map((a) => carte(a, 0, 'Atelier')).join('');
   }
   function tout() { rendreProfil(); rendreXp(); rendreCartes(); }

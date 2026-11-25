@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le poste de travail en 3D — Atelier</title>
+<meta name="theme-color" content="#F5F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .scene{position:relative;background:radial-gradient(120% 90% at 50% 0%,#EEF4FF 0%,#F7F9FC 55%,#F2F4F8 100%);
+    border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden}
+  #scene3d{height:min(64vh,560px);touch-action:none;cursor:grab;outline:none}
+  #scene3d:active{cursor:grabbing}
+  #scene3d canvas{display:block;width:100%;height:100%}
+  .hud{position:absolute;pointer-events:none;font:600 11px/1.4 -apple-system,"SF Mono",ui-monospace,monospace;color:#7A8497;letter-spacing:.13em;text-transform:uppercase}
+  .hud.tl{top:14px;left:16px}.hud.tr{top:14px;right:16px;text-align:right}
+  .hud.bl{bottom:14px;left:16px}.hud.br{bottom:14px;right:16px;text-align:right}
+  .etiquettes3d{position:absolute;inset:0;pointer-events:none}
+  .etiquette3d{position:absolute;left:0;top:0;display:inline-flex;align-items:center;border:0;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(8px);border-radius:980px;padding:3px;font:700 11.5px/1 inherit;color:#1D1D1F;
+    box-shadow:0 2px 10px -2px rgba(20,30,50,.3);cursor:pointer;transition:opacity .2s;white-space:nowrap;overflow:hidden}
+  .etiquette3d b{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--c,#5A6478);color:#fff;font-size:10.5px;font-weight:800;flex:none}
+  .etiquette3d span{max-width:0;overflow:hidden;transition:max-width .18s ease, padding .18s ease;padding-left:0}
+  .etiquette3d.ouvert{z-index:3}
+  .etiquette3d.ouvert span{max-width:190px;padding:0 9px 0 7px}
+  .etiquette3d:hover{box-shadow:0 4px 16px -3px rgba(20,30,50,.4)}
+  #fiche3d h3 .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;margin-right:8px;vertical-align:2px}
+  .poster{display:grid;place-items:center;gap:10px;padding:22px;height:100%}
+  .poster svg{max-height:78%;width:auto}
+  .poster p{max-width:46ch;text-align:center;font-size:14px;color:var(--ink2);margin:0}
+  .barre-vues{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
+  .grp{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.04);border-radius:980px;padding:5px}
+  .grp>span{font-size:12px;font-weight:700;color:var(--ink3);padding:0 8px 0 10px;text-transform:uppercase;letter-spacing:.04em}
+  .grp button{border:0;background:transparent;border-radius:980px;padding:9px 14px;font:600 13.5px/1 inherit;color:var(--ink2);cursor:pointer;transition:background .16s,color .16s,transform .16s}
+  .grp button:hover{background:rgba(0,0,0,.05)}
+  .grp button:active{transform:scale(.96)}
+  .grp button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-1)}
+  .puces{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .puce-piece{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--card);border-radius:980px;
+    padding:9px 14px;font:600 13px/1 inherit;color:var(--ink2);cursor:pointer;box-shadow:var(--sh-1);transition:transform .15s,color .15s,box-shadow .15s}
+  .puce-piece i{width:10px;height:10px;border-radius:50%;background:var(--c,#94A3B8);display:block}
+  .puce-piece:hover{color:var(--ink);transform:translateY(-1px)}
+  .puce-piece.on{box-shadow:0 0 0 2px var(--blue), var(--sh-1);color:var(--ink)}
+  #fiche3d .detail{font-size:12.5px;color:var(--ink3);margin-top:8px;font-family:ui-monospace,monospace;letter-spacing:.02em}
+  .duo{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;margin-top:16px}
+  @media(max-width:920px){.duo{grid-template-columns:1fr}}
+  #fiche3d{background:var(--card);border-radius:var(--r-md);padding:18px;box-shadow:var(--sh-1);min-height:150px}
+  #fiche3d h3{margin:8px 0 6px;font-size:19px;letter-spacing:-.01em}
+  #fiche3d p{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink2)}
+  #fiche3d .role{display:inline-block;font:700 11px/1 inherit;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+    background:var(--c,#5A6478);padding:6px 10px;border-radius:980px}
+  #fiche3d .vide{color:var(--ink3);font-size:14px}
+  .progres3d{display:flex;align-items:center;gap:12px;margin-top:14px;background:var(--card);border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--sh-1)}
+  .progres3d b{font-variant-numeric:tabular-nums}
+  .progres3d .rail{flex:1;height:8px;border-radius:99px;background:rgba(0,0,0,.07);overflow:hidden}
+  .progres3d .rail i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#6AA6FF,#2F5BFF);transition:width .3s}
+  .defis{display:grid;gap:10px;margin-top:14px}
+  .defi{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--sh-1)}
+  .defi .n{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:14px;background:linear-gradient(145deg,#FFD60A,#FF9F0A);color:#5A3B00;flex:none}
+  .defi p{font-size:14.5px;line-height:1.35;flex:1;margin:0}
+  .defi .st{font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
+  .defi.fait{background:linear-gradient(180deg,#F1FBF5,#E9F8F0);box-shadow:0 0 0 1.5px rgba(31,163,92,.22), var(--sh-1)}
+  .defi.fait .st{color:#127A44}
+  .defi.fait .n{background:linear-gradient(145deg,#34D399,#0EA47A);color:#fff}
+  #bravo{margin-top:14px;background:linear-gradient(135deg,#34D399,#0EA47A);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;width:max-content;max-width:100%}
+  #bravo.vu{opacity:1;transform:none}
+  .aide{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink3);margin-top:10px}
+  .aide span{display:inline-flex;align-items:center;gap:6px}
+  kbd{font:600 11px/1 ui-monospace,monospace;background:#fff;border-radius:5px;padding:4px 6px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top">3D</span></a>
+    <a class="btn s small" href="index.html">← Accueil</a>
+  </header>
+
+  <section style="padding:30px 0 6px">
+    <span class="kicker" style="background:linear-gradient(135deg,#6AA6FF,#2F5BFF)">Technologie · visite 3D</span>
+    <h1 style="font-size:clamp(32px,4.4vw,50px);margin-top:18px">Ouvre la tour,<br><span class="grad">pièce par pièce.</span></h1>
+    <p class="sub">Un vrai modèle 3D dans le navigateur : fais tourner le poste, clique une pièce pour lire son rôle, puis remets les cinq composants à leur place.</p>
+    <div class="xp" id="xp"></div>
+  </section>
+
+  <h2 class="sec"><span>La scène</span><span>glisse pour tourner · clique pour choisir</span></h2>
+  <div class="scene">
+    <div id="scene3d"></div>
+    <div class="hud tl">Poste de travail · vue 3D</div>
+    <div id="etiquettes3d" class="etiquettes3d" aria-hidden="false"></div>
+    <div class="hud tr" id="hud-cam">—</div>
+    <div class="hud bl">glisser · pincer · cliquer</div>
+    <div class="hud br">WebGL · three.js</div>
+  </div>
+
+  <div class="barre-vues">
+    <div class="grp"><span>Vue</span>
+      <button data-vue="eclate" class="on">Éclaté</button>
+      <button data-vue="face">Face</button>
+      <button data-vue="dessus">Dessus</button>
+      <button data-vue="interieur">Intérieur</button></div>
+    <div class="grp"><span>Assemblage</span>
+      <button id="btn-eclate">Remettre les pièces à part</button></div>
+  </div>
+  <div class="aide">
+    <span><kbd>←</kbd><kbd>→</kbd> tourner</span><span><kbd>↑</kbd><kbd>↓</kbd> incliner</span><span>molette / deux doigts : zoom</span>
+  </div>
+
+  <div id="puces" class="puces" aria-label="Choisir une pièce"></div>
+
+  <div class="duo">
+    <div>
+      <div class="progres3d"><b id="compteur">1 / 8</b><span style="font-size:13px;color:var(--ink3)">pièces en place</span>
+        <div class="rail" id="barre3d"><i></i></div></div>
+      <div class="defis">
+        <div class="defi" id="defi-identifier"><span class="n">1</span><p>Clique les cinq composants pour lire leur rôle.</p><span class="st">à faire</span></div>
+        <div class="defi" id="defi-assemble"><span class="n">2</span><p>Remets toutes les pièces à leur place dans la tour.</p><span class="st">à faire</span></div>
+      </div>
+      <div id="bravo" role="status" aria-live="polite"></div>
+    </div>
+    <div id="fiche3d"><p class="vide">Clique une pièce pour lire à quoi elle sert.</p></div>
+  </div>
+
+  <h2 class="sec"><span>Les fiches</span><span>déplie « En savoir plus »</span></h2>
+  <div class="fiches">
+    <article class="fiche" style="--c1:#6AA6FF;--c2:#2F5BFF">
+      <div class="role">Carte mère</div><h3>Le plateau de connexion</h3>
+      <p>Elle relie tout : processeur, mémoire, stockage, alimentation, périphériques. Sans elle, aucun composant ne communique.</p>
+      <details><summary>En savoir plus</summary><div>Les pistes de cuivre de la carte mère jouent le rôle de routes. Le <b>chipset</b> gère les échanges lents (USB, disque), le processeur gère les échanges rapides avec la mémoire. Le format le plus courant sur un poste est l'ATX.</div></details>
+    </article>
+    <article class="fiche" style="--c1:#B57BFF;--c2:#6A5BFF">
+      <div class="role">Processeur</div><h3>Le cerveau qui calcule</h3>
+      <p>Il exécute les instructions, des milliards de fois par seconde. Il chauffe : c'est pour cela qu'il porte un radiateur et un ventilateur.</p>
+      <details><summary>En savoir plus</summary><div>Un processeur moderne contient plusieurs cœurs et des milliards de transistors. Sa vitesse se mesure en gigahertz, mais ce qui compte aujourd'hui est le nombre de cœurs et l'efficacité énergétique.</div></details>
+    </article>
+    <article class="fiche" style="--c1:#FF9F0A;--c2:#E5342B">
+      <div class="role">Mémoire et stockage</div><h3>Retenir, vite ou longtemps</h3>
+      <p>La mémoire vive est rapide mais s'efface à l'extinction. Le SSD garde les fichiers sans courant, mais plus lentement.</p>
+      <details><summary>En savoir plus</summary><div>Au démarrage, le système est copié du SSD vers la mémoire vive : c'est pour cela qu'un SSD rapide accélère le démarrage. Manquer de mémoire oblige l'ordinateur à utiliser le disque, bien plus lent.</div></details>
+    </article>
+    <article class="fiche" style="--c1:#34D399;--c2:#0EA47A">
+      <div class="role">Alimentation et refroidissement</div><h3>Donner l'énergie, évacuer la chaleur</h3>
+      <p>L'alimentation transforme le 230 V du secteur en basses tensions continues. Le ventilateur évacue la chaleur produite par les composants.</p>
+      <details><summary>En savoir plus</summary><div>Une alimentation de qualité stabilise la tension : c'est elle qui protège le reste du poste. Un ventilateur encrassé fait chauffer le processeur, qui ralentit de lui-même pour se protéger.</div></details>
+    </article>
+  </div>
+
+  <h2 class="sec"><span>Vérification</span><span>4 questions</span></h2>
+  <div class="quiz" id="quiz3d"></div>
+  <div class="bilan" id="bilan3d"></div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <span>Moteur 3D : three.js (licence MIT) · géométrie dessinée par code, aucun modèle téléchargé</span>
+  </footer>
+</div>
+
+<script src="assets/store.js"></script>
+<script type="module" src="assets/poste3d.js"></script>
+<script>
+  /* quiz court, indépendant du moteur 3D (utilisable même sans WebGL) */
+  (function () {
+    const Q = [
+      { q: 'Quel composant exécute les calculs ?', r: ['Le processeur', 'Le ventilateur', 'L\u2019alimentation', 'Le boîtier'], b: 0, e: 'Le processeur exécute les instructions ; les autres l\u2019alimentent, le refroidissent ou le protègent.' },
+      { q: 'Que perd-on en éteignant le poste ?', r: ['Le contenu du SSD', 'Le contenu de la mémoire vive', 'Le processeur', 'La carte mère'], b: 1, e: 'La mémoire vive s\u2019efface faute de courant ; le SSD conserve les fichiers.' },
+      { q: 'À quoi sert l\u2019alimentation ?', r: ['À refroidir', 'À transformer le 230 V en basses tensions continues', 'À calculer', 'À stocker les photos'], b: 1, e: 'Elle convertit le courant du secteur en tensions stables utilisables par les composants.' },
+      { q: 'Pourquoi un ventilateur est-il indispensable ?', r: ['Pour faire du bruit', 'Pour évacuer la chaleur des composants', 'Pour alimenter la carte mère', 'Pour accélérer Internet'], b: 1, e: 'Sans évacuation de la chaleur, le processeur surchauffe et ralentit, ou s\u2019arrête pour se protéger.' },
+    ];
+    const zone = document.getElementById('quiz3d'), bilan = document.getElementById('bilan3d');
+    let fait = 0, bon = 0;
+    zone.innerHTML = Q.map((t, i) => `<article class="q" data-q="${i}"><h3>${i + 1}. ${t.q}</h3>
+      <div class="rep">${t.r.map((r, k) => `<button data-k="${k}" data-i="${i}">${r}</button>`).join('')}</div>
+      <div class="expl"><b>Explication.</b> ${t.e}</div></article>`).join('');
+    zone.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-k]'); if (!b) return;
+      const art = b.closest('.q'); if (art.classList.contains('repondu')) return;
+      const i = +b.dataset.i, k = +b.dataset.k;
+      art.classList.add('repondu');
+      art.querySelectorAll('button').forEach((x, idx) => { x.disabled = true; if (idx === Q[i].b) x.classList.add('bon'); else if (idx === k) x.classList.add('faux'); });
+      fait++; if (k === Q[i].b) { bon++; window.Atelier.gagner(10); }
+      if (fait === Q.length) {
+        bilan.innerHTML = `<div class="kicker">Bilan</div><div class="note">${bon} / ${Q.length} — ${Math.round(bon / Q.length * 20)}/20</div>
+          <div class="cta"><a class="btn p" href="index.html">Retour à l'accueil</a><a class="btn s" href="module-composants.html">Refaire le module 2D</a></div>`;
+        bilan.classList.add('vu');
+        window.Atelier.terminer('poste3d', 3);
+        if (bon >= 3) window.Atelier.badge('poste3d');
+      }
+    });
+  })();
+</script>
+</body>
+</html>
