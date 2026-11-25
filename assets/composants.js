@@ -139,6 +139,43 @@
                    : `Ce logement attend ${SLOTS[s.dataset.slot] ? SLOTS[s.dataset.slot].toLowerCase() : 'une pièce'}. Choisis d'abord une pièce à droite, puis clique ici.`);
   });
 
+  /* glisser-déposer (souris, stylet, doigt) : même règle que le clic, via poser() */
+  let glisse = null, ignorerClic = false;
+  tray.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-piece]');
+    if (!b || b.classList.contains('fait') || e.button > 0) return;
+    glisse = { id: b.dataset.piece, b, x0: e.clientX, y0: e.clientY, fant: null, cible: null };
+    b.setPointerCapture(e.pointerId);
+  });
+  tray.addEventListener('pointermove', (e) => {
+    if (!glisse) return;
+    if (!glisse.fant) {
+      if (Math.hypot(e.clientX - glisse.x0, e.clientY - glisse.y0) < 8) return;
+      glisse.fant = glisse.b.cloneNode(true);
+      glisse.fant.className = 'fantome'; glisse.fant.removeAttribute('data-piece'); glisse.fant.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(glisse.fant);
+      dire(`Dépose <b>${PIECES[glisse.id].nom}</b> sur son logement dans le boîtier.`);
+    }
+    glisse.fant.style.transform = `translate(${e.clientX - 40}px, ${e.clientY - 24}px)`;
+    glisse.fant.style.visibility = 'hidden';
+    const sous = document.elementFromPoint(e.clientX, e.clientY);
+    glisse.fant.style.visibility = '';
+    const s = sous && sous.closest && sous.closest('[data-slot]');
+    if (glisse.cible && glisse.cible !== s) glisse.cible.classList.remove('cible');
+    if (s) s.classList.add('cible');
+    glisse.cible = s;
+  });
+  const finGlisse = (e) => {
+    if (!glisse) return;
+    const g = glisse; glisse = null;
+    if (!g.fant) return;                       // simple clic : géré par l'écouteur « click »
+    g.fant.remove(); ignorerClic = true; setTimeout(() => { ignorerClic = false; }, 0);
+    if (g.cible) { g.cible.classList.remove('cible'); if (e.type === 'pointerup') poser(g.id, g.cible.dataset.slot); }
+  };
+  tray.addEventListener('pointerup', finGlisse);
+  tray.addEventListener('pointercancel', finGlisse);
+  tray.addEventListener('click', (e) => { if (ignorerClic) { e.stopImmediatePropagation(); } }, true);
+
   /* ---------- fiches ---------- */
   const fiches = document.getElementById('fiches');
   fiches.innerHTML = Object.entries(PIECES).map(([id, p]) => `
@@ -247,7 +284,7 @@
     const el = document.getElementById('xp');
     if (!el) return;
     el.innerHTML = `<span class="lvl">Nv. ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div>
-      <small>${p.xp} XP · ${p.nom} (${p.classe})</small>`;
+      <small>${p.xp} XP · ${A.esc(p.nom)} (${A.esc(p.classe)})</small>`;
   }
 
   majJauge(); majXP();

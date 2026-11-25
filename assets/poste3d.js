@@ -394,7 +394,7 @@ function demarrer() {
     fanPiece.add(modele);
     fanPiece.userData.blender = true;
     fanPiece.userData.procedural = false;
-    fanPiece.userData.detail = '140 × 140 × 25 mm · modèle Blender · 2 306 triangles';
+    fanPiece.userData.detail = '140 × 140 × 25 mm · 1 000 tr/min · modèle Blender';
     marquer();
   }, undefined, (err) => { console.warn('[atelier] GLB ventilateur non chargé, repli procédural :', err && (err.message || err)); });
 
@@ -703,7 +703,7 @@ function demarrer() {
   selectionner = (g) => { _sel(g); if (g && g.userData.logement) { identifiees.add(g.userData.id); if (identifiees.size >= 5) reussi('identifier'); } };
   function majXP() {
     const p = A.profil(), niv = A.niveau(p.xp), dans = p.xp % 200;
-    document.getElementById('xp').innerHTML = `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div><small>${p.xp} XP · ${p.nom} · ${p.classe}</small>`;
+    document.getElementById('xp').innerHTML = `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div><small>${p.xp} XP · ${window.Atelier.esc(p.nom)} · ${window.Atelier.esc(p.classe)}</small>`;
   }
 
   vue('eclate'); camera.position.copy(camPos()); camera.lookAt(orb.cible);

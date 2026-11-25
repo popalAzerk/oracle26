@@ -1,0 +1,5 @@
+# Démos /apercu : elles chargent des scripts intégrés et des bibliothèques ;
+# la politique stricte de l'Atelier (racine) ne s'applique pas ici.
+<IfModule mod_headers.c>
+  Header always unset Content-Security-Policy
+</IfModule>

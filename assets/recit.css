@@ -1,0 +1,87 @@
+/* Récit audio + bulles animées (assets/recit.js). Couleurs du module : --c1 / --c2 posées sur #recit. */
+#recit{--c1:#6AA6FF;--c2:#2F5BFF}
+.recit{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-1);padding:22px 24px 16px;position:relative;overflow:hidden}
+.recit::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--c1),var(--c2))}
+.recit-tete{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.recit-play{flex:0 0 auto;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 8px 22px color-mix(in srgb,var(--c2) 40%,transparent);
+  display:grid;place-items:center;transition:transform .15s}
+.recit-play svg{width:28px;height:28px}
+.recit-play:active{transform:scale(.94)}
+.recit.joue .recit-play{animation:recit-halo 2.4s ease-in-out infinite}
+@keyframes recit-halo{50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--c1) 22%,transparent)}}
+.recit-titre{flex:1 1 260px;display:flex;flex-direction:column;gap:2px}
+.recit-titre b{font-size:19px;letter-spacing:-.02em}
+.recit-titre span{font-size:13px;color:var(--ink2)}
+.recit-vitesse{display:flex;gap:3px;background:var(--bg);border-radius:999px;padding:4px}
+.recit-vitesse button{border:0;background:none;border-radius:999px;padding:10px 16px;font:inherit;font-size:14px;color:var(--ink2);cursor:pointer;min-height:44px}
+.recit-vitesse button[aria-pressed=true]{background:#fff;color:var(--ink);box-shadow:var(--sh-1);font-weight:600}
+.recit-barre{position:relative;margin:18px 0 6px;display:flex;align-items:center;gap:12px}
+.recit-barre input{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;cursor:pointer;
+  background:linear-gradient(90deg,var(--c2) var(--p,0%),#E5E7EB var(--p,0%))}
+.recit-barre input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--c2);box-shadow:var(--sh-1)}
+.recit-barre input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--c2)}
+.recit-reperes{position:absolute;left:0;right:96px;top:50%;height:0;pointer-events:none}
+.recit-reperes i{position:absolute;top:-6px;width:2px;height:12px;background:#fff;border-radius:2px;opacity:.9}
+.recit-temps{flex:0 0 84px;text-align:right;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.recit-chapitres{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.recit-chapitres button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:8px 14px 8px 8px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;min-height:40px;transition:background .2s}
+.recit-chapitres button b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:12px}
+.recit-chapitres button.on{background:var(--c2);color:#fff}
+.recit-chapitres button.on b{background:rgba(255,255,255,.25)}
+.recit-sous{margin:14px 0 6px;min-height:92px;padding:16px 18px;border-radius:var(--r-md);background:color-mix(in srgb,var(--c1) 9%,#fff)}
+.recit-sous p{font-size:20px;line-height:1.42;letter-spacing:-.015em;font-weight:500}
+.recit-qui{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c2);margin-bottom:4px}
+.recit-qui:empty{display:none}
+.recit-qui.q{color:#C2185B}
+.recit-texte{margin-top:8px}
+.recit-texte summary{cursor:pointer;font-size:14px;color:var(--blue);padding:8px 0}
+.recit-texte h4{font-size:14px;margin:14px 0 6px;color:var(--ink2)}
+.recit-texte p{font-size:15px;padding:6px 10px;border-radius:10px;cursor:pointer;margin:2px 0}
+.recit-texte p:hover{background:var(--bg)}
+.recit-texte p span{font-weight:700;margin-right:8px;color:var(--c2)}
+.recit-texte p.q span{color:#C2185B}
+.recit-texte p.lu{background:color-mix(in srgb,var(--c1) 16%,#fff)}
+
+/* ---------- bulle flottante ---------- */
+.recit-bulle{position:fixed;right:20px;bottom:20px;z-index:60;width:min(380px,calc(100vw - 24px));background:#fff;border-radius:22px;
+  box-shadow:var(--sh-3);padding:12px 14px 14px;opacity:0;transform:translateY(16px) scale(.96);transition:opacity .25s,transform .3s cubic-bezier(.2,.9,.3,1.2)}
+.recit-bulle.vue{opacity:1;transform:none}
+.recit-bulle.arret .rb-svg *{animation-play-state:paused!important}
+.rb-tete{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.rb-tete b{flex:1;font-size:15px;letter-spacing:-.01em}
+.rb-tete button{width:36px;height:36px;border:0;border-radius:50%;background:var(--bg);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.rb-tete button svg{width:16px;height:16px}
+.rb-svg{background:#F8FAFC;border-radius:14px;overflow:hidden}
+.rb-svg svg{width:100%;height:auto}
+.recit-bulle p{font-size:14px;line-height:1.4;color:var(--ink2);margin-top:8px}
+@media (max-width:640px){
+  .recit-sous p{font-size:17px}.recit-sous{min-height:0;padding:12px 14px;margin:10px 0 4px}.recit{padding:16px 14px 10px}
+  .recit-play{width:52px;height:52px}.recit-titre b{font-size:17px}.recit-titre{flex-basis:200px}
+  .recit-vitesse{margin-left:auto}
+  .recit-chapitres{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);margin:8px -14px 0 0;padding-right:30px}
+  .recit-chapitres::-webkit-scrollbar{display:none}
+  .recit-chapitres button{flex:0 0 auto}
+  .recit-barre{margin:12px 0 4px}
+}
+.recit-bulle.integree{position:relative;right:auto;bottom:auto;width:auto;margin:10px 0 4px;box-shadow:none;border:1px solid var(--line);z-index:auto}
+
+/* ---------- briques d'animation des bulles ---------- */
+.r-lab{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1E293B}
+.r-lab2{font:500 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#475569}
+.r-gros{font:800 22px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1E293B}
+.r-fleche{fill:none;stroke:#0F172A;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.r-flux{stroke-dasharray:7 11;animation:r-flux 1s linear infinite}
+.r-flux.lent{animation-duration:2.1s}.r-flux.vite{animation-duration:.42s}
+@keyframes r-flux{to{stroke-dashoffset:-36}}
+.r-tourne{transform-box:fill-box;transform-origin:center;animation:r-tourne 1.8s linear infinite}
+.r-tourne.lent{animation-duration:3.6s}.r-tourne.vite{animation-duration:.6s}
+@keyframes r-tourne{to{transform:rotate(360deg)}}
+.r-pulse{animation:r-pulse 1.6s ease-in-out infinite}
+@keyframes r-pulse{50%{opacity:.55}}
+@keyframes r-flotte{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.r-flotte{animation:r-flotte 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .recit-bulle{transition:none}.recit.joue .recit-play{animation:none}
+  .rb-svg *{animation:none!important}
+}

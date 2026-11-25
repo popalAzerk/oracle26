@@ -2,6 +2,7 @@
    Aucun réseau, aucun compte : tout reste dans le navigateur de cet ordinateur. */
 (function () {
   const CLE = 'atelier.profils.v1';
+  const CLE_SECOURS = CLE + '.bak';
 
   // profils enregistrés avant le changement de prénoms : renommage appliqué une seule fois
   const RENOMMAGES = { 'Léa': 'Nellia', 'Noé': 'Elyas', 'Manon': 'Maël' };
@@ -17,38 +18,79 @@
     maj: Date.now(),
   });
 
+  /** Échappe un texte avant insertion dans du HTML (prénom, classe… venant d'un fichier importé). */
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /** Reconstruit un état sûr à partir de n'importe quel objet : seuls les champs connus et bien typés sont repris. */
+  function normaliser(d) {
+    const sur = NEUF();
+    if (!d || typeof d !== 'object' || !d.profils || typeof d.profils !== 'object') throw new Error('fichier inattendu');
+    const texte = (v, max, defaut) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : defaut);
+    const entier = (v) => (Number.isFinite(+v) && +v >= 0 ? Math.min(Math.floor(+v), 1e6) : 0);
+    let repris = 0;
+    for (const id of Object.keys(sur.profils)) {
+      const src = d.profils[id];
+      if (!src || typeof src !== 'object') continue;
+      const p = sur.profils[id];
+      p.nom = texte(RENOMMAGES[src.nom] || src.nom, 30, p.nom);
+      p.classe = texte(src.classe, 10, p.classe);
+      p.avatar = texte(src.avatar, 4, p.avatar);
+      p.xp = entier(src.xp);
+      p.badges = Array.isArray(src.badges) ? [...new Set(src.badges.filter((b) => typeof b === 'string' && /^[\w-]{1,40}$/.test(b)))].slice(0, 50) : [];
+      p.fait = {};
+      if (src.fait && typeof src.fait === 'object') {
+        for (const [m, n] of Object.entries(src.fait)) if (/^[\w-]{1,40}$/.test(m)) p.fait[m] = Math.min(entier(n), 10);
+      }
+      p.note = {};
+      if (src.note && typeof src.note === 'object') {
+        for (const [m, n] of Object.entries(src.note)) if (/^[\w-]{1,40}$/.test(m) && Number.isFinite(+n)) p.note[m] = +n;
+      }
+      repris++;
+    }
+    if (!repris) throw new Error('aucun profil reconnu');
+    sur.actif = Object.prototype.hasOwnProperty.call(sur.profils, d.actif) ? d.actif : 'lea';
+    return sur;
+  }
+
+  let stockageOK = true;
+  function signalerStockage(ok) {
+    if (ok === stockageOK) return;
+    stockageOK = ok;
+    window.dispatchEvent(new CustomEvent('atelier:stockage', { detail: { ok } }));
+    let b = document.getElementById('atelier-stockage');
+    if (!ok && !b && document.body) {
+      b = document.createElement('div'); b.id = 'atelier-stockage'; b.setAttribute('role', 'status');
+      b.textContent = 'Ta progression ne peut pas être enregistrée sur cet appareil (navigation privée ou stockage bloqué). Tu peux continuer, mais elle sera perdue en fermant la page.';
+      document.body.prepend(b);
+    } else if (ok && b) b.remove();
+  }
+
   function lire() {
     try {
       const brut = localStorage.getItem(CLE);
       if (!brut) return NEUF();
-      const d = JSON.parse(brut);
-      if (!d || !d.profils) return NEUF();
-      if (migrer(d)) localStorage.setItem(CLE, JSON.stringify(d));
-      return d;
+      return normaliser(JSON.parse(brut));
     } catch (_) { return NEUF(); }
   }
-  /** renomme les profils hérités de l'ancienne version ; vrai si quelque chose a changé */
-  function migrer(d) {
-    let change = false;
-    Object.values(d.profils || {}).forEach((p) => {
-      if (p && RENOMMAGES[p.nom]) { p.nom = RENOMMAGES[p.nom]; change = true; }
-    });
-    if ((d.version || 1) < 2) { d.version = 2; change = true; }
-    return change;
-  }
 
+  let persistanceDemandee = false;
   function ecrire(d) {
     d.maj = Date.now();
-    localStorage.setItem(CLE, JSON.stringify(d));
+    try {
+      localStorage.setItem(CLE, JSON.stringify(d));
+      signalerStockage(true);
+      // Safari efface le stockage d'un site après 7 jours sans visite, sauf stockage « persistant »
+      if (!persistanceDemandee && navigator.storage && navigator.storage.persist) { persistanceDemandee = true; navigator.storage.persist().catch(() => {}); }
+    } catch (_) { signalerStockage(false); }
     window.dispatchEvent(new CustomEvent('atelier:maj', { detail: d }));
     return d;
   }
-  const profil = () => { const d = lire(); return d.profils[d.actif] || d.profils.lea || Object.values(d.profils)[0]; };
+  const profil = () => { const d = lire(); return d.profils[d.actif] || d.profils.lea; };
   const profilId = () => lire().actif;
-  function choisir(id) { const d = lire(); if (d.profils[id]) { d.actif = id; ecrire(d); } }
+  function choisir(id) { const d = lire(); if (Object.prototype.hasOwnProperty.call(d.profils, id)) { d.actif = id; ecrire(d); } }
 
   /** gagner(25) ; terminer('composants', 3) ; badge('composants') */
-  function gagner(xp) { const d = lire(); d.profils[d.actif].xp += xp; return ecrire(d); }
+  function gagner(xp) { const d = lire(); d.profils[d.actif].xp += Math.max(0, +xp || 0); return ecrire(d); }
   function terminer(module, etapes) {
     const d = lire(), p = d.profils[d.actif];
     p.fait[module] = Math.max(p.fait[module] || 0, etapes);
@@ -69,21 +111,26 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
+  /** Lit un fichier de sauvegarde, le valide champ par champ, garde une copie de l'état actuel, puis remplace. */
   function importer(fichier) {
     return new Promise((ok, ko) => {
+      if (fichier.size > 200000) { ko(new Error('fichier trop gros')); return; }
       const r = new FileReader();
       r.onload = () => {
         try {
-          const d = JSON.parse(r.result);
-          if (!d.profils) throw new Error('fichier inattendu');
-          migrer(d); ecrire(d); ok(d);
+          const d = normaliser(JSON.parse(r.result));
+          try { const avant = localStorage.getItem(CLE); if (avant) localStorage.setItem(CLE_SECOURS, avant); } catch (_) {}
+          ecrire(d); ok(d);
         } catch (e) { ko(e); }
       };
       r.onerror = ko;
       r.readAsText(fichier);
     });
   }
-  function reinitialiser() { localStorage.removeItem(CLE); window.dispatchEvent(new CustomEvent('atelier:maj', { detail: lire() })); }
+  function reinitialiser() {
+    try { const avant = localStorage.getItem(CLE); if (avant) localStorage.setItem(CLE_SECOURS, avant); localStorage.removeItem(CLE); } catch (_) {}
+    window.dispatchEvent(new CustomEvent('atelier:maj', { detail: lire() }));
+  }
 
   /* --- voix : lit un texte en français avec la voix du système --- */
   function parler(texte) {
@@ -98,5 +145,9 @@
   }
   const stop = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); };
 
-  window.Atelier = { lire, ecrire, profil, profilId, choisir, gagner, terminer, badge, etape, niveau, exporter, importer, reinitialiser, voix: parler, stopVoix: stop };
+  // test d'écriture au chargement : prévient tout de suite si le stockage est bloqué
+  try { localStorage.setItem(CLE + '.test', '1'); localStorage.removeItem(CLE + '.test'); }
+  catch (_) { const f = () => signalerStockage(false); if (document.body) f(); else document.addEventListener('DOMContentLoaded', f); }
+
+  window.Atelier = { lire, ecrire, profil, profilId, choisir, gagner, terminer, badge, etape, niveau, exporter, importer, reinitialiser, voix: parler, stopVoix: stop, esc, normaliser, stockageOK: () => stockageOK };
 })();

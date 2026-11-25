@@ -6,11 +6,13 @@
 <title>Le poste de travail en 3D — Atelier</title>
 <meta name="theme-color" content="#F5F5F7">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/app.css?v=20261125g">
+<link rel="stylesheet" href="assets/app.css?v=20261125s">
+<link rel="stylesheet" href="assets/recit.css?v=20261125s">
 <style>
   .scene{position:relative;background:radial-gradient(120% 90% at 50% 0%,#EEF4FF 0%,#F7F9FC 55%,#F2F4F8 100%);
     border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden}
   #scene3d{height:min(64vh,560px);touch-action:none;cursor:grab;outline:none}
+  #scene3d:focus-visible{outline:3px solid #0071E3;outline-offset:3px}
   #scene3d:active{cursor:grabbing}
   #scene3d canvas{display:block;width:100%;height:100%}
   .hud{position:absolute;pointer-events:none;font:600 11px/1.4 -apple-system,"SF Mono",ui-monospace,monospace;color:#7A8497;letter-spacing:.13em;text-transform:uppercase}
@@ -63,7 +65,7 @@
   .defi.fait{background:linear-gradient(180deg,#F1FBF5,#E9F8F0);box-shadow:0 0 0 1.5px rgba(31,163,92,.22), var(--sh-1)}
   .defi.fait .st{color:#127A44}
   .defi.fait .n{background:linear-gradient(145deg,#34D399,#0EA47A);color:#fff}
-  #bravo{margin-top:14px;background:linear-gradient(135deg,#34D399,#0EA47A);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;width:max-content;max-width:100%}
+  #bravo{margin-top:14px;background:linear-gradient(135deg,#047857,#065F46);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;width:max-content;max-width:100%}
   #bravo.vu{opacity:1;transform:none}
   .aide{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink3);margin-top:10px}
   .aide span{display:inline-flex;align-items:center;gap:6px}
@@ -83,6 +85,8 @@
     <p class="sub">Un vrai modèle 3D dans le navigateur : fais tourner le poste, clique une pièce pour lire son rôle, puis remets les cinq composants à leur place.</p>
     <div class="xp" id="xp"></div>
   </section>
+  <section id="recit" data-recit="poste-3d" data-v="20261125s" style="--c1:#B57BFF;--c2:#6A5BFF" hidden></section>
+
 
   <h2 class="sec"><span>La scène</span><span>glisse pour tourner · clique pour choisir</span></h2>
   <div class="scene">
@@ -156,38 +160,9 @@
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261125g"></script>
-<script type="module" src="assets/poste3d.js?v=20261125g"></script>
-<script>
-  /* quiz court, indépendant du moteur 3D (utilisable même sans WebGL) */
-  (function () {
-    const Q = [
-      { q: 'Quel composant exécute les calculs ?', r: ['Le processeur', 'Le ventilateur', 'L\u2019alimentation', 'Le boîtier'], b: 0, e: 'Le processeur exécute les instructions ; les autres l\u2019alimentent, le refroidissent ou le protègent.' },
-      { q: 'Que perd-on en éteignant le poste ?', r: ['Le contenu du SSD', 'Le contenu de la mémoire vive', 'Le processeur', 'La carte mère'], b: 1, e: 'La mémoire vive s\u2019efface faute de courant ; le SSD conserve les fichiers.' },
-      { q: 'À quoi sert l\u2019alimentation ?', r: ['À refroidir', 'À transformer le 230 V en basses tensions continues', 'À calculer', 'À stocker les photos'], b: 1, e: 'Elle convertit le courant du secteur en tensions stables utilisables par les composants.' },
-      { q: 'Pourquoi un ventilateur est-il indispensable ?', r: ['Pour faire du bruit', 'Pour évacuer la chaleur des composants', 'Pour alimenter la carte mère', 'Pour accélérer Internet'], b: 1, e: 'Sans évacuation de la chaleur, le processeur surchauffe et ralentit, ou s\u2019arrête pour se protéger.' },
-    ];
-    const zone = document.getElementById('quiz3d'), bilan = document.getElementById('bilan3d');
-    let fait = 0, bon = 0;
-    zone.innerHTML = Q.map((t, i) => `<article class="q" data-q="${i}"><h3>${i + 1}. ${t.q}</h3>
-      <div class="rep">${t.r.map((r, k) => `<button data-k="${k}" data-i="${i}">${r}</button>`).join('')}</div>
-      <div class="expl"><b>Explication.</b> ${t.e}</div></article>`).join('');
-    zone.addEventListener('click', (ev) => {
-      const b = ev.target.closest('button[data-k]'); if (!b) return;
-      const art = b.closest('.q'); if (art.classList.contains('repondu')) return;
-      const i = +b.dataset.i, k = +b.dataset.k;
-      art.classList.add('repondu');
-      art.querySelectorAll('button').forEach((x, idx) => { x.disabled = true; if (idx === Q[i].b) x.classList.add('bon'); else if (idx === k) x.classList.add('faux'); });
-      fait++; if (k === Q[i].b) { bon++; window.Atelier.gagner(10); }
-      if (fait === Q.length) {
-        bilan.innerHTML = `<div class="kicker">Bilan</div><div class="note">${bon} / ${Q.length} — ${Math.round(bon / Q.length * 20)}/20</div>
-          <div class="cta"><a class="btn p" href="index.html">Retour à l'accueil</a><a class="btn s" href="module-composants.html">Refaire le module 2D</a></div>`;
-        bilan.classList.add('vu');
-        window.Atelier.terminer('poste3d', 3);
-        if (bon >= 3) window.Atelier.badge('poste3d');
-      }
-    });
-  })();
-</script>
+<script src="assets/store.js?v=20261125s"></script>
+<script type="module" src="assets/poste3d.js?v=20261125s"></script>
+<script src="assets/quiz3d.js?v=20261125s"></script>
+<script src="assets/recit.js?v=20261125s"></script>
 </body>
 </html>

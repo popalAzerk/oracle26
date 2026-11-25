@@ -8,8 +8,7 @@
 <meta name="theme-color" content="#F5F5F7">
 <link rel="icon" href="assets/logo/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/logo/icon-180.png">
-<meta name="theme-color" content="#0B0D12">
-<link rel="stylesheet" href="assets/app.css?v=20261125g">
+<link rel="stylesheet" href="assets/app.css?v=20261125s">
 </head>
 <body>
 <div class="wrap">
@@ -27,7 +26,7 @@
       <div class="cta">
         <a class="btn p" href="module-composants.html" id="btnReprendre">▶ Reprendre où j'en étais</a>
         <a class="btn s" href="#comment">Comment ça marche</a>
-        <input type="file" id="fichier" accept="application/json" class="sr">
+        <input type="file" id="fichier" accept="application/json" class="sr" tabindex="-1" aria-hidden="true">
       </div>
       <div class="xp" id="xp"></div>
       <div class="xp-outils">
@@ -38,11 +37,11 @@
 
     <figure class="hero-film">
       <div class="film-cadre">
-        <video id="film" src="assets/video/bande-annonce.mp4?v=20261125g" poster="assets/video/bande-annonce.jpg?v=20261125g"
-               autoplay muted loop playsinline preload="metadata"
+        <video id="film" src="assets/video/bande-annonce.mp4?v=20261125s" poster="assets/video/bande-annonce.jpg?v=20261125s"
+               muted loop playsinline preload="none"
                aria-label="Bande annonce de l'Atelier : électricité, lumière, eau, énergie, modélisation 3D"></video>
-        <button class="film-play" id="filmPlay" type="button" aria-label="Mettre la bande annonce en pause">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5h3v14H8zM14 5h3v14h-3z" fill="currentColor"/></svg>
+        <button class="film-play" id="filmPlay" type="button" aria-label="Lire la bande annonce">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
         </button>
       </div>
       <figcaption class="cap"><span>Bande annonce · 15 s</span><span>électricité · lumière · eau · énergie · 3D</span></figcaption>
@@ -237,129 +236,7 @@
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261125g"></script>
-<script>
-(function () {
-  const A = window.Atelier;
-  const mods = [
-    { id: 'electricite', titre: 'Électricité', ico: '⚡', c: ['#FFD84D', '#FF9F0A'],
-      desc: "Fermer une boucle, comparer série et dérivation, tester conducteurs et isolants, éviter le court-circuit.", min: 20, href: 'module-electricite.html', total: 3 },
-    { id: 'lumiere', titre: 'Lumière', ico: '🔆', c: ['#FF9EC4', '#F0417E'],
-      desc: "Ombres, propagation rectiligne, réfraction, lentilles et couleurs.", min: 20, href: 'module-lumiere.html', total: 3 },
-    { id: 'poste3d', titre: 'Le poste en 3D', ico: '🧊', c: ['#38BDF8', '#0E7490'],
-      desc: "Visite WebGL : tourne le poste, clique chaque pièce, remets les 7 composants en place.", min: 15, href: 'module-poste-3d.html', total: 3, badge: '3D' },
-    { id: 'composants', titre: 'Les composants', ico: '🔧', c: ['#6AA6FF', '#2F5BFF'],
-      desc: "Nommer les cinq constituants d'un poste, les placer, expliquer leur rôle.", min: 18, href: 'module-composants.html', total: 3 },
-    { id: 'energie', titre: 'Énergie', ico: '🔋', c: ['#34D399', '#0EA47A'],
-      desc: "Formes d'énergie, chaîne de conversion, rendement, sources et CO₂.", min: 18, href: 'module-energie.html', total: 3 },
-    { id: 'forces', titre: 'Forces et machines', ico: '⚙️', c: ['#A0A6B8', '#5A6478'],
-      desc: "Newtons, loi de Hooke sur un ressort, leviers et moments.", min: 20, href: 'module-forces.html', total: 3 },
-    { id: 'eau', titre: 'Eau et fluides', ico: '💧', c: ['#5AC8FA', '#0071E3'],
-      desc: "Cycle de l'eau, flottabilité, pression et vérins hydrauliques.", min: 22, href: 'module-eau.html', total: 3 },
-    { id: 'chaleur', titre: 'Chaleur et son', ico: '🌡️', c: ['#FB923C', '#EA580C'],
-      desc: "Conduction thermique, isolants, ondes sonores et vitesse du son.", min: 20, href: 'module-chaleur.html', total: 3 },
-    { id: 'matiere', titre: 'Matière et matériaux', ico: '🧪', c: ['#8B5CF6', '#6D28D9'],
-      desc: "États et changements d'état, mélanges homogènes, filtration et distillation.", min: 20, href: 'module-matiere.html', total: 3 },
-    { id: 'structures', titre: 'Structures', ico: '🏗️', c: ['#0EA5E9', '#1E40AF'],
-      desc: "Formes, triangulation, centre de gravité, charge maximale et rupture.", min: 20, href: 'module-structures.html', total: 3 },
-    { id: 'information', titre: 'Information', ico: '💻', c: ['#F472B6', '#BE185D'],
-      desc: "Binaire, portes logiques ET/OU/NON, capteur → programme → actionneur, biais d'IA.", min: 22, href: 'module-information.html', total: 3 },
-  ];
-  const ateliers = [
-    { id: 'frappe', titre: 'Frappe · 10 doigts', ico: '⌨️', c: ['#B57BFF', '#6A5BFF'],
-      desc: 'Apprendre l’AZERTY sans regarder les mains, touche par touche.', min: 5, total: 5 },
-    { id: 'ia', titre: 'Comprendre une IA', ico: '🤖', c: ['#FF7EB3', '#F0417E'],
-      desc: 'Entraîner un classifieur, le voir se tromper, corriger son biais.', min: 10, total: 4 },
-    { id: 'pix', titre: 'Badge Pix · domaine 1', ico: '🏅', c: ['#FFDE59', '#FF9F0A'],
-      desc: 'Rechercher, gérer et traiter des données — niveau 3 attendu en 3e.', min: 8, total: 6 },
-  ];
-  const AVATARS = { lea: '🦊', noe: '🦉', manon: '🐬' };
-
-  function rendreProfil() {
-    const d = A.lire();
-    const nav = document.getElementById('profils');
-    nav.innerHTML = Object.entries(d.profils).map(([id, p]) =>
-      `<button data-id="${id}" class="${id === d.actif ? 'on' : ''}"><span class="av">${AVATARS[id] || '👤'}</span>${p.nom}<span class="cl">${p.classe}</span></button>`).join('');
-  }
-  function rendreXp() {
-    const p = A.profil(), niv = A.niveau(p.xp), dans = p.xp % 200;
-    document.getElementById('xp').innerHTML =
-      `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div>
-       <small>${p.xp} XP · ${p.nom} · ${p.classe}</small>`;
-    document.getElementById('kicker').textContent = `Technologie & sciences · ${p.classe} · profil de ${p.nom}`;
-    const fait = p.fait.composants || 0;
-    document.getElementById('btnReprendre').textContent =
-      fait >= 3 ? '↻ Revoir la séquence' : fait > 0 ? '▶ Reprendre la séquence' : '▶ Commencer la séquence';
-  }
-  function carte(m, i, prefixe) {
-    const p = A.profil(), fait = p.fait[m.id] || 0, pc = Math.round((fait / m.total) * 100);
-    const etat = pc === 100 ? '<span class="pill ok">✓ terminé</span>'
-      : pc > 0 ? `<span class="pill go">en cours · ${fait}/${m.total}</span>`
-      : m.href ? '<span class="pill">à découvrir</span>' : '<span class="pill">bientôt</span>';
-    return `<article class="card" style="--c1:${m.c[0]};--c2:${m.c[1]}">
-      <div class="ico" aria-hidden="true">${m.ico}</div>
-      <div class="no">${prefixe}</div>
-      <h3>${m.href ? `<a href="${m.href}">${m.titre}</a>` : m.titre + ' <span style="font-size:12.5px;font-weight:600;color:var(--ink3)">· bientôt</span>'}</h3>
-      <p>${m.desc}</p>
-      <div class="bar"><i style="width:${pc}%"></i></div>
-      <div class="meta">${etat}<span>${m.min} min</span></div>
-    </article>`;
-  }
-  function rendreCartes() {
-    document.getElementById('modules').innerHTML = mods.map((m, i) => carte(m, i, String(i + 1).padStart(2, '0') + ' / 11')).join('');
-    document.getElementById('ateliers').innerHTML = ateliers.map((a) => carte(a, 0, 'Atelier')).join('');
-  }
-  function tout() { rendreProfil(); rendreXp(); rendreCartes(); }
-
-  document.getElementById('profils').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-id]'); if (!b) return;
-    A.choisir(b.dataset.id); tout();
-  });
-  document.getElementById('btnExport').onclick = () => A.exporter();
-  document.getElementById('btnImport').onclick = () => document.getElementById('fichier').click();
-  document.getElementById('fichier').onchange = async (e) => {
-    if (!e.target.files[0]) return;
-    try { await A.importer(e.target.files[0]); tout(); alert('Sauvegarde restaurée.'); }
-    catch (err) { alert('Ce fichier n’est pas une sauvegarde valide.'); }
-  };
-  document.getElementById('btnReset').onclick = () => {
-    if (confirm('Effacer toute la progression des trois profils ? Cette action ne peut pas être annulée.')) { A.reinitialiser(); tout(); }
-  };
-  window.addEventListener('atelier:maj', tout);
-  tout();
-})();
-
-  /* ---------- bande annonce : lecture maîtrisée ---------- */
-  (function () {
-    const film = document.getElementById('film');
-    const bouton = document.getElementById('filmPlay');
-    if (!film || !bouton) return;
-    const ICONE_PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5h3v14H8zM14 5h3v14h-3z" fill="currentColor"/></svg>';
-    const ICONE_PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>';
-    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const majBouton = () => {
-      const enPause = film.paused;
-      bouton.innerHTML = enPause ? ICONE_PLAY : ICONE_PAUSE;
-      bouton.setAttribute('aria-label', enPause ? 'Lire la bande annonce' : 'Mettre la bande annonce en pause');
-    };
-    if (reduit) { film.autoplay = false; film.pause(); }
-    bouton.addEventListener('click', () => { film.paused ? film.play().catch(() => {}) : film.pause(); });
-    film.addEventListener('play', majBouton); film.addEventListener('pause', majBouton);
-    majBouton();
-    // on ne fait tourner la vidéo que lorsqu'elle est à l'écran et que l'onglet est visible
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver((entrees) => {
-        entrees.forEach((e) => {
-          if (reduit) return;
-          if (e.isIntersecting && !document.hidden) film.play().catch(() => {}); else film.pause();
-        });
-      }, { threshold: .25 }).observe(film);
-    }
-    document.addEventListener('visibilitychange', () => {
-      if (reduit) return;
-      if (document.hidden) film.pause(); else if (!film.paused === false) film.play().catch(() => {});
-    });
-  })();
-</script>
+<script src="assets/store.js?v=20261125s"></script>
+<script src="assets/accueil.js?v=20261125s"></script>
 </body>
 </html>

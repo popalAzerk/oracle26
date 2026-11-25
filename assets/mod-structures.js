@@ -16,51 +16,72 @@ window.MODULE = {
   ],
   CAPACITE: { plat: 40, triangule: 220, arc: 150 },
   capaciteMax(e) { return window.MODULE.CAPACITE[e.forme] * Math.pow(e.epaisseur, 1.8) / 3; },
+  /* Stabilité : la poutre est POSÉE sur deux appuis et dépasse à droite (porte-à-faux).
+     G = centre de gravité de l'ensemble poutre + charge. Tant que G reste au-dessus de la base d'appui
+     (du bord gauche de l'appui gauche au bord droit de l'appui droit), rien ne bascule ;
+     dès que G dépasse le bord de l'appui droit, l'ensemble pivote autour de ce bord. */
+  GEO: { x1: 170, x2: 600, bout: 800, baseG: 130, baseD: 640, baseY: 300 },
+  stabilite(e) {
+    const g = window.MODULE.GEO;
+    const mPoutre = 20 * e.epaisseur;                          // kg : la poutre pèse plus quand elle est épaisse
+    const xPoutre = (g.x1 + g.bout) / 2;                       // son propre centre de gravité, au milieu
+    const px = g.x1 + (g.bout - 46 - g.x1) * (e.deplacement / 100);
+    const xG = (mPoutre * xPoutre + e.charge * px) / (mPoutre + e.charge);
+    return { px, xG, mPoutre, bascule: e.charge > 0 && xG > g.baseD };
+  },
   dessiner(e) {
-    const max = window.MODULE.capaciteMax(e);
+    const M = window.MODULE, g = M.GEO, max = M.capaciteMax(e);
     const rupture = e.charge > max;
-    const fleche = Math.min(60, (e.charge / Math.max(1, max)) * 28);
-    const baseY = 300, x1 = 180, x2 = 720, cx = (x1 + x2) / 2;
-    let forme = '';
-    if (e.forme === 'plat') {
-      forme = `<rect x="${x1}" y="${baseY - e.epaisseur * 4}" width="${x2 - x1}" height="${e.epaisseur * 8}" rx="3" fill="${rupture ? '#FCA5A5' : '#94A3B8'}" stroke="${rupture ? '#DC2626' : '#475569'}" stroke-width="2"/>`;
-    } else if (e.forme === 'triangule') {
-      forme = `<g><rect x="${x1}" y="${baseY - e.epaisseur * 4}" width="${x2 - x1}" height="${e.epaisseur * 8}" rx="3" fill="${rupture ? '#FCA5A5' : '#94A3B8'}" stroke="${rupture ? '#DC2626' : '#475569'}" stroke-width="2"/>
-        <path d="M${x1} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70} L${x2} ${baseY + e.epaisseur * 4} Z" fill="none" stroke="#1E40AF" stroke-width="5"/>
-        <path d="M${x1 + 120} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70} M${x2 - 120} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70}" stroke="#1E40AF" stroke-width="3" opacity=".6"/></g>`;
-    } else {
-      forme = `<path d="M${x1} ${baseY + e.epaisseur * 4} Q${cx} ${baseY - 150 - e.epaisseur * 6} ${x2} ${baseY + e.epaisseur * 4} L${x2} ${baseY + e.epaisseur * 4 + e.epaisseur * 6} Q${cx} ${baseY - 130 - e.epaisseur * 6} ${x1} ${baseY + e.epaisseur * 4 + e.epaisseur * 6} Z" fill="${rupture ? '#FCA5A5' : '#94A3B8'}" stroke="${rupture ? '#DC2626' : '#475569'}" stroke-width="2"/>`;
+    const st = M.stabilite(e);
+    const fleche = st.bascule ? 0 : Math.min(60, (e.charge / Math.max(1, max)) * 28);
+    const { x1, x2, bout, baseY } = g, cx = (x1 + x2) / 2;
+    const remplir = rupture ? '#FCA5A5' : '#94A3B8', trait = rupture ? '#DC2626' : '#475569';
+    const plateau = `<rect x="${x1}" y="${baseY - e.epaisseur * 4}" width="${bout - x1}" height="${e.epaisseur * 8}" rx="3" fill="${remplir}" stroke="${trait}" stroke-width="2"/>`;
+    let forme = plateau;
+    if (e.forme === 'triangule') {
+      forme += `<path d="M${x1} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70} L${x2} ${baseY + e.epaisseur * 4} Z" fill="none" stroke="#1E40AF" stroke-width="5"/>
+        <path d="M${x1 + 100} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70} M${x2 - 100} ${baseY + e.epaisseur * 4} L${cx} ${baseY - 70}" stroke="#1E40AF" stroke-width="3" opacity=".6"/>`;
+    } else if (e.forme === 'arc') {
+      forme += `<path d="M${x1} ${baseY + e.epaisseur * 4} Q${cx} ${baseY - 150 - e.epaisseur * 6} ${x2} ${baseY + e.epaisseur * 4} L${x2} ${baseY + e.epaisseur * 4 + e.epaisseur * 6} Q${cx} ${baseY - 130 - e.epaisseur * 6} ${x1} ${baseY + e.epaisseur * 4 + e.epaisseur * 6} Z" fill="${remplir}" stroke="${trait}" stroke-width="2"/>`;
     }
-    const px = x1 + (x2 - x1) * (e.deplacement / 100);
-    return `
-      <rect x="${x1 - 40}" y="${baseY + e.epaisseur * 8 + 5}" width="60" height="70" fill="#CBD5E1"/>
-      <rect x="${x2 - 20}" y="${baseY + e.epaisseur * 8 + 5}" width="60" height="70" fill="#CBD5E1"/>
+    const yAppui = baseY + e.epaisseur * 4 + 2, sol = 372, hAppui = Math.max(6, sol - yAppui);
+    const pivot = `${g.baseD} ${baseY + e.epaisseur * 4}`;
+    const ensemble = `
       <g transform="translate(0 ${fleche})">${forme}</g>
-      <g transform="translate(${px} ${baseY - 30 - fleche - e.epaisseur * 4})">
+      <g transform="translate(${st.px} ${baseY - e.epaisseur * 4 + fleche})">
         <rect x="-46" y="-46" width="92" height="46" rx="8" fill="${rupture ? '#DC2626' : '#FCD34D'}" stroke="#B45309" stroke-width="2.5"/>
         <text x="0" y="-16" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="15" font-weight="700" fill="${rupture ? '#fff' : '#5A3B00'}">${e.charge} kg</text>
       </g>
-      <line x1="${px}" y1="${baseY + 90}" x2="${px}" y2="${baseY + 40}" stroke="#0EA5E9" stroke-width="2" stroke-dasharray="5 5"/>
-      <text x="${px}" y="${baseY + 112}" text-anchor="middle" class="lab">poids ici</text>
-      <text x="${cx}" y="60" text-anchor="middle" class="lab">${rupture ? 'LA STRUCTURE CÈDE' : 'la structure tient'}</text>
-      ${rupture ? `<text x="${cx}" y="84" text-anchor="middle" class="lab" fill="#DC2626">limite dépassée : ${Math.round(max)} kg maximum</text>` : ''}`;
+      <circle cx="${st.xG}" cy="${baseY + fleche}" r="11" fill="${st.bascule ? '#DC2626' : '#0EA5E9'}" stroke="#fff" stroke-width="2.5"/>
+      <text x="${st.xG}" y="${baseY + fleche + 5}" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="13" font-weight="800" fill="#fff">G</text>`;
+    const couleurBase = st.bascule ? '#DC2626' : '#16A34A';
+    return `
+      <rect x="${g.baseG}" y="${yAppui}" width="60" height="${hAppui}" fill="#CBD5E1"/>
+      <rect x="${g.baseD - 60}" y="${yAppui}" width="60" height="${hAppui}" fill="#CBD5E1"/>
+      ${st.bascule ? `<g transform="rotate(9 ${pivot})">${ensemble}</g>` : ensemble}
+      <line x1="${st.xG}" y1="${baseY + 14}" x2="${st.xG}" y2="${sol + 16}" stroke="${st.bascule ? '#DC2626' : '#0EA5E9'}" stroke-width="2" stroke-dasharray="5 5"/>
+      <path d="M${g.baseG} ${sol + 6}v10h${g.baseD - g.baseG}v-10" fill="none" stroke="${couleurBase}" stroke-width="3"/>
+      <text x="${(g.baseG + g.baseD) / 2}" y="${sol + 36}" text-anchor="middle" class="lab" fill="${couleurBase}">base d'appui</text>
+      <text x="${bout - 70}" y="${sol - 10}" text-anchor="middle" class="lab">porte-à-faux</text>
+      <text x="${cx + 60}" y="60" text-anchor="middle" class="lab">${st.bascule ? 'ÇA BASCULE : G est sorti de la base d\u2019appui' : rupture ? 'LA STRUCTURE CÈDE' : 'la structure tient'}</text>
+      ${rupture && !st.bascule ? `<text x="${cx + 60}" y="84" text-anchor="middle" class="lab" fill="#DC2626">limite dépassée : ${Math.round(max)} kg maximum</text>` : ''}`;
   },
   mesures(e) {
-    const max = window.MODULE.capaciteMax(e), r = e.charge / max;
-    const bascule = e.deplacement > 60;
+    const M = window.MODULE, max = M.capaciteMax(e), r = e.charge / max, st = M.stabilite(e);
     return [{ valeur: Math.round(max) + ' kg', label: 'charge maximale' },
             { valeur: Math.round(r * 100) + ' %', label: 'de la limite', alerte: r > 1 },
-            { valeur: bascule ? 'bascule' : 'stable', label: 'stabilité', alerte: bascule }];
+            { valeur: st.bascule ? 'bascule' : 'stable', label: 'stabilité', alerte: st.bascule }];
   },
   commentaire(e) {
-    const max = window.MODULE.capaciteMax(e), rupture = e.charge > max;
+    const M = window.MODULE, max = M.capaciteMax(e), rupture = e.charge > max, st = M.stabilite(e);
+    if (st.bascule) return { classe: 'faux', html: `<b>Ça bascule.</b> Le centre de gravité G de l'ensemble (poutre de ${st.mPoutre} kg + charge de ${e.charge} kg) est passé au-delà de l'appui de droite : plus rien ne retient la poutre de l'autre côté. Recule la charge, ou imagine un contrepoids à gauche, comme sur une grue.` };
     if (rupture) return { classe: 'faux', html: `<b>Ça cède.</b> Cette forme supporte au maximum ${Math.round(max)} kg avec ${e.epaisseur} cm d'épaisseur. Le triangle est la forme la plus rigide : il ne se déforme pas sans changer la longueur de ses côtés.` };
-    return { classe: 'bon', html: `<b>Ça tient.</b> ${e.forme === 'triangule' ? 'Le triangle est indéformable : c\u2019est pourquoi il est partout (grues, charpentes, ponts).' : e.forme === 'arc' ? 'L\u2019arc reporte la charge vers les appuis latéraux : c\u2019est le principe des voûtes romaines.' : 'La poutre plate travaille en flexion : elle plie au milieu. Doubler son épaisseur la rend bien plus résistante.'} ${e.deplacement > 60 ? 'Attention, le poids est très décalé : la structure risque de basculer.' : ''}` };
+    return { classe: 'bon', html: `<b>Ça tient.</b> ${e.forme === 'triangule' ? 'Le triangle est indéformable : c\u2019est pourquoi il est partout (grues, charpentes, ponts).' : e.forme === 'arc' ? 'L\u2019arc reporte la charge vers les appuis latéraux : c\u2019est le principe des voûtes romaines.' : 'La poutre plate travaille en flexion : elle plie au milieu. Doubler son épaisseur la rend bien plus résistante.'} ${st.xG > M.GEO.baseD - 40 ? 'Attention : G s\u2019approche du bord de l\u2019appui de droite.' : ''}` };
   },
   defis: [
     { id: 'tri', texte: 'Passe en triangulée et soutiens 400 kg.', xp: 25, bravo: 'le triangle gagne, largement.', quand: (e) => e.forme === 'triangule' && e.charge >= 400 && e.charge <= window.MODULE.capaciteMax(e) },
     { id: 'casse', texte: 'Dépasse la limite et observe la rupture.', xp: 20, bravo: 'tu as trouvé le point de rupture.', quand: (e) => e.charge > window.MODULE.capaciteMax(e) },
-    { id: 'basculer', texte: 'Décale le poids à 100 % et explique pourquoi ça bascule.', xp: 20, bravo: 'le centre de gravité sort de la base.', quand: (e) => e.deplacement >= 90 },
+    { id: 'basculer', texte: 'Décale le poids vers le bout du porte-à-faux jusqu\u2019à ce que ça bascule, et explique pourquoi.', xp: 20, bravo: 'le centre de gravité G est sorti de la base d\u2019appui.', quand: (e) => window.MODULE.stabilite(e).bascule },
   ],
   fiches: [
     { id: 'forme', court: 'Formes', nom: 'La forme fait la résistance', texte: "Une poutre plate plie ; un triangle ne se déforme pas ; un arc reporte la charge sur ses appuis. <b>La géométrie compte autant que la matière.</b>", plus: "Une feuille de papier droite ne porte rien ; pliée en accordéon ou en U, elle supporte un livre. Les ingénieurs jouent sur la forme autant que sur l'épaisseur." },

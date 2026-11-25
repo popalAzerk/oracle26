@@ -1,6 +1,0 @@
-# Cache : les fichiers partagés doivent être revalidés à chaque visite
-/assets/*
-  Cache-Control: public, max-age=0, must-revalidate
-
-/*.html
-  Cache-Control: public, max-age=0, must-revalidate

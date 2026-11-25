@@ -6,7 +6,8 @@
 <title>Atelier</title>
 <meta name="theme-color" content="#F5F5F7">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/app.css?v=20261125g">
+<link rel="stylesheet" href="assets/app.css?v=20261125s">
+<link rel="stylesheet" href="assets/recit.css?v=20261125s">
 <style>
   .banc-wrap{background:var(--card);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-2)}
   .banc-wrap svg{width:100%;height:auto;display:block}
@@ -36,7 +37,7 @@
   .defi.fait{background:linear-gradient(180deg,#F1FBF5,#E9F8F0);box-shadow:0 0 0 1.5px rgba(31,163,92,.22), var(--sh-1)}
   .defi.fait .st{color:#127A44}
   .defi.fait .n{background:linear-gradient(145deg,#34D399,#0EA47A);color:#fff}
-  #bravo{margin-top:14px;background:linear-gradient(135deg,#34D399,#0EA47A);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;width:max-content;max-width:100%}
+  #bravo{margin-top:14px;background:linear-gradient(135deg,#047857,#065F46);color:#fff;font-weight:700;font-size:14.5px;padding:13px 18px;border-radius:980px;box-shadow:0 12px 28px -12px #0EA47A;opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;width:max-content;max-width:100%}
   #bravo.vu{opacity:1;transform:none}
   .muted{color:var(--ink3)}
   .maison{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
@@ -56,6 +57,8 @@
     <p class="sub" id="soustitre"></p>
     <div class="xp" id="xp"></div>
   </section>
+  <section id="recit" data-recit="MODULEID" data-v="20261125s" hidden></section>
+
 
   <h2 class="sec"><span>Étape 1 · l'atelier</span><span>change un réglage à la fois</span></h2>
   <div class="banc-wrap"><div id="banc"></div></div>
@@ -82,8 +85,9 @@
     <span>Atelier · technologie &amp; sciences</span>
   </footer>
 </div>
-<script src="assets/store.js?v=20261125g"></script>
-<script src="assets/mod-MODULEID.js"></script>
-<script src="assets/engine.js"></script>
+<script src="assets/store.js?v=20261125s"></script>
+<script src="assets/mod-MODULEID.js?v=20261125s"></script>
+<script src="assets/engine.js?v=20261125s"></script>
+<script src="assets/recit.js?v=20261125s"></script>
 </body>
 </html>

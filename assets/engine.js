@@ -29,7 +29,7 @@
     const p = A.profil(), niv = A.niveau(p.xp), dans = p.xp % 200;
     document.getElementById('xp').innerHTML =
       `<span class="lvl">⭐ Niveau ${niv}</span><div class="rail"><i style="width:${(dans / 200) * 100}%"></i></div>
-       <small>${p.xp} XP · ${p.nom} · ${p.classe}</small>`;
+       <small>${p.xp} XP · ${A.esc(p.nom)} · ${A.esc(p.classe)}</small>`;
   }
   function terminerEtape(n) { if ((A.etape(M.id) || 0) < n) { A.terminer(M.id, n); majXP(); } }
 

@@ -1,0 +1,47 @@
+# Atelier (popalazerk.com) — en-têtes servis par l'hébergeur.
+# Le serveur d'origine est LiteSpeed (derrière Cloudflare) : il lit ce fichier, à la syntaxe Apache.
+# Côté Cloudflare, « Browser Cache TTL » doit rester sur « Respect Existing Headers ».
+
+# --- types de fichiers ---
+AddType model/gltf-binary .glb
+AddType text/javascript .js .mjs
+AddType audio/mpeg .mp3
+AddType video/mp4 .mp4
+AddType image/svg+xml .svg
+AddDefaultCharset utf-8
+
+# --- cache ---
+# L'hébergeur ajoute par défaut « garder 7 jours » aux scripts, styles et images : on reprend la main.
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+<IfModule mod_headers.c>
+  # Pages, scripts, styles : revérifiés à chaque visite (réponse 304 de quelques octets si rien n'a changé).
+  # Plus aucun risque qu'un élève reçoive un mélange d'ancien et de nouveau code.
+  <FilesMatch "\.(html?|js|mjs|css|json)$">
+    Header set Cache-Control "no-cache"
+    Header unset Expires
+  </FilesMatch>
+  # Médias lourds : 30 jours. Leurs adresses portent une estampille ?v=… qui change avec le contenu.
+  <FilesMatch "\.(mp4|mp3|glb|jpe?g|png|webp|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+    Header unset Expires
+  </FilesMatch>
+
+  # --- sécurité et vie privée (public mineur) ---
+  # Pages de l'Atelier : aucun script ni ressource d'un autre site, aucun cadre, aucun formulaire envoyé.
+  # (Limité aux pages de l'Atelier : les démos de /apercu ont leur propre .htaccess.)
+  <FilesMatch "^(index|module-[a-z0-9-]+)\.html$">
+    Header always set Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
+  </FilesMatch>
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+</IfModule>
+
+# Fichiers de travail jamais servis (liste précise : _pulse_marker.txt et les autres fichiers du site restent publics)
+<FilesMatch "^(_gabarit-module\.html|_headers|.*\.(py|tgz|log))$">
+  Require all denied
+</FilesMatch>
