@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Frappe à 10 doigts — Atelier</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23161513'/%3E%3Cpath d='M9 22 16 9l7 13' stroke='%23F1EDE4' stroke-width='2.6' fill='none'/%3E%3Ccircle cx='24' cy='24' r='2.6' fill='%23C2452D'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css?v=20261126b">
+<link rel="stylesheet" href="assets/atelier-frappe.css?v=20261126b">
+</head>
+<body>
+<div class="wrap at-frappe">
+  <header>
+    <a class="brand" href="index.html"><span class="mark">A</span>Atelier<span class="tagline-top">numérique · clavier</span></a>
+    <a class="btn s small" href="index.html">← Accueil</a>
+  </header>
+
+  <section style="padding:30px 0 6px">
+    <span class="kicker">Atelier · clavier AZERTY</span>
+    <h1 style="font-size:clamp(32px,4.4vw,50px);margin-top:18px">Taper à 10 doigts,<br><span class="grad">sans regarder tes mains.</span></h1>
+    <p class="sub">Cinq leçons : la rangée de repos, la rangée du haut, la rangée du bas, les majuscules et les accents, puis un test d'une minute. Le clavier dessiné te montre la touche et le doigt à utiliser.</p>
+    <div class="cta"><button class="btn p" type="button" id="atfCta">Commencer la leçon 1</button></div>
+    <div class="xp" id="xp"></div>
+  </section>
+
+  <div class="atf-sans-clavier" id="atfSansClavier" role="status" hidden>
+    <b>Cet atelier demande un vrai clavier.</b>
+    <span>Sur une tablette ou un téléphone, branche un clavier (ou passe sur un ordinateur). Tu peux quand même lire les conseils et regarder le clavier dessiné. Ce message disparaît dès que tu appuies sur une touche d'un clavier.</span>
+  </div>
+
+  <h2 class="sec"><span>Avant de commencer</span><span>3 règles d'or</span></h2>
+  <div class="atf-regles">
+    <article class="fiche">
+      <div class="role">Repos</div>
+      <h3>Les index sur F et J</h3>
+      <p>Les touches <b>F</b> et <b>J</b> ont une petite bosse : pose tes index dessus. Les autres doigts se posent à côté : <b>Q S D</b> à gauche, <b>K L M</b> à droite. Les pouces effleurent la barre d'espace.</p>
+      <details><summary>En savoir plus</summary><div>Les bosses servent à retrouver la position au toucher, sans regarder. Après chaque touche, ton doigt revient sur la rangée de repos. Garde le dos droit, les pieds à plat et les poignets légèrement relevés : ils ne s'écrasent pas sur la table.</div></details>
+    </article>
+    <article class="fiche">
+      <div class="role">Regard</div>
+      <h3>Les yeux sur l'écran</h3>
+      <p><b>Ne regarde pas tes mains.</b> Regarde le texte et le clavier dessiné : la touche à taper s'allume dans la couleur du doigt qui doit la frapper.</p>
+      <details><summary>En savoir plus</summary><div>Au début, tu iras sans doute moins vite qu'avec deux doigts. C'est normal : tes doigts apprennent où sont les touches. Avec un peu d'entraînement régulier (dix minutes par jour valent mieux qu'une heure une fois), les gestes deviennent automatiques.</div></details>
+    </article>
+    <article class="fiche">
+      <div class="role">Précision</div>
+      <h3>Juste d'abord, vite ensuite</h3>
+      <p>Une leçon est réussie à partir de <b>90&nbsp;% de précision</b>. Si tu te trompes, le texte attend la bonne touche et t'explique ton erreur.</p>
+      <details><summary>En savoir plus</summary><div>Pour une majuscule, tiens la touche Maj avec l'auriculaire de l'<b>autre main</b> que celle qui tape la lettre. Exemple : « P » se tape avec la main droite, donc Maj gauche. La précision compte toutes tes frappes, même une faute corrigée tout de suite.</div></details>
+    </article>
+  </div>
+
+  <h2 class="sec" id="atfLeconsTitre"><span>Les 5 leçons</span><span>réussie dès 90&nbsp;% de précision · 40 XP</span></h2>
+  <div class="atf-lecons" id="atfLecons" role="group" aria-label="Choisir une leçon"></div>
+
+  <div class="atf-poste" id="atfPoste">
+    <div class="atf-tete">
+      <div>
+        <div class="atf-titre" id="atfTitre">Leçon</div>
+        <p class="atf-consigne" id="atfConsigne"></p>
+      </div>
+      <div class="atf-actions">
+        <button class="btn p" id="atfGo" type="button">Commencer</button>
+        <button class="btn s" id="atfStop" type="button" hidden>Arrêter (Échap)</button>
+      </div>
+    </div>
+    <p class="atf-yeux"><span aria-hidden="true">👀</span> Regarde l'écran, pas tes mains. Tes index retrouvent F et J grâce aux petites bosses.</p>
+    <div class="atf-zone" id="atfZone">
+      <div class="atf-texte" id="atfTexte" aria-describedby="atfConsigne"></div>
+      <textarea class="atf-capteur" id="atfCapteur" aria-label="Zone de frappe : tape le texte affiché" autocomplete="off" autocapitalize="off" spellcheck="false" rows="1"></textarea>
+    </div>
+    <div class="atf-mesures" id="atfMesures"></div>
+    <div class="atf-alerte" id="atfVerr" role="status" hidden><b>Verr. Maj est activé.</b> Les lettres sortent en majuscules. Appuie une fois sur la touche Verr. Maj (au-dessus de Maj gauche) pour la couper.</div>
+    <div class="commentaire" id="atfRetour" aria-live="polite">Choisis une leçon, puis appuie sur Commencer.</div>
+    <p class="atf-prochaine" id="atfProchaine"></p>
+    <div class="atf-clavier-bloc">
+      <div class="atf-clavier" id="atfClavier" aria-hidden="true"></div>
+      <div class="atf-mains-bloc">
+        <svg class="atf-mains" id="atfMains" viewBox="0 0 330 150" aria-hidden="true"></svg>
+        <ul class="atf-legende" id="atfLegende" aria-label="Couleur de chaque doigt"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="bilan" id="atfBilan" aria-live="polite"></div>
+
+  <h2 class="sec"><span>Tes touches faibles</span><span>exercice ciblé · 20 XP</span></h2>
+  <div class="atf-faibles" id="atfFaibles"></div>
+
+  <h2 class="sec"><span>Entraînement libre</span><span>sans chrono · 10 XP la première fois</span></h2>
+  <div class="atf-libre">
+    <div class="atf-libre-themes">
+      <p>Trois phrases au hasard, à ton rythme :</p>
+      <div class="atf-boutons">
+        <button class="btn s" type="button" data-libre="sciences">Sciences</button>
+        <button class="btn s" type="button" data-libre="quotidien">Vie quotidienne</button>
+      </div>
+    </div>
+    <div class="atf-libre-perso">
+      <label for="atfPerso">Ou écris (ou colle) ton propre texte, 300 caractères au plus :</label>
+      <textarea id="atfPerso" maxlength="300" rows="3" spellcheck="true" placeholder="Par exemple : la phrase du jour de ton cahier."></textarea>
+      <button class="btn s" type="button" id="atfPersoGo">M'entraîner sur ce texte</button>
+      <div class="atf-perso-retour" id="atfPersoRetour" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <h2 class="sec"><span>Objectifs de vitesse</span><span>repères indicatifs selon ta classe</span></h2>
+  <div class="atf-objectifs">
+    <table class="atf-table">
+      <caption>Vitesse visée au test d'une minute, avec au moins 90&nbsp;% de précision</caption>
+      <thead><tr><th scope="col">Classe</th><th scope="col">Objectif</th><th scope="col">D'où vient ce chiffre</th></tr></thead>
+      <tbody id="atfObjectifs"></tbody>
+    </table>
+    <div class="atf-calcul">
+      <h3>Comment l'atelier calcule</h3>
+      <p><b>Vitesse</b> : caractères justes (espaces compris) ÷ 5 ÷ temps en minutes. Par convention, dans les tests de frappe, un « mot » vaut 5 caractères, quelle que soit la longueur des vrais mots.</p>
+      <p><b>Précision</b> : frappes justes ÷ toutes tes frappes × 100. Une faute compte même si tu tapes ensuite la bonne touche.</p>
+      <details><summary>En savoir plus : pourquoi ces objectifs ?</summary><div>
+        À notre connaissance, aucun texte officiel français ne fixe une vitesse de frappe à atteindre au collège ou au lycée. Les repères ci-contre viennent du site d'entraînement américain Typing.com : de 20 à 30 mots/min au collège américain (élèves d'environ 11 à 14 ans), de 30 à 40 au lycée. Ils concernent des élèves qui tapent en anglais, sur des claviers QWERTY. En français, les accents et la touche Maj pour le point ralentissent un peu : l'atelier prend donc le bas de ces fourchettes.<br><br>
+        Pour comparer : une grande étude de 2018 (Dhakal et al., universités Aalto et Cambridge, 168 960 volontaires, âge moyen 24,5 ans, 72&nbsp;% avaient suivi un cours de frappe) a mesuré une vitesse moyenne de 52 mots/min, avec de très grands écarts entre les personnes.
+      </div></details>
+    </div>
+  </div>
+
+  <footer>
+    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
+    <span>Clavier AZERTY français · méthode des 10 doigts</span>
+  </footer>
+</div>
+<script src="assets/store.js?v=20261126b"></script>
+<script src="assets/atelier-frappe.js?v=20261126b"></script>
+</body>
+</html>

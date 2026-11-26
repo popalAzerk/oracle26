@@ -27,11 +27,11 @@
   ];
   const ateliers = [
     { id: 'frappe', titre: 'Frappe · 10 doigts', ico: '⌨️', c: ['#B57BFF', '#6A5BFF'],
-      desc: 'Apprendre l’AZERTY sans regarder les mains, touche par touche.', min: 5, total: 5 },
+      desc: 'Apprendre l’AZERTY sans regarder les mains, touche par touche, puis test de vitesse.', min: 30, total: 5, href: 'atelier-frappe.html' },
     { id: 'ia', titre: 'Comprendre une IA', ico: '🤖', c: ['#FF7EB3', '#F0417E'],
-      desc: 'Entraîner un classifieur, le voir se tromper, corriger son biais.', min: 10, total: 4 },
+      desc: 'Entraîner une IA, corriger son biais, savoir lui demander et repérer ses erreurs.', min: 25, total: 4, href: 'atelier-ia.html' },
     { id: 'pix', titre: 'Badge Pix · domaine 1', ico: '🏅', c: ['#FFDE59', '#FF9F0A'],
-      desc: 'Rechercher, gérer et traiter des données — niveau 3 attendu en 3e.', min: 8, total: 6 },
+      desc: 'Rechercher, gérer et traiter des données — niveau 3 attendu en 3e.', min: 30, total: 6, href: 'atelier-pix.html' },
   ];
   const AVATARS = { lea: '🦊', noe: '🦉', manon: '🐬' };
 
