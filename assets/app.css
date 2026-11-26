@@ -311,3 +311,13 @@ footer a{color:var(--ink2)}
 .piece-btn{touch-action:none}
 .fantome{position:fixed;left:0;top:0;z-index:90;pointer-events:none;opacity:.92;box-shadow:var(--sh-3);border-radius:16px;
   display:flex;align-items:center;gap:12px;background:var(--card);padding:12px 14px;border:0;font:inherit;max-width:260px;transform-origin:0 0}
+
+/* ---------- animations des fiches (assets/anim-fiche.js) ---------- */
+.fiche-anim{margin:6px 0 12px;border-radius:14px;overflow:hidden;background:color-mix(in srgb,var(--c1,#6AA6FF) 9%,#fff);border:1px solid color-mix(in srgb,var(--c1,#6AA6FF) 22%,#fff)}
+.fiche-anim svg{display:block;width:100%;height:auto}
+.fiche-anim figcaption{display:flex;align-items:center;gap:8px;padding:2px 4px 4px 12px;font-size:13px;line-height:1.35;color:var(--ink2)}
+.fiche-anim figcaption span{flex:1}
+.fa-pause{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:var(--ink2);cursor:pointer}
+.fa-pause:hover{background:rgba(0,0,0,.05)}
+.fiche-anim.fige *,.fiche-anim.hors *{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){.fiche-anim *{animation:none!important;transition:none!important}.fa-pause{display:none}}
