@@ -12,7 +12,7 @@
 .at-frappe [data-f="R4"]{--f:var(--atf-R4)} .at-frappe [data-f="R5"]{--f:var(--atf-R5)}
 .at-frappe [data-f="P"]{--f:var(--atf-P)}
 
-.at-frappe .kicker{background:linear-gradient(135deg,var(--atf-c1),var(--atf-c2));box-shadow:0 6px 18px rgba(106,91,255,.30)}
+.at-frappe .kicker{background:linear-gradient(135deg,#7446DB,#5241DB);box-shadow:0 6px 18px rgba(106,91,255,.30)}
 .at-frappe h1 .grad{background:linear-gradient(120deg,#9B5CFF,var(--atf-c2) 60%,#4B3FD9);-webkit-background-clip:text;background-clip:text;color:transparent}
 .at-frappe header .btn.small,.at-frappe .btn{min-height:44px}
 .at-frappe header .brand{min-height:44px}
@@ -38,7 +38,7 @@
   box-shadow:var(--sh-1);font:600 15px/1.25 inherit;color:var(--ink);transition:transform .16s ease-out,box-shadow .16s}
 .at-frappe .atf-lecon:hover{transform:translateY(-1px);box-shadow:var(--sh-2)}
 .at-frappe .atf-lecon .atf-num{grid-area:num;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;
-  background:linear-gradient(140deg,var(--atf-c1),var(--atf-c2));box-shadow:0 8px 16px -8px var(--atf-c2)}
+  background:linear-gradient(140deg,#7446DB,#5241DB);box-shadow:0 8px 16px -8px var(--atf-c2)}
 .at-frappe .atf-lecon .atf-nom{grid-area:nom}
 .at-frappe .atf-lecon small{display:block;font-weight:500;font-size:12.5px;color:var(--ink2);margin-top:2px}
 .at-frappe .atf-lecon .pill{grid-area:etat;justify-self:start}

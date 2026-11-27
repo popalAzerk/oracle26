@@ -6,8 +6,8 @@
 <title>Le poste de travail en 3D — Atelier</title>
 <meta name="theme-color" content="#F5F5F7">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23B57BFF'/%3E%3Cstop offset='1' stop-color='%232F5BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M9 23 16 9l7 14' stroke='%23fff' stroke-width='2.8' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/app.css?v=20261126b">
-<link rel="stylesheet" href="assets/recit.css?v=20261126b">
+<link rel="stylesheet" href="assets/app.css?v=20261127a">
+<link rel="stylesheet" href="assets/recit.css?v=20261127a">
 <style>
   .scene{position:relative;background:radial-gradient(120% 90% at 50% 0%,#EEF4FF 0%,#F7F9FC 55%,#F2F4F8 100%);
     border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden}
@@ -16,14 +16,14 @@
   #scene3d:focus-visible{outline:3px solid #0071E3;outline-offset:3px}
   #scene3d:active{cursor:grabbing}
   #scene3d canvas{display:block;width:100%;height:100%}
-  .hud{position:absolute;pointer-events:none;font:600 11px/1.4 -apple-system,"SF Mono",ui-monospace,monospace;color:#7A8497;letter-spacing:.13em;text-transform:uppercase}
+  .hud{position:absolute;pointer-events:none;font:600 11px/1.4 -apple-system,"SF Mono",ui-monospace,monospace;color:#525C70;letter-spacing:.13em;text-transform:uppercase}
   .hud.tl{top:14px;left:16px}.hud.tr{top:14px;right:16px;text-align:right}
   .hud.bl{bottom:14px;left:16px}.hud.br{bottom:14px;right:16px;text-align:right}
   .etiquettes3d{position:absolute;inset:0;pointer-events:none}
   .etiquette3d{position:absolute;left:0;top:0;display:inline-flex;align-items:center;border:0;background:rgba(255,255,255,.94);
     backdrop-filter:blur(8px);border-radius:980px;padding:3px;font:700 11.5px/1 inherit;color:#1D1D1F;
     box-shadow:0 2px 10px -2px rgba(20,30,50,.3);cursor:pointer;transition:opacity .2s;white-space:nowrap;overflow:hidden}
-  .etiquette3d b{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--c,#5A6478);color:#fff;font-size:10.5px;font-weight:800;flex:none}
+  .etiquette3d b{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--c,#5A6478) 60%,#1D1D1F);color:#fff;font-size:10.5px;font-weight:800;flex:none}
   .etiquette3d span{max-width:0;overflow:hidden;transition:max-width .18s ease, padding .18s ease;padding-left:0}
   .etiquette3d.ouvert{z-index:3}
   .etiquette3d.ouvert span{max-width:190px;padding:0 9px 0 7px}
@@ -86,7 +86,7 @@
     <p class="sub">Un vrai modèle 3D dans le navigateur : fais tourner le poste, clique une pièce pour lire son rôle, puis remets les cinq composants à leur place.</p>
     <div class="xp" id="xp"></div>
   </section>
-  <section id="recit" data-recit="poste-3d" data-v="20261126b" style="--c1:#B57BFF;--c2:#6A5BFF" hidden></section>
+  <section id="recit" data-recit="poste-3d" data-v="20261127a" style="--c1:#B57BFF;--c2:#6A5BFF" hidden></section>
 
 
   <h2 class="sec"><span>La scène</span><span>glisse pour tourner · clique pour choisir</span></h2>
@@ -161,10 +161,10 @@
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261126b"></script>
-<script type="module" src="assets/poste3d.js?v=20261126b"></script>
-<script src="assets/repli3d.js?v=20261126b" defer></script>
-<script src="assets/quiz3d.js?v=20261126b"></script>
-<script src="assets/recit.js?v=20261126b"></script>
+<script src="assets/store.js?v=20261127a"></script>
+<script type="module" src="assets/poste3d.js?v=20261127a"></script>
+<script src="assets/repli3d.js?v=20261127a" defer></script>
+<script src="assets/quiz3d.js?v=20261127a"></script>
+<script src="assets/recit.js?v=20261127a"></script>
 </body>
 </html>

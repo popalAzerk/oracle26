@@ -6,38 +6,51 @@
 <title>Atelier — technologie &amp; SVT, 5e · 3e · 2de</title>
 <meta name="description" content="Environnement de travail pour le collège et le lycée : technologie, SVT, clavier, IA, Pix. Progression gardée sur l'ordinateur.">
 <meta name="theme-color" content="#F5F5F7">
-<link rel="icon" href="assets/logo/favicon.svg?v=20261126b" type="image/svg+xml">
-<link rel="apple-touch-icon" href="assets/logo/icon-180.png?v=20261126b">
-<link rel="stylesheet" href="assets/app.css?v=20261126b">
+<link rel="icon" href="assets/logo/favicon.svg?v=20261127a" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/logo/icon-180.png?v=20261127a">
+<link rel="stylesheet" href="assets/app.css?v=20261127a">
 </head>
-<body>
+<body class="accueil">
 <div class="wrap">
   <header>
-    <a class="brand" href="index.html"><img class="mark-img" src="assets/logo/mark.svg?v=20261126b" alt="" width="34" height="34">Atelier<span class="tagline-top">technologie &amp; SVT</span></a>
-    <nav class="profil" id="profils" aria-label="Profil de travail"></nav>
+    <a class="brand" href="index.html"><img class="mark-img" src="assets/logo/mark.svg?v=20261127a" alt="" width="34" height="34">Atelier<span class="tagline-top">technologie &amp; SVT</span></a>
+    <div class="qui">
+      <label for="qui">Qui travaille&nbsp;?</label>
+      <select id="qui"></select>
+    </div>
   </header>
+  <p class="sr" role="status" aria-live="polite" id="annonce"></p>
 
   <section class="hero">
     <div>
-      <span class="kicker" id="kicker">Technologie &amp; sciences · 5ᵉ · 3ᵉ · 2ᵈᵉ</span>
       <h1>Manipule, mesure,<br><span class="grad">comprends le monde.</span></h1>
-      <p class="sub">La technologie et les sciences du collège et du lycée, en ateliers : électricité, lumière, eau, énergie, forces, matière, structures, information.<br>
-        On ouvre un thème, on essaie, on vérifie par la mesure, on répond au quiz — le tout dans le navigateur, sans compte.</p>
+      <p class="sub">Choisis un module, essaie, vérifie par la mesure, puis réponds au quiz. Tout se passe ici, sans compte.</p>
       <div class="cta">
         <a class="btn p" href="module-composants.html" id="btnReprendre">▶ Reprendre où j'en étais</a>
-        <a class="btn s" href="#comment">Comment ça marche</a>
-        <input type="file" id="fichier" accept="application/json" class="sr" tabindex="-1" aria-hidden="true">
-      </div>
-      <div class="xp" id="xp"></div>
-      <div class="xp-outils">
-        <button class="lien" id="btnExport" title="Enregistrer la progression dans un fichier">⤓ Sauvegarder la progression</button>
-        <button class="lien" id="btnImport" title="Restaurer une sauvegarde">⤒ Restaurer</button>
+        <a class="btn s" href="#modules">Voir tous les modules</a>
       </div>
     </div>
 
+    <section class="progres" aria-labelledby="progresTitre">
+      <h2 id="progresTitre" class="progres-titre">Ta progression</h2>
+      <div class="xp" id="xp"></div>
+      <p class="objectif" id="objectif"></p>
+      <h3 class="etagere-titre"><span>Tes badges</span> <span id="nbBadges"></span></h3>
+      <ul class="etagere" id="etagere"></ul>
+    </section>
+  </section>
+
+  <h2 class="sec" id="modules">Modules</h2>
+  <div id="familles"></div>
+
+  <h2 class="sec" id="pratiques">Ateliers pratiques</h2>
+  <div class="cards" id="ateliers"></div>
+
+  <h2 class="sec" id="decouvrir">Découvrir l'Atelier</h2>
+  <div class="decouvrir">
     <figure class="hero-film">
       <div class="film-cadre">
-        <video id="film" src="assets/video/bande-annonce.mp4?v=20261126b" poster="assets/video/bande-annonce.jpg?v=20261126b"
+        <video id="film" src="assets/video/bande-annonce.mp4?v=20261127a" poster="assets/video/bande-annonce.jpg?v=20261127a"
                muted loop playsinline preload="none"
                aria-label="Bande annonce de l'Atelier : électricité, lumière, eau, énergie, modélisation 3D"></video>
         <button class="film-play" id="filmPlay" type="button" aria-label="Lire la bande annonce">
@@ -46,87 +59,7 @@
       </div>
       <figcaption class="cap"><span>Bande annonce · 15 s</span><span>électricité · lumière · eau · énergie · 3D</span></figcaption>
     </figure>
-
-
-  </section>
-
-  <div class="stats" aria-label="En un coup d'œil">
-    <div class="stat"><b>11</b><span>ateliers interactifs</span></div>
-    <div class="stat"><b>3</b><span>niveaux : 5ᵉ, 3ᵉ, 2ᵈᵉ</span></div>
-    <div class="stat"><b>64</b><span>questions corrigées</span></div>
-    <div class="stat"><b>100 %</b><span>local, sans compte</span></div>
-  </div>
-
-
-  <h2 class="sec" id="but"><span>À quoi ça sert</span><span>trois usages, un seul outil</span></h2>
-  <div class="trio">
-    <article class="tuile">
-      <span class="tuile-ico" style="background:linear-gradient(140deg,#6AA6FF,#2F5BFF)">🎯</span>
-      <h3>Comprendre le programme</h3>
-      <p>Chaque atelier suit le programme officiel de technologie (cycle 4, BO du 29 février 2024) et de sciences.
-        Rien d'inventé : les grandeurs, les unités et les calculs sont ceux du cours.</p>
-    </article>
-    <article class="tuile">
-      <span class="tuile-ico" style="background:linear-gradient(140deg,#2EE6C8,#0EA47A)">🧪</span>
-      <h3>S'entraîner sans matériel</h3>
-      <p>Un banc électrique, un banc optique, une scène 3D, des animations : on essaie, on se trompe, on recommence.
-        Pas besoin d'acheter une pile, une lampe ou un ordinateur à démonter.</p>
-    </article>
-    <article class="tuile">
-      <span class="tuile-ico" style="background:linear-gradient(140deg,#FFB340,#FF7A3D)">📈</span>
-      <h3>Garder sa progression</h3>
-      <p>Points d'expérience, badges, modules terminés : tout est enregistré dans cet ordinateur, jamais envoyé ailleurs.
-        Trois profils séparés, et une sauvegarde dans un fichier si tu changes de machine.</p>
-    </article>
-  </div>
-
-  <h2 class="sec" id="comment"><span>Comment s'en servir</span><span>quatre gestes, dans l'ordre</span></h2>
-  <ol class="etapes">
-    <li><b>Choisis ton profil</b><span>en haut à droite : chaque profil garde ses propres points.</span></li>
-    <li><b>Ouvre un thème</b><span>électricité, lumière, eau… chaque carte mène à un atelier interactif.</span></li>
-    <li><b>Manipule, puis relève les défis</b><span>trois défis vérifient que c'est acquis ; les fiches « En savoir plus » donnent le cours, et le bouton « Écouter » le lit à voix haute.</span></li>
-    <li><b>Réponds au quiz</b><span>six questions, une note, un badge. C'est ce qui fait monter le niveau.</span></li>
-  </ol>
-
-  <h2 class="sec" id="themes"><span>Les thèmes abordés</span><span>onze ateliers, trois familles</span></h2>
-  <div class="familles">
-    <div class="famille">
-      <h3>Physique et énergie</h3>
-      <ul class="puces">
-        <li><i style="background:#FF9F0A"></i><div><b>Électricité</b><span>boucle, série, dérivation, court-circuit</span></div></li>
-        <li><i style="background:#F0417E"></i><div><b>Lumière</b><span>ombres, réfraction, lentilles, couleurs</span></div></li>
-        <li><i style="background:#5A6478"></i><div><b>Forces et machines</b><span>newtons, ressorts, leviers, moments</span></div></li>
-        <li><i style="background:#0EA47A"></i><div><b>Énergie</b><span>chaîne de conversion, rendement, CO₂</span></div></li>
-        <li><i style="background:#EA580C"></i><div><b>Chaleur et son</b><span>conduction, isolants, ondes, vitesse du son</span></div></li>
-      </ul>
-    </div>
-    <div class="famille">
-      <h3>Matière et fluides</h3>
-      <ul class="puces">
-        <li><i style="background:#0071E3"></i><div><b>Eau et fluides</b><span>cycle de l'eau, flottabilité, pression, vérins</span></div></li>
-        <li><i style="background:#6D28D9"></i><div><b>Matière et matériaux</b><span>états, changements d'état,&nbsp;mélanges, filtration</span></div></li>
-      </ul>
-    </div>
-    <div class="famille">
-      <h3>Objets et informatique</h3>
-      <ul class="puces">
-        <li><i style="background:#2F5BFF"></i><div><b>Les composants</b><span>rôle de chaque pièce du poste</span></div></li>
-        <li><i style="background:#0E7490"></i><div><b>Le poste en 3D</b><span>sept pièces à remonter, à l'échelle réelle</span></div></li>
-        <li><i style="background:#BE185D"></i><div><b>Information</b><span>binaire, portes logiques, capteur → actionneur, biais d'IA</span></div></li>
-        <li><i style="background:#1E40AF"></i><div><b>Structures</b><span>triangulation, centre de gravité,&nbsp;charge, rupture</span></div></li>
-      </ul>
-    </div>
-  </div>
-  <div class="famille-pratiques">
-    <span class="fp-titre">En plus des thèmes</span>
-    <span class="fp-item"><i style="background:#B57BFF"></i><b>Frappe au clavier</b> apprendre l’AZERTY sans regarder ses mains</span>
-    <span class="fp-item"><i style="background:#F0417E"></i><b>Comprendre une IA</b> entraîner un classifieur, voir son biais</span>
-    <span class="fp-item"><i style="background:#FF9F0A"></i><b>Badge Pix</b> rechercher, gérer et traiter des données</span>
-  </div>
-
-  <h2 class="sec"><span>Zoom sur un thème</span><span>le poste informatique, en vue éclatée</span></h2>
-  <section class="illus-sec">
-    <figure>
+    <figure class="illus-fig">
       <svg viewBox="0 0 620 340" class="illus" role="img" aria-label="Vue éclatée d'un ordinateur : boîtier, carte mère, processeur, mémoire, stockage, alimentation">
         <defs>
           <linearGradient id="gCase" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E6EEFC"/><stop offset="1" stop-color="#C9D7F0"/></linearGradient>
@@ -220,23 +153,60 @@
           <text x="504" y="288">ALIMENTATION</text>
         </g>
       </svg>
-      <figcaption class="cap"><span>Fig. 1 — vue éclatée</span><span>programme de technologie, cycle 4</span></figcaption>
+      <figcaption class="cap"><span>Vue éclatée d'un poste</span><span>module « Les composants »</span></figcaption>
     </figure>
-  </section>
+  </div>
 
-  <h2 class="sec"><span>Technologie &amp; sciences</span><span>11 blocs · 6 matières · programmes français, anglais, japonais, canadien, finlandais</span></h2>
-  <div class="cards" id="modules"></div>
+  <details class="plus" id="comment">
+    <summary>Comment ça marche</summary>
+    <div>
+      <ol class="etapes">
+        <li><b>Choisis qui travaille</b><span>en haut de la page : chacun garde ses propres points et ses badges.</span></li>
+        <li><b>Ouvre un module</b><span>électricité, lumière, eau… chaque carte ouvre une séance interactive.</span></li>
+        <li><b>Manipule, puis relève les défis</b><span>trois défis vérifient que c'est compris ; les fiches « En savoir plus » donnent le cours, et « Écouter » le lit à voix haute.</span></li>
+        <li><b>Réponds au quiz</b><span>six questions, une note, un badge. C'est ce qui fait monter ton niveau.</span></li>
+      </ol>
+    </div>
+  </details>
 
-  <h2 class="sec"><span>Ateliers</span><span>clavier · IA · Pix</span></h2>
-  <div class="cards" id="ateliers"></div>
+  <details class="plus" id="but">
+    <summary>À quoi sert l'Atelier</summary>
+    <div>
+      <ul class="usages">
+        <li><b>Comprendre le programme.</b> Les modules suivent le programme officiel de technologie du collège (cycle 4) et de sciences. Rien d'inventé : les grandeurs, les unités et les calculs sont ceux du cours.</li>
+        <li><b>S'entraîner sans matériel.</b> Un banc électrique, un banc optique, une scène en 3D, des animations : on essaie, on se trompe, on recommence. 64 questions corrigées en tout.</li>
+        <li><b>Garder sa progression.</b> Points, badges et modules terminés restent dans cet appareil, jamais envoyés ailleurs. Trois profils séparés, et une sauvegarde dans un fichier pour changer d'appareil.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="plus parent" id="parent">
+    <summary>Espace parent</summary>
+    <div>
+      <table class="bilan-parent">
+        <caption class="sr">Progression des trois profils</caption>
+        <thead><tr><th scope="col">Profil</th><th scope="col">Niveau</th><th scope="col">Modules terminés</th><th scope="col">Badges</th></tr></thead>
+        <tbody id="bilanParent"></tbody>
+      </table>
+      <p class="note-parent">Sur iPhone et iPad, Safari peut effacer la progression d'un site qu'on n'a pas ouvert depuis 7 jours. Pour l'éviter : ajouter l'Atelier à l'écran d'accueil (Partager → Sur l'écran d'accueil), ou sauvegarder dans un fichier avant les vacances.</p>
+      <div class="outils-parent">
+        <button class="btn s" id="btnExport" type="button">⤓ Sauvegarder dans un fichier</button>
+        <button class="btn s" id="btnImport" type="button">⤒ Restaurer une sauvegarde</button>
+        <input type="file" id="fichier" accept="application/json" class="sr" tabindex="-1" aria-hidden="true">
+      </div>
+      <div class="outils-parent danger">
+        <button class="btn ghost" id="btnResetProfil" type="button">Effacer la progression du profil actif</button>
+        <button class="btn ghost" id="btnReset" type="button">Tout effacer (trois profils)</button>
+      </div>
+    </div>
+  </details>
 
   <footer>
-    <span>Progression gardée sur cet ordinateur · aucun compte, aucune donnée envoyée</span>
-    <button class="btn ghost" id="btnReset" style="font-size:11.5px;padding:8px 12px">Réinitialiser</button>
+    <span>Progression gardée sur cet appareil · aucun compte, aucune donnée envoyée</span>
   </footer>
 </div>
 
-<script src="assets/store.js?v=20261126b"></script>
-<script src="assets/accueil.js?v=20261126b"></script>
+<script src="assets/store.js?v=20261127a"></script>
+<script src="assets/accueil.js?v=20261127a"></script>
 </body>
 </html>
